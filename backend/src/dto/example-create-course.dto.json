@@ -1,0 +1,14 @@
+{
+  "basicInfo": {
+    "title": "Test Course",
+    "description": "A test course description",
+    "category": "Programming",
+    "level": "beginner",
+    "duration": "8 weeks",
+    "price": 99.99
+  },
+  "syllabus": [],
+  "schedule": [],
+  "resources": [],
+  "assessments": []
+}
