@@ -24,6 +24,7 @@ import CourseAnalytics from './components/dashboard/CourseAnalytics';
 import CourseWizard from './components/CourseWizard/CourseWizard';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService'; // Import the TermsOfService component
+import StudentCourseView from './pages/student/StudentCourseView';
 
 const router = createBrowserRouter([
   {
@@ -47,11 +48,27 @@ const router = createBrowserRouter([
         element: <Courses />
       },
       {
+        path: 'courses/:id/analytics',
+        element: <CourseAnalytics />
+      },
+      {
         path: 'courses/new',
         element: <CourseWizard />
       },
       {
+        path: 'courses/:id/learn',
+        element: <CourseLearning />
+      },
+      {
+        path: 'courses/:id/assessments',
+        element: <Assessments />
+      },
+      {
         path: 'courses/:id',
+        element: <CourseContentManager />
+      },
+      {
+        path: 'courses/:id/content',
         element: <CourseContentManager />
       },
       {
@@ -75,6 +92,10 @@ const router = createBrowserRouter([
         element: <Settings />
       }
     ]
+  },
+  {
+    path: '/student/courses/:id',
+    element: <StudentCourseView />
   },
   {
     path: '/',

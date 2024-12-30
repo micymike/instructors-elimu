@@ -2,7 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
-import { Instructor } from '../instructor.entity';
+import { Instructor } from './instructor.entity';
+
+interface DashboardStats {
+  coursesCreated: number;
+  studentsEnrolled: number;
+  revenueGenerated: number;
+}
 
 @Injectable()
 export class InstructorService {
@@ -15,12 +21,12 @@ export class InstructorService {
     return this.instructorRepository.find();
   }
 
-  async findOne(id: string): Promise<Instructor> {
-    return this.instructorRepository.findOne({ where: { id } });
-  }
+async findOne(id: number): Promise<Instructor> {
+  return this.instructorRepository.findOne({ where: { id } });
+}
 
-  async update(id: string, updateInstructorDto: any): Promise<Instructor> {
-    const instructor = await this.instructorRepository.findOne({ where: { id } });
+async update(id: number, updateInstructorDto: any): Promise<Instructor> {
+  const instructor = await this.instructorRepository.findOne({ where: { id } });
     if (!instructor) {
       throw new Error('Instructor not found');
     }
@@ -28,12 +34,16 @@ export class InstructorService {
     return this.instructorRepository.save(instructor);
   }
 
-  async remove(id: string): Promise<void> {
-    await this.instructorRepository.delete(id);
-  }
+async remove(id: number): Promise<void> {
+  await this.instructorRepository.delete(id);
+}
 
-  async getDashboardStats(instructorId: string): Promise<any> {
-    // TO DO: implement logic to retrieve dashboard stats for the instructor
-    return {};
-  }
+async getDashboardStats(instructorId: string): Promise<DashboardStats> {
+  // Basic implementation: return a placeholder object with some stats
+  return {
+    coursesCreated: 0,
+    studentsEnrolled: 0,
+    revenueGenerated: 0,
+  };
+}
 }

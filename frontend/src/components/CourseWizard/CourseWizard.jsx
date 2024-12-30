@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { MessageSquare } from 'lucide-react';  // Add this import
 
 // Basic Information Form Component
 const BasicInfoForm = ({ data, updateData }) => {
@@ -306,6 +307,8 @@ const Preview = ({ courseData }) => {
   );
 };
 
+import AIAssistant from '../course-generator/AIAssistant';
+
 // Main Course Wizard Component
 const CourseWizard = () => {
   const [activeStep, setActiveStep] = useState(0);
@@ -324,14 +327,16 @@ const CourseWizard = () => {
     resources: [],
     assessments: []
   });
+  const [showAIAssistant, setShowAIAssistant] = useState(false);
 
-  const steps = [
-    { title: 'Basic Information', component: BasicInfoForm },
-    { title: 'Syllabus', component: SyllabusBuilder },
-    { title: 'Schedule', component: SchedulePlanner },
-    { title: 'Resources', component: ResourceManager },
-    { title: 'Preview', component: Preview }
-  ];
+const steps = [
+  { title: 'Basic Information', component: BasicInfoForm },
+  { title: 'AI Assistant', component: AIAssistant },
+  { title: 'Syllabus', component: SyllabusBuilder },
+  { title: 'Schedule', component: SchedulePlanner },
+  { title: 'Resources', component: ResourceManager },
+  { title: 'Preview', component: Preview }
+];
 
 const handleNext = async () => {
   if (activeStep === 0) {
@@ -372,20 +377,23 @@ const handleNext = async () => {
 
   const CurrentStepComponent = steps[activeStep].component;
 
-  return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-      <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
-        <div className="p-6 space-y-6">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center"
-          >
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
-              Create New Course
-            </h1>
-          </motion.div>
+return (
+  <div className="min-h-screen bg-gray-50 p-4 md:p-8 relative">
+    <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden relative">
+      <div className="p-6 space-y-6">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center"
+        >
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
+            Create New Course
+          </h1>
+        </motion.div>
 
+        {/* Main content */}
+        <div className="space-y-6">
+          {/* Steps indicator */}
           <div className="flex justify-between items-center overflow-x-auto py-4">
             {steps.map((step, index) => (
               <div 
@@ -410,6 +418,7 @@ const handleNext = async () => {
             ))}
           </div>
 
+          {/* Current step content */}
           <div className="relative min-h-[400px]">
             <AnimatePresence mode="wait">
               <motion.div
@@ -457,27 +466,27 @@ const handleNext = async () => {
             </div>
           )}
 
-          {/* Navigation Buttons */}
-          <div className="flex justify-between mt-6 px-4">
-            <button
-              onClick={handleBack}
-              disabled={activeStep === 0 || loading}
-              className="px-6 py-2 rounded-lg border border-gray-300 text-gray-700 
-                       disabled:opacity-50 disabled:cursor-not-allowed
-                       hover:bg-gray-50 transition-colors"
-            >
-              Back
-            </button>
-            <button
-              onClick={handleNext}
-              disabled={loading}
-              className="px-6 py-2 rounded-lg bg-blue-500 text-white
-                       disabled:opacity-50 disabled:cursor-not-allowed
-                       hover:bg-blue-600 transition-colors"
-            >
-              {activeStep === steps.length - 1 ? 'Publish Course' : 'Next'}
-            </button>
-          </div>
+{/* Navigation Buttons */}
+<div className="flex justify-between mt-6 px-4">
+  <button
+    onClick={handleBack}
+    disabled={activeStep === 0 || loading}
+    className="px-6 py-2 rounded-lg border border-gray-300 text-gray-700 
+             disabled:opacity-50 disabled:cursor-not-allowed
+             hover:bg-gray-50 transition-colors"
+  >
+    Back
+  </button>
+  <button
+    onClick={handleNext}
+    disabled={loading}
+    className="px-6 py-2 rounded-lg bg-blue-500 text-white
+             disabled:opacity-50 disabled:cursor-not-allowed
+             hover:bg-blue-600 transition-colors"
+  >
+    {activeStep === steps.length - 1 ? 'Publish Course' : 'Next'}
+  </button>
+</div>
         </div>
       </div>
 
@@ -489,7 +498,55 @@ const handleNext = async () => {
         </div>
       </div>
     </div>
-  );
-};
+
+
+{/* Replace the AI button in navigation with this floating button */}
+<div className="fixed bottom-8 right-8 z-50">
+  <AnimatePresence>
+    {!showAIAssistant && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="absolute bottom-full right-0 mb-4 whitespace-nowrap"
+          >
+            <motion.div
+              animate={{ y: [0, -8, 0] }}
+              transition={{ 
+                duration: 1.5, 
+                repeat: Infinity,
+                repeatType: "reverse" 
+              }}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg"
+            >
+              Click here for AI assistance! 
+              <div className="absolute bottom-0 left-1/2 transform translate-y-full -translate-x-1/2">
+                <div className="w-3 h-3 bg-blue-600 rotate-45 transform -translate-y-1/2" />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      <motion.button
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={() => setShowAIAssistant(!showAIAssistant)}
+        className="bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-colors"
+      >
+        <MessageSquare size={24} />
+      </motion.button>
+    </div>
+
+    {showAIAssistant && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 z-40">
+        <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl">
+          <AIAssistant />
+        </div>
+      </div>
+    )}
+</div>
+);
+}
 
 export default CourseWizard;

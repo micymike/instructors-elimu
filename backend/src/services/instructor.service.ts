@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Instructor } from '../schemas/instructor.schema';
 import { UpdateInstructorDto } from '../dto/update-instructor.dto';
+import { DashboardStats } from '../types/dashboard-stats.type';
 
 @Injectable()
 export class InstructorService {
@@ -26,7 +27,6 @@ export class InstructorService {
     const updatedInstructor = await this.instructorModel
       .findByIdAndUpdate(id, updateInstructorDto, { new: true })
       .exec();
-    
     if (!updatedInstructor) {
       throw new NotFoundException(`Instructor with ID ${id} not found`);
     }
@@ -41,7 +41,6 @@ export class InstructorService {
         { new: true }
       )
       .exec();
-    
     if (!updatedInstructor) {
       throw new NotFoundException(`Instructor with ID ${id} not found`);
     }
@@ -52,10 +51,18 @@ export class InstructorService {
     const deletedInstructor = await this.instructorModel
       .findByIdAndDelete(id)
       .exec();
-    
     if (!deletedInstructor) {
       throw new NotFoundException(`Instructor with ID ${id} not found`);
     }
     return deletedInstructor;
   }
-} 
+
+  async getDashboardStats(instructorId: string): Promise<DashboardStats> {
+    // Basic implementation: return a placeholder object with some stats
+    return {
+      coursesCreated: 0,
+      studentsEnrolled: 0,
+      revenueGenerated: 0,
+    };
+  }
+}

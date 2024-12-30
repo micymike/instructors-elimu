@@ -12,6 +12,6 @@ import { Group, GroupSchema } from '../instructor/schemas/group.schema'; // Upda
     ]),
   ],
   providers: [NotificationService],
-  exports: [NotificationService],
+  exports: [NotificationService, MongooseModule], // Export the MongooseModule
 })
 export class NotificationModule {}

@@ -114,6 +114,12 @@ export class GeminiService implements OnModuleInit {
     }
   }
 
+  async generateCourse(createCourseDto: any): Promise<any> {
+    // Implement the logic to generate a course based on the createCourseDto
+    // For now, just return a dummy response
+    return { message: 'Course generated successfully' };
+  }
+
   private validateCourseStructure(data: any): data is CourseStructure {
     try {
       // Basic structure check

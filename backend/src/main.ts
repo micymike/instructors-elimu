@@ -31,7 +31,7 @@ async function bootstrap() {
   });
 
   // Global prefix
-  app.setGlobalPrefix('api');
+  // Remove the global prefix
 
   // Add raw body logging middleware
   app.use((req, res, next) => {

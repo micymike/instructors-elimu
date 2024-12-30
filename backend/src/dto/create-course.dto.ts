@@ -60,4 +60,8 @@ export class CreateCourseDto {
   @IsOptional()
   @IsArray()
   syllabus: any[];
+
+  @IsNotEmpty()
+  @IsString()
+  subject: string;
 }
