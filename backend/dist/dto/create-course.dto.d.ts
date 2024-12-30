@@ -1,4 +1,5 @@
 export declare class CreateCourseDto {
+    additionalRequirements?: string;
     title: string;
     description: string;
     category: string;

@@ -1,428 +1,298 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader, Bot, User, Save, Edit, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from "@/lib/utils";
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-hot-toast';
+import { Send, Bot, User, X, Move, Paperclip, Smile, Volume2 } from 'lucide-react';
+import debounce from 'lodash/debounce';
 
-const TypewriterEffect = ({ text }) => {
-  const [displayText, setDisplayText] = useState('');
+const TypingIndicator = () => (
+  <motion.div 
+    className="flex space-x-2 p-2 rounded-lg bg-gray-100 w-16"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+  >
+    {[0, 1, 2].map((dot) => (
+      <motion.div
+        key={dot}
+        className="w-2 h-2 bg-gray-400 rounded-full"
+        animate={{
+          y: ["0%", "-50%", "0%"],
+        }}
+        transition={{
+          duration: 0.8,
+          repeat: Infinity,
+          delay: dot * 0.2,
+        }}
+      />
+    ))}
+  </motion.div>
+);
 
-  useEffect(() => {
-    if (!text) return;
-
-    setDisplayText('');
-    let index = 0;
-
-    const timer = setInterval(() => {
-      if (index < text.length) {
-        setDisplayText(prev => prev + text.charAt(index));
-        index++;
-      } else {
-        clearInterval(timer);
-      }
-    }, 30);
-
-    return () => clearInterval(timer);
-  }, [text]);
-
-  return <span className="whitespace-pre-wrap">{displayText}</span>;
-};
-
-const ChatInterface = ({ onClose }) => {
-  const [messages, setMessages] = useState([{
-    id: '1',
-    type: 'bot',
-    content: "Hi! I'm your AI course creation assistant. Let's create a course together! What subject would you like to teach?",
-    isTyping: true
-  }]);
-
+const ChatInterface = ({ onClose, onSuggestion }) => {
+  const [messages, setMessages] = useState([
+    {
+      id: 1,
+      type: 'bot',
+      content: "Hi! I'm your Elimu Assistant. How can I help you with your course content?",
+      timestamp: new Date().toISOString()
+    }
+  ]);
   const [input, setInput] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [courseData, setCourseData] = useState(null);
-  const chatEndRef = useRef(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const navigate = useNavigate();
+  const [isTyping, setIsTyping] = useState(false);
+  const [width, setWidth] = useState(400);
+  const [height, setHeight] = useState(600);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [showEmoji, setShowEmoji] = useState(false);
+  const messagesEndRef = useRef(null);
+  const chatContainerRef = useRef(null);
+  const inputRef = useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    scrollToBottom();
   }, [messages]);
 
-  const handleSend = async () => {
-    if (!input.trim() || isGenerating) return;
+  // Auto-focus input on mount
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
 
-    // Add user message
-    const userMessage = {
-      id: Date.now().toString(),
+  const handleTypingStatus = debounce(async (text) => {
+    if (text.length > 0) {
+      // Simulate sending typing status to backend
+      console.log('User is typing...');
+    }
+  }, 500);
+
+  const handleInputChange = (e) => {
+    setInput(e.target.value);
+    handleTypingStatus(e.target.value);
+  };
+
+  const handleSend = async () => {
+    if (!input.trim() || isTyping) return;
+
+    const newMessage = {
+      id: Date.now(),
       type: 'user',
       content: input,
+      timestamp: new Date().toISOString()
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages(prev => [...prev, newMessage]);
     setInput('');
-    setIsGenerating(true);
+    setIsTyping(true);
 
     try {
-      const response = await fetch('http://localhost:3000/api/course-generation', {
+      const response = await fetch('http://localhost:3000/api/courses/generate-content', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify({
-          mode: 'course',
-          message: input,
-          context: messages.map(msg => ({
-            role: msg.type === 'user' ? 'user' : 'assistant',
-            content: msg.content
-          }))
-        }),
+        body: JSON.stringify({ message: input }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate response');
+        throw new Error('Failed to generate content');
       }
 
       const data = await response.json();
-      console.log('AI Response:', data); // Debug log
-
-      // Add bot response
-      const botMessage = {
-        id: Date.now().toString(),
+      
+      // Simulate natural typing delay
+      await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
+      
+      setMessages(prev => [...prev, {
+        id: Date.now(),
         type: 'bot',
-        content: data.message,
-        isTyping: true
-      };
+        content: data.response,
+        timestamp: new Date().toISOString()
+      }]);
 
-      setMessages(prev => [...prev, botMessage]);
-
-      // If course data is generated, show it
-      if (data.courseData) {
-        console.log('Course Data:', data.courseData); // Debug log
-        setCourseData(data.courseData);
+      if (data.suggestion) {
+        onSuggestion(data.suggestion);
       }
-
     } catch (error) {
       console.error('Error:', error);
       setMessages(prev => [...prev, {
-        id: Date.now().toString(),
+        id: Date.now(),
         type: 'bot',
         content: "Sorry, I encountered an error. Please try again.",
-        isTyping: true
+        timestamp: new Date().toISOString()
       }]);
     } finally {
-      setIsGenerating(false);
+      setIsTyping(false);
     }
   };
 
-  const handleSaveCourse = async () => {
-    setIsSaving(true);
+  const handleResize = (e) => {
+    if (!isDragging) return;
+    const newWidth = Math.max(300, Math.min(800, e.clientX - e.target.getBoundingClientRect().left));
+    const newHeight = Math.max(400, Math.min(800, e.clientY - e.target.getBoundingClientRect().top));
+    setWidth(newWidth);
+    setHeight(newHeight);
+  };
 
-    try {
-      // Build course data from chat conversation
-      const course = {
-        title: messages.find(m => m.type === 'user' && m.content.includes('/title'))?.content.split('/title ')[1] || '',
-        description: messages.find(m => m.type === 'user' && m.content.includes('/description'))?.content.split('/description ')[1] || '',
-        duration: messages.find(m => m.type === 'user' && m.content.includes('/duration'))?.content.split('/duration ')[1] || '',
-        level: messages.find(m => m.type === 'user' && m.content.includes('/level'))?.content.split('/level ')[1] || '',
-        category: messages.find(m => m.type === 'user' && m.content.includes('/category'))?.content.split('/category ')[1] || '',
-        modules: messages
-          .filter(m => m.type === 'user' && m.content.includes('/module'))
-          .map(m => {
-            const [_, title, description] = m.content.split('/module ');
-            return { title, description };
-          })
-      };
-
-      // Save course to server
-      const response = await fetch('http://localhost:3000/api/courses', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(course)
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save course');
-      }
-
-      const savedCourse = await response.json();
-
-      // Show success message
-      toast.success('Course saved successfully!');
-
-      // Add success message to chat
-      setMessages(prev => [...prev, {
-        id: Date.now().toString(),
-        type: 'bot',
-        content: "✨ Course has been saved successfully! You can find it in your courses list.",
-        isTyping: true
-      }]);
-
-      // Navigate to courses page after a short delay
-      setTimeout(() => {
-        navigate('/instructor/courses', {
-          state: {
-            newCourse: savedCourse,
-            highlight: true
-          }
-        });
-      }, 2000);
-
-    } catch (error) {
-      console.error('Error saving course:', error);
-      toast.error('Failed to save course. Please try again.');
-    } finally {
-      setIsSaving(false);
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
     }
   };
 
-  const handleSave = async () => {
-    const handleSaveCourse = async () => {
-      setIsSaving(true);
+  const formatTimestamp = (timestamp) => {
+    return new Date(timestamp).toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+  };
 
-      try {
-        // Build course data from chat conversation
-        const course = {
-          title: messages.find(m => m.type === 'user' && m.content.includes('/title'))?.content.split('/title ')[1] || '',
-          description: messages.find(m => m.type === 'user' && m.content.includes('/description'))?.content.split('/description ')[1] || '',
-          duration: messages.find(m => m.type === 'user' && m.content.includes('/duration'))?.content.split('/duration ')[1] || '',
-          level: messages.find(m => m.type === 'user' && m.content.includes('/level'))?.content.split('/level ')[1] || '',
-          category: messages.find(m => m.type === 'user' && m.content.includes('/category'))?.content.split('/category ')[1] || '',
-          modules: messages
-            .filter(m => m.type === 'user' && m.content.includes('/module'))
-            .map(m => {
-              const [_, title, description] = m.content.split('/module ');
-              return { title, description };
-            })
-        };
+  const handleVoiceRecord = () => {
+    setIsRecording(!isRecording);
+    // Add voice recording logic here
+  };
 
-        // Save course to server
-        const response = await fetch('http://localhost:3000/api/courses', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(course)
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to save course');
-        }
-
-        const result = await response.json();
-        toast.success('Course saved successfully!');
-
-        // Optionally handle the saved course data
-        console.log('Saved Course:', result);
-
-      } catch (error) {
-        toast.error(error.message || 'Error saving course. Please try again.');
-        console.error('Error saving course:', error);
-      } finally {
-        setIsSaving(false);
+  const handleFileUpload = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*,.pdf,.doc,.docx';
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        // Add file upload logic here
+        console.log('File selected:', file);
       }
     };
-
-    handleSaveCourse();
+    input.click();
   };
-
-  const handleClose = () => {
-    // Logic to close the chat interface
-    onClose();
-  };
-
-  // Add course preview component
-  const CoursePreview = ({ course }) => (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-xl font-semibold">Course Preview</h3>
-        <button
-          onClick={handleSaveCourse}
-          disabled={isSaving}
-          className={cn(
-            "flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors",
-            isSaving
-              ? "bg-gray-400 cursor-not-allowed"
-              : "bg-green-600 hover:bg-green-700 text-white"
-          )}
-        >
-          {isSaving ? (
-            <>
-              <Loader className="h-4 w-4 animate-spin" />
-              <span>Saving...</span>
-            </>
-          ) : (
-            <>
-              <Save className="h-4 w-4" />
-              <span>Save Course</span>
-            </>
-          )}
-        </button>
-      </div>
-      <div>
-        <h4 className="font-medium text-gray-700">Title</h4>
-        <p className="p-2 bg-gray-50 rounded">{course.title}</p>
-      </div>
-      <div>
-        <h4 className="font-medium text-gray-700">Description</h4>
-        <p className="p-2 bg-gray-50 rounded">{course.description}</p>
-      </div>
-      <div>
-        <h4 className="font-medium text-gray-700">Modules</h4>
-        <div className="space-y-3">
-          {course.modules.map((module, index) => (
-            <div key={index} className="p-3 bg-gray-50 rounded">
-              <h5 className="font-medium">{module.title}</h5>
-              <p className="text-sm text-gray-600 mt-1">{module.description}</p>
-              <div className="mt-2 space-y-1">
-                {module.content.map((content, idx) => (
-                  <div key={idx} className="ml-3 text-sm">
-                    <span className="text-blue-600">{content.type}: </span>
-                    {content.title}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <h4 className="font-medium text-gray-700">Level</h4>
-          <p className="p-2 bg-gray-50 rounded">{course.level}</p>
-        </div>
-        <div>
-          <h4 className="font-medium text-gray-700">Duration</h4>
-          <p className="p-2 bg-gray-50 rounded">{course.duration}</p>
-        </div>
-      </div>
-    </div>
-  );
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl h-[80vh] flex flex-col">
-        {/* Header */}
-        <div className="p-4 border-b flex justify-between items-center bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-t-lg">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 20 }}
+      className="fixed bottom-20 right-6 bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden"
+      style={{ width: `${width}px`, height: `${height}px` }}
+      ref={chatContainerRef}
+    >
+      {/* Chat Header */}
+      <div className="flex justify-between items-center p-4 border-b bg-white">
+        <div className="flex items-center space-x-2">
+          <Bot className="w-6 h-6 text-blue-500" />
           <div>
-            <h2 className="text-xl font-semibold">AI Course Creator</h2>
-            <p className="text-sm opacity-90">Let's create something amazing together</p>
-          </div>
-          <div className="flex space-x-2">
-            <button
-              onClick={handleSave}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
-            >
-              <Save className="h-4 w-4" />
-              <span>Save Course</span>
-            </button>
-            <button
-              onClick={handleClose}
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
-            >
-              <X className="h-4 w-4" />
-              <span>Close</span>
-            </button>
+            <h3 className="font-medium">Elimu Assistant</h3>
+            {isTyping && (
+              <span className="text-xs text-gray-500">typing...</span>
+            )}
           </div>
         </div>
-
-        {/* Main Content */}
-        <div className="flex-1 flex overflow-hidden">
-          {/* Chat Section */}
-          <div className={cn(
-            "flex-1 flex flex-col",
-            courseData && "w-1/2 border-r"
-          )}>
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              <AnimatePresence>
-                {messages.map((message) => (
-                  <motion.div
-                    key={message.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    className={cn(
-                      "flex",
-                      message.type === 'user' ? "justify-end" : "justify-start"
-                    )}
-                  >
-                    <div className={cn(
-                      "flex items-start space-x-2 max-w-[80%]",
-                      message.type === 'user' && "flex-row-reverse space-x-reverse"
-                    )}>
-                      <div className={cn(
-                        "p-2 rounded-full",
-                        message.type === 'user' ? "bg-blue-100" : "bg-gray-100"
-                      )}>
-                        {message.type === 'user' ? (
-                          <User className="h-5 w-5 text-blue-600" />
-                        ) : (
-                          <Bot className="h-5 w-5 text-gray-600" />
-                        )}
-                      </div>
-                      <div className={cn(
-                        "p-3 rounded-lg",
-                        message.type === 'user'
-                          ? "bg-blue-600 text-white"
-                          : "bg-gray-100 text-gray-800"
-                      )}>
-                        {message.isTyping ? (
-                          <TypewriterEffect text={message.content} />
-                        ) : (
-                          message.content
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-              <div ref={chatEndRef} />
-            </div>
-
-            {/* Input Area */}
-            <div className="p-4 border-t bg-white">
-              <div className="flex space-x-2">
-                <input
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                  placeholder="Type your message..."
-                  className="flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={isGenerating}
-                />
-                <button
-                  onClick={handleSend}
-                  disabled={isGenerating || !input.trim()}
-                  className={cn(
-                    "p-3 rounded-lg transition-colors",
-                    isGenerating || !input.trim()
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-blue-600 text-white hover:bg-blue-700"
-                  )}
-                >
-                  {isGenerating ? (
-                    <Loader className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <Send className="h-5 w-5" />
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Course Preview Section */}
-          {courseData && (
-            <div className="w-1/2 overflow-y-auto p-4 bg-gray-50">
-              <div className="bg-white rounded-lg shadow p-4">
-                <CoursePreview course={courseData} />
-              </div>
-            </div>
-          )}
+        <div className="flex space-x-2">
+          <button 
+            onClick={onClose}
+            className="p-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          <button 
+            onMouseDown={() => setIsDragging(true)}
+            onMouseUp={() => setIsDragging(false)}
+            onMouseMove={handleResize}
+            onMouseLeave={() => setIsDragging(false)}
+            className="p-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700 cursor-se-resize"
+          >
+            <Move className="w-5 h-5" />
+          </button>
         </div>
       </div>
-    </div>
+
+      {/* Messages Area */}
+      <div className="h-[calc(100%-120px)] overflow-y-auto p-4 space-y-4">
+        <AnimatePresence>
+          {messages.map(message => (
+            <motion.div
+              key={message.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              <div className={`
+                max-w-[80%] p-3 rounded-lg relative group
+                ${message.type === 'user' 
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-gray-100 text-gray-800'}
+              `}>
+                {message.content}
+                <span className="absolute bottom-1 right-2 text-xs opacity-50 group-hover:opacity-100">
+                  {formatTimestamp(message.timestamp)}
+                </span>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+        {isTyping && (
+          <motion.div 
+            className="flex justify-start"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            <TypingIndicator />
+          </motion.div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Input Area */}
+      <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-white">
+        <div className="flex items-end space-x-2">
+          <div className="flex-1 relative">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={handleInputChange}
+              onKeyPress={handleKeyPress}
+              placeholder="Type your message..."
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              style={{ maxHeight: '120px', minHeight: '40px' }}
+              rows={1}
+            />
+            <div className="absolute bottom-2 left-2 flex space-x-2">
+              <button
+                onClick={() => setShowEmoji(!showEmoji)}
+                className="p-1 rounded hover:bg-gray-100 text-gray-500"
+              >
+                <Smile className="w-5 h-5" />
+              </button>
+              <button
+                onClick={handleFileUpload}
+                className="p-1 rounded hover:bg-gray-100 text-gray-500"
+              >
+                <Paperclip className="w-5 h-5" />
+              </button>
+              <button
+                onClick={handleVoiceRecord}
+                className={`p-1 rounded hover:bg-gray-100 ${isRecording ? 'text-red-500' : 'text-gray-500'}`}
+              >
+                <Volume2 className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+          <button
+            onClick={handleSend}
+            disabled={!input.trim() || isTyping}
+            className={`
+              p-2 rounded-lg transition-colors
+              ${!input.trim() || isTyping
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-blue-500 text-white hover:bg-blue-600'}
+            `}
+          >
+            <Send className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+    </motion.div>
   );
 };
 

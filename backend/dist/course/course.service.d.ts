@@ -9,7 +9,7 @@ export declare class CourseService {
     create(createCourseDto: CreateCourseDto): Promise<CourseDocument>;
     findAll(): Promise<CourseDocument[]>;
     findOne(id: string): Promise<CourseDocument>;
-    generateLearningObjectives(subject: string, level: string): Promise<any>;
-    generateCourseSchedule(subject: string, level: string): Promise<any>;
-    generateAssessments(subject: string, level: string): Promise<any>;
+    generateLearningObjectives(subject: string, level: string): Promise<string>;
+    generateCourseSchedule(subject: string, level: string): Promise<string>;
+    generateAssessments(subject: string, level: string): Promise<string>;
 }

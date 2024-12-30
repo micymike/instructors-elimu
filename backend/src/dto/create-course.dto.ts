@@ -33,6 +33,9 @@ class ModuleDto {
 }
 
 export class CreateCourseDto {
+  @IsOptional()
+  @IsString()
+  additionalRequirements?: string;
   @IsNotEmpty()
   @IsString()
   title: string;
@@ -64,4 +67,5 @@ export class CreateCourseDto {
   @IsNotEmpty()
   @IsString()
   subject: string;
+
 }

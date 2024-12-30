@@ -182,4 +182,15 @@ async findAll(@Request() req: any) {
     });
     return course;
   }
+
+  @Post('generate-content')
+  async generateContent(@Body() body: { message: string }) {
+    try {
+      const response = await this.geminiService.generateResponse(body.message, '');
+      return { response };
+    } catch (error) {
+      console.error('Error generating content:', error);
+      throw new Error('Failed to generate content');
+    }
+  }
 }

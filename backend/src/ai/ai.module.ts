@@ -8,4 +8,4 @@ import { AIService } from './ai.service';
   providers: [GeminiService, AIService],
   exports: [GeminiService, AIService],
 })
-export class AIModule { }
+export class AIModule {}

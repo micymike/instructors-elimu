@@ -127,6 +127,16 @@ Suggestion: Use a combination of assessment strategies to evaluate student progr
         });
         return course;
     }
+    async generateContent(body) {
+        try {
+            const response = await this.geminiService.generateResponse(body.message, '');
+            return { response };
+        }
+        catch (error) {
+            console.error('Error generating content:', error);
+            throw new Error('Failed to generate content');
+        }
+    }
 };
 exports.CourseController = CourseController;
 __decorate([
@@ -219,6 +229,13 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], CourseController.prototype, "uploadContent", null);
+__decorate([
+    (0, common_1.Post)('generate-content'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], CourseController.prototype, "generateContent", null);
 exports.CourseController = CourseController = __decorate([
     (0, common_1.Controller)('api/courses'),
     __metadata("design:paramtypes", [course_service_1.CourseService,

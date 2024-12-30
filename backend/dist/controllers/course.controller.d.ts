@@ -26,5 +26,10 @@ export declare class CourseController {
     remove(id: string): Promise<any>;
     getContent(id: string): Promise<import("../schemas/course.schema").Course>;
     uploadContent(id: string, file: Express.Multer.File): Promise<import("../schemas/course.schema").Course>;
+    generateContent(body: {
+        message: string;
+    }): Promise<{
+        response: string;
+    }>;
 }
 export {};
