@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Book, Video, FileText, Tool, Search, Filter, ExternalLink } from 'lucide-react';
+import { Book, Video, FileText, Wrench, Search, Filter, ExternalLink } from 'lucide-react';
 import axios from 'axios';
 import { useToast } from '../../hooks/useToast';
 
@@ -20,7 +20,7 @@ const Content = () => {
         textbook: { icon: Book, color: 'text-blue-600' },
         video: { icon: Video, color: 'text-red-600' },
         article: { icon: FileText, color: 'text-green-600' },
-        tool: { icon: Tool, color: 'text-purple-600' }
+        tool: { icon: Wrench, color: 'text-purple-600' }
     };
 
     // Sample curated resources (you can move this to your backend)
@@ -68,7 +68,7 @@ const Content = () => {
     const fetchResources = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:3000/api/resources', {
+            const response = await axios.get('https://eba3-102-0-10-118.ngrok-free.app/api/resources', {
                 headers: { Authorization: `Bearer ${token}` },
                 params: { ...filters, search: searchQuery }
             });
@@ -204,4 +204,4 @@ const Content = () => {
     );
 };
 
-export default Content; 
+export default Content;
