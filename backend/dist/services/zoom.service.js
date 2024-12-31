@@ -55,11 +55,11 @@ let ZoomService = class ZoomService {
             const token = await this.getAccessToken();
             console.log('Creating Zoom meeting with params:', params);
             const response = await (0, rxjs_1.firstValueFrom)(this.httpService.post('https://api.zoom.us/v2/users/me/meetings', {
-                topic: params.topic,
+                topic: params.title,
                 type: 2,
-                start_time: params.startTime,
+                start_time: `${params.date}T${params.time}:00`,
                 duration: params.duration,
-                agenda: params.agenda,
+                agenda: params.description,
                 settings: {
                     host_video: true,
                     participant_video: true,

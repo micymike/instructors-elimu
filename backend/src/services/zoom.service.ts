@@ -66,37 +66,37 @@ export class ZoomService implements OnModuleInit {
     }
   }
 
-  async createMeeting(params: CreateMeetingDto) {
-    try {
-      console.log('Getting access token...');
-      const token = await this.getAccessToken();
-      
-      console.log('Creating Zoom meeting with params:', params);
-      const response = await firstValueFrom(
-        this.httpService.post(
-          'https://api.zoom.us/v2/users/me/meetings',
-          {
-            topic: params.topic,
-            type: 2,
-            start_time: params.startTime,
-            duration: params.duration,
-            agenda: params.agenda,
-            settings: {
-              host_video: true,
-              participant_video: true,
-              join_before_host: false,
-              mute_upon_entry: true,
-              waiting_room: true,
-            },
+async createMeeting(params: CreateMeetingDto) {
+  try {
+    console.log('Getting access token...');
+    const token = await this.getAccessToken();
+    
+    console.log('Creating Zoom meeting with params:', params);
+    const response = await firstValueFrom(
+      this.httpService.post(
+        'https://api.zoom.us/v2/users/me/meetings',
+        {
+          topic: params.title,
+          type: 2,
+          start_time: `${params.date}T${params.time}:00`,
+          duration: params.duration,
+          agenda: params.description,
+          settings: {
+            host_video: true,
+            participant_video: true,
+            join_before_host: false,
+            mute_upon_entry: true,
+            waiting_room: true,
           },
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
           },
-        ),
-      );
+        },
+      ),
+    );
 
       console.log('Zoom API response:', response.data);
       return response.data;
@@ -106,4 +106,4 @@ export class ZoomService implements OnModuleInit {
       throw new Error(zoomError.response?.data?.message || 'Failed to create Zoom meeting');
     }
   }
-} 
+}

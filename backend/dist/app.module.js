@@ -19,6 +19,7 @@ const course_generation_controller_1 = require("./controllers/course-generation.
 const course_controller_1 = require("./controllers/course.controller");
 const gemini_service_1 = require("./services/gemini.service");
 const notification_module_1 = require("./notification/notification.module");
+const zoom_module_1 = require("./zoom/zoom.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -51,6 +52,7 @@ exports.AppModule = AppModule = __decorate([
             course_module_1.CourseModule,
             course_generation_module_1.CourseGenerationModule,
             notification_module_1.NotificationModule,
+            zoom_module_1.ZoomModule,
         ],
         controllers: [course_generation_controller_1.CourseGenerationController, course_controller_1.CourseController],
         providers: [gemini_service_1.GeminiService],

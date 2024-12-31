@@ -1,16 +1,30 @@
-import { IsString, IsNumber, IsOptional, IsDateString } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsDateString, IsBoolean } from 'class-validator';
 
 export class CreateMeetingDto {
   @IsString()
-  topic: string;
+  title: string;
 
   @IsDateString()
-  startTime: string;
+  date: string;
+
+  @IsString()
+  time: string;
 
   @IsNumber()
   duration: number;
 
   @IsString()
+  description: string;
+
+  @IsBoolean()
+  recurring: boolean;
+
+  @IsNumber()
+  maxParticipants: number;
+
+  @IsBoolean()
+  requiresRegistration: boolean;
+
   @IsOptional()
-  agenda?: string;
-} 
+  materials: any[];
+}

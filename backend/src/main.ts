@@ -30,8 +30,8 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
-  // Global prefix
-  // Remove the global prefix
+// Global prefix
+app.setGlobalPrefix('api');
 
   // Add raw body logging middleware
   app.use((req, res, next) => {

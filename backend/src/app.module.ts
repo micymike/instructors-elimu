@@ -10,6 +10,7 @@ import { CourseGenerationController } from './controllers/course-generation.cont
 import { CourseController } from './controllers/course.controller';
 import { GeminiService } from './services/gemini.service';
 import { NotificationModule } from './notification/notification.module'; // Ensure NotificationModule is imported
+import { ZoomModule } from './zoom/zoom.module'; // Import ZoomModule
 
 @Module({
 imports: [
@@ -39,6 +40,7 @@ imports: [
   CourseModule,
   CourseGenerationModule,
   NotificationModule, // Ensure NotificationModule is imported
+  ZoomModule, // Add ZoomModule to imports array
 ],
   controllers: [CourseGenerationController, CourseController],
   providers: [GeminiService],

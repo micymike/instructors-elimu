@@ -1,6 +1,11 @@
 export declare class CreateMeetingDto {
-    topic: string;
-    startTime: string;
+    title: string;
+    date: string;
+    time: string;
     duration: number;
-    agenda?: string;
+    description: string;
+    recurring: boolean;
+    maxParticipants: number;
+    requiresRegistration: boolean;
+    materials: any[];
 }

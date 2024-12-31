@@ -21,6 +21,7 @@ async function bootstrap() {
         credentials: true,
         allowedHeaders: ['Content-Type', 'Authorization'],
     });
+    app.setGlobalPrefix('api');
     app.use((req, res, next) => {
         let data = '';
         req.on('data', chunk => {

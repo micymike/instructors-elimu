@@ -33,6 +33,6 @@ export declare class GeminiService implements OnModuleInit {
     determineStage(context: Array<{
         role: string;
         content: string;
-    }>): "subject" | "audience" | "objectives" | "duration" | "final";
+    }>): "objectives" | "subject" | "audience" | "duration" | "final";
 }
 export {};

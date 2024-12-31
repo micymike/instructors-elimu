@@ -17,18 +17,37 @@ exports.CreateMeetingDto = CreateMeetingDto;
 __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
-], CreateMeetingDto.prototype, "topic", void 0);
+], CreateMeetingDto.prototype, "title", void 0);
 __decorate([
     (0, class_validator_1.IsDateString)(),
     __metadata("design:type", String)
-], CreateMeetingDto.prototype, "startTime", void 0);
+], CreateMeetingDto.prototype, "date", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateMeetingDto.prototype, "time", void 0);
 __decorate([
     (0, class_validator_1.IsNumber)(),
     __metadata("design:type", Number)
 ], CreateMeetingDto.prototype, "duration", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
-], CreateMeetingDto.prototype, "agenda", void 0);
+], CreateMeetingDto.prototype, "description", void 0);
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], CreateMeetingDto.prototype, "recurring", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreateMeetingDto.prototype, "maxParticipants", void 0);
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], CreateMeetingDto.prototype, "requiresRegistration", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Array)
+], CreateMeetingDto.prototype, "materials", void 0);
 //# sourceMappingURL=create-meeting.dto.js.map

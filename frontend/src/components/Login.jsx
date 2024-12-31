@@ -20,7 +20,7 @@ const Login = () => {
     event.preventDefault();
     setIsLoading(true);
     setError('');
-
+  
     try {
       const response = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
@@ -29,34 +29,56 @@ const Login = () => {
         },
         body: JSON.stringify(credentials)
       });
-
+  
       const data = await response.json();
-      
-      if (response.ok) {
-        // Ensure user data has required fields before storing
+      console.log(data); // Log the response to check the structure
+  
+      if (!response.ok) {
+        // Handle non-200 HTTP status codes (e.g., 401, 400, etc.)
+        const errorMessage = data.message || 'Something went wrong. Please try again.';
+        setError(errorMessage);
+        return;
+      }
+  
+      if (data.success && data.data.access_token) {
+        // Store the token in localStorage
+        localStorage.setItem('token', data.data.access_token);
+  
+        // Prepare user data
         const userData = {
-          firstName: data.user?.firstName || '',
-          lastName: data.user?.lastName || '',
-          email: data.user?.email || credentials.email,
-          expertise: data.user?.expertise || 'Instructor',
-          ...data.user
+          firstName: data.data.instructor?.firstName || '',
+          lastName: data.data.instructor?.lastName || '',
+          email: data.data.instructor?.email || credentials.email,
+          status: data.data.instructor?.status || 'pending',
+          isVerified: data.data.instructor?.isVerified || false,
+          role: data.data.instructor?.role || 'instructor',
+          ...data.data.instructor
         };
-
-        localStorage.setItem('token', data.access_token);
+  
+        // Store user data in localStorage
         localStorage.setItem('user', JSON.stringify(userData));
-        
-        window.location.href = '/instructor/dashboard';
+  
+        // Redirect to dashboard
+        navigate('/instructor/dashboard');
       } else {
-        setError(data.message || 'Invalid email or password');
+        // Handle missing token or unsuccessful login
+        setError('Token not received. Please try again.');
       }
     } catch (err) {
+      // Catch any errors that occur during the fetch or other operations
       console.error('Login error:', err);
-      setError('Network error. Please try again.');
+  
+      // Differentiate between network errors and unexpected errors
+      if (err instanceof TypeError && err.message.includes('Failed to fetch')) {
+        setError('Network error. Please check your internet connection and try again.');
+      } else {
+        setError('An unexpected error occurred. Please try again later.');
+      }
     } finally {
       setIsLoading(false);
     }
   };
-
+  
   const handleChange = (e) => {
     const { name, value } = e.target;
     setCredentials(prev => ({
