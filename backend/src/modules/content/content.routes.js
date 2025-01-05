@@ -7,9 +7,9 @@ const contentController = new ContentController();
 
 router.use(authMiddleware);
 
-router.get('/', (req, res) => contentController.getResources(req, res));
-router.post('/', (req, res) => contentController.addResource(req, res));
-router.put('/:id', (req, res) => contentController.updateResource(req, res));
-router.post('/:id/reviews', (req, res) => contentController.addReview(req, res));
+router.get('/resources', (req, res) => contentController.getResources(req, res));
+router.post('/resources', (req, res) => contentController.addResource(req, res));
+router.put('/resources/:id', (req, res) => contentController.updateResource(req, res));
+router.post('/resources/:id/reviews', (req, res) => contentController.addReview(req, res));
 
 export default router; 

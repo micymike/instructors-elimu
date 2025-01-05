@@ -4,7 +4,8 @@ import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import Testimonial from '../components/ui/Testimonial';
 import BlobButton from './ui/BlobButton';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+// Specific endpoint for instructor login
+const LOGIN_URL = 'https://centralize-auth-elimu.onrender.com/auth/login/instructor';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -22,37 +23,51 @@ const Login = () => {
     setError('');
   
     try {
-      const response = await fetch(`${API_URL}/api/auth/login`, {
+      console.log('Login Request:', {
+        url: LOGIN_URL,
+        method: 'POST',
+        body: JSON.stringify({
+          email: credentials.email,
+          password: credentials.password
+        })
+      });
+
+      const response = await fetch(LOGIN_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(credentials)
+        body: JSON.stringify({
+          email: credentials.email,
+          password: credentials.password
+        })
       });
   
+      console.log('Full Response:', {
+        status: response.status,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+
       const data = await response.json();
-      console.log(data); // Log the response to check the structure
+      console.log('Response Data:', data);
   
       if (!response.ok) {
-        // Handle non-200 HTTP status codes (e.g., 401, 400, etc.)
         const errorMessage = data.message || 'Something went wrong. Please try again.';
         setError(errorMessage);
         return;
       }
   
-      if (data.success && data.data.access_token) {
+      if (data.access_token) {
         // Store the token in localStorage
-        localStorage.setItem('token', data.data.access_token);
+        localStorage.setItem('token', data.access_token);
   
         // Prepare user data
         const userData = {
-          firstName: data.data.instructor?.firstName || '',
-          lastName: data.data.instructor?.lastName || '',
-          email: data.data.instructor?.email || credentials.email,
-          status: data.data.instructor?.status || 'pending',
-          isVerified: data.data.instructor?.isVerified || false,
-          role: data.data.instructor?.role || 'instructor',
-          ...data.data.instructor
+          firstName: data.user?.firstName || '',
+          lastName: data.user?.lastName || '',
+          email: data.user?.email || credentials.email,
+          role: data.user?.role || 'instructor',
+          isVerified: data.user?.isVerified || false
         };
   
         // Store user data in localStorage
@@ -78,7 +93,7 @@ const Login = () => {
       setIsLoading(false);
     }
   };
-  
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setCredentials(prev => ({

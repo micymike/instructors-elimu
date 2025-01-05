@@ -1,7 +1,7 @@
 import { Model } from 'mongoose';
 import { CourseDocument } from './schemas/course.schema';
 import { CreateCourseDto } from './dto/create-course.dto';
-import { GeminiService } from '../ai/gemini.service';
+import { GeminiService } from '../services/gemini.service';
 export declare class CourseService {
     private courseModel;
     private geminiService;

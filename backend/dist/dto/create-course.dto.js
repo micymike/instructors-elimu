@@ -9,94 +9,43 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CreateCourseDto = void 0;
+exports.CreateCourseDto = exports.CourseLevel = void 0;
 const class_validator_1 = require("class-validator");
-const class_transformer_1 = require("class-transformer");
-class ContentDto {
-}
-__decorate([
-    (0, class_validator_1.IsEnum)(['video', 'document', 'quiz', 'assignment']),
-    __metadata("design:type", String)
-], ContentDto.prototype, "type", void 0);
-__decorate([
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], ContentDto.prototype, "title", void 0);
-__decorate([
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], ContentDto.prototype, "description", void 0);
-__decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", String)
-], ContentDto.prototype, "url", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", Number)
-], ContentDto.prototype, "duration", void 0);
-class ModuleDto {
-}
-__decorate([
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], ModuleDto.prototype, "title", void 0);
-__decorate([
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], ModuleDto.prototype, "description", void 0);
-__decorate([
-    (0, class_validator_1.IsArray)(),
-    (0, class_validator_1.ValidateNested)({ each: true }),
-    (0, class_transformer_1.Type)(() => ContentDto),
-    __metadata("design:type", Array)
-], ModuleDto.prototype, "content", void 0);
+var CourseLevel;
+(function (CourseLevel) {
+    CourseLevel["BEGINNER"] = "beginner";
+    CourseLevel["INTERMEDIATE"] = "intermediate";
+    CourseLevel["ADVANCED"] = "advanced";
+})(CourseLevel || (exports.CourseLevel = CourseLevel = {}));
 class CreateCourseDto {
 }
 exports.CreateCourseDto = CreateCourseDto;
 __decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], CreateCourseDto.prototype, "additionalRequirements", void 0);
-__decorate([
-    (0, class_validator_1.IsNotEmpty)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateCourseDto.prototype, "title", void 0);
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateCourseDto.prototype, "description", void 0);
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsEnum)(CourseLevel),
+    __metadata("design:type", String)
+], CreateCourseDto.prototype, "level", void 0);
+__decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateCourseDto.prototype, "category", void 0);
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], CreateCourseDto.prototype, "level", void 0);
-__decorate([
-    (0, class_validator_1.IsNotEmpty)(),
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], CreateCourseDto.prototype, "duration", void 0);
-__decorate([
-    (0, class_validator_1.IsNotEmpty)(),
-    (0, class_validator_1.IsNumber)(),
-    __metadata("design:type", Number)
-], CreateCourseDto.prototype, "price", void 0);
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsString)({ each: true }),
+    __metadata("design:type", Array)
+], CreateCourseDto.prototype, "topics", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsArray)(),
     __metadata("design:type", Array)
-], CreateCourseDto.prototype, "syllabus", void 0);
-__decorate([
-    (0, class_validator_1.IsNotEmpty)(),
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], CreateCourseDto.prototype, "subject", void 0);
+], CreateCourseDto.prototype, "resources", void 0);
 //# sourceMappingURL=create-course.dto.js.map

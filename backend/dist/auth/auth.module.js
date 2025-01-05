@@ -14,6 +14,7 @@ const mongoose_1 = require("@nestjs/mongoose");
 const config_1 = require("@nestjs/config");
 const auth_service_1 = require("./auth.service");
 const auth_controller_1 = require("./auth.controller");
+const jwt_auth_guard_1 = require("./guards/jwt-auth.guard");
 const instructor_schema_1 = require("../instructor/instructor.schema");
 let AuthModule = class AuthModule {
 };
@@ -32,8 +33,9 @@ exports.AuthModule = AuthModule = __decorate([
                 inject: [config_1.ConfigService],
             }),
         ],
-        providers: [auth_service_1.AuthService],
+        providers: [auth_service_1.AuthService, jwt_auth_guard_1.JwtAuthGuard],
         controllers: [auth_controller_1.AuthController],
+        exports: [jwt_auth_guard_1.JwtAuthGuard],
     })
 ], AuthModule);
 //# sourceMappingURL=auth.module.js.map

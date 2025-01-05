@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Users,
   BookOpen,
@@ -14,17 +14,25 @@ import CourseAnalytics from '../../components/dashboard/CourseAnalytics.jsx';
 import UpcomingSchedule from '../../components/dashboard/UpcomingSchedule';
 import RecentActivity from '../../components/dashboard/RecentActivity';
 import StatCard from '../../components/dashboard/StatCard';
+import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [user, setUser] = useState({
     firstName: 'Instructor',
     email: ''
   });
   const [selectedTimeRange, setSelectedTimeRange] = useState('week');
+  const [stats, setStats] = useState({
+    totalCourses: 0,
+    activeCourses: 0,
+    totalStudents: 0,
+    teachingHours: 0
+  });
   const [courseStats, setCourseStats] = useState(null);
-  const [error, setError] = useState(null); // Add error state
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -34,53 +42,95 @@ const Dashboard = () => {
         setUser(parsedUser);
       } catch (err) {
         console.error('Error parsing user data:', err);
-        // Keep default user state
       }
     }
-    // Comment out the fetchCourseStats call since we're using static data
-    // fetchCourseStats();
+    fetchUserSettings();
+    fetchCourseStats();
   }, []);
 
-  // Temporary empty function to prevent undefined error
-  const fetchCourseStats = () => {
-    console.log('Stats fetching is temporarily disabled');
-    // We'll implement this later when the API is ready
-    setCourseStats({
-      totalStudents: 0,
-      activeCourses: 0,
-      teachingHours: 0,
-      completionRate: 0,
-      activeCoursesList: []
-    });
+  const fetchUserSettings = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+
+      const response = await axios.get(`${API_URL}/settings`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.data && response.data.data) {
+        setUser(response.data.data.personalInfo || response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching user settings:', error);
+      if (error.response?.status === 401) {
+        // Clear token and redirect to login
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        navigate('/login');
+      }
+    }
+  };
+
+  const fetchCourseStats = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_URL}/courses/instructor/stats`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      const statsData = response.data.data;
+      setStats({
+        totalCourses: statsData.totalCourses || 0,
+        activeCourses: statsData.activeCourses || 0,
+        totalStudents: statsData.totalStudents || 0,
+        teachingHours: statsData.teachingHours || 0
+      });
+    } catch (error) {
+      console.error('Error fetching course stats:', error);
+      // Handle error gracefully
+      setStats({
+        totalCourses: 0,
+        activeCourses: 0,
+        totalStudents: 0,
+        teachingHours: 0
+      });
+    }
   };
 
   // Temporary static stats for testing
-  const stats = [
+  const statCards = [
     {
-      name: 'Total Students',
-      value: '0',
-      icon: Users,
-      change: '+0%',
-      changeType: 'positive'
-    },
-    {
-      name: 'Active Courses',
-      value: '0',
+      name: 'Total Courses',
+      value: stats.totalCourses,
       icon: BookOpen,
       change: '+0%',
       changeType: 'positive'
     },
     {
-      name: 'Teaching Hours',
-      value: '0',
-      icon: Clock,
+      name: 'Active Courses',
+      value: stats.activeCourses,
+      icon: BookOpen,
       change: '+0%',
       changeType: 'positive'
     },
     {
-      name: 'Completion Rate',
-      value: '0%',
-      icon: Award,
+      name: 'Total Students',
+      value: stats.totalStudents,
+      icon: Users,
+      change: '+0%',
+      changeType: 'positive'
+    },
+    {
+      name: 'Teaching Hours',
+      value: stats.teachingHours,
+      icon: Clock,
       change: '+0%',
       changeType: 'positive'
     }
@@ -137,7 +187,7 @@ const Dashboard = () => {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {stats.map((stat, index) => (
+        {statCards.map((stat, index) => (
           <StatCard key={index} {...stat} />
         ))}
       </div>

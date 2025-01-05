@@ -14,42 +14,80 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.InstructorService = void 0;
 const common_1 = require("@nestjs/common");
-const typeorm_1 = require("@nestjs/typeorm");
-const typeorm_2 = require("typeorm");
-const instructor_entity_1 = require("./instructor.entity");
+const mongoose_1 = require("@nestjs/mongoose");
+const mongoose_2 = require("mongoose");
+const instructor_schema_1 = require("../schemas/instructor.schema");
 let InstructorService = class InstructorService {
-    constructor(instructorRepository) {
-        this.instructorRepository = instructorRepository;
+    constructor(instructorModel) {
+        this.instructorModel = instructorModel;
     }
     async findAll() {
-        return this.instructorRepository.find();
+        return this.instructorModel.find().exec();
     }
     async findOne(id) {
-        return this.instructorRepository.findOne({ where: { id } });
+        const instructor = await this.instructorModel.findById(id).exec();
+        if (!instructor) {
+            throw new common_1.NotFoundException(`Instructor with ID ${id} not found`);
+        }
+        return instructor;
     }
     async update(id, updateInstructorDto) {
-        const instructor = await this.instructorRepository.findOne({ where: { id } });
-        if (!instructor) {
-            throw new Error('Instructor not found');
+        const updatedInstructor = await this.instructorModel
+            .findByIdAndUpdate(id, updateInstructorDto, { new: true })
+            .exec();
+        if (!updatedInstructor) {
+            throw new common_1.NotFoundException(`Instructor with ID ${id} not found`);
         }
-        Object.assign(instructor, updateInstructorDto);
-        return this.instructorRepository.save(instructor);
+        return updatedInstructor;
+    }
+    async updateProfilePicture(id, url) {
+        const updatedInstructor = await this.instructorModel
+            .findByIdAndUpdate(id, { profilePicture: url }, { new: true })
+            .exec();
+        if (!updatedInstructor) {
+            throw new common_1.NotFoundException(`Instructor with ID ${id} not found`);
+        }
+        return updatedInstructor;
     }
     async remove(id) {
-        await this.instructorRepository.delete(id);
+        const deletedInstructor = await this.instructorModel
+            .findByIdAndDelete(id)
+            .exec();
+        if (!deletedInstructor) {
+            throw new common_1.NotFoundException(`Instructor with ID ${id} not found`);
+        }
+        return deletedInstructor;
     }
-    async getDashboardStats(instructorId) {
-        return {
-            coursesCreated: 0,
-            studentsEnrolled: 0,
-            revenueGenerated: 0,
-        };
+    async getUserDetails(instructorId) {
+        try {
+            const instructor = await this.instructorModel
+                .findById(instructorId)
+                .select('-password')
+                .exec();
+            if (!instructor) {
+                throw new common_1.NotFoundException('Instructor not found');
+            }
+            return {
+                id: instructor._id,
+                firstName: instructor.firstName,
+                lastName: instructor.lastName,
+                email: instructor.email,
+                profilePicture: instructor.profilePicture,
+                expertise: instructor.expertise,
+                bio: instructor.bio,
+                isVerified: instructor.isVerified,
+                status: instructor.status
+            };
+        }
+        catch (error) {
+            throw new common_1.NotFoundException('Could not retrieve instructor details');
+        }
     }
 };
 exports.InstructorService = InstructorService;
 exports.InstructorService = InstructorService = __decorate([
     (0, common_1.Injectable)(),
-    __param(0, (0, typeorm_1.InjectRepository)(instructor_entity_1.Instructor)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __param(0, (0, mongoose_1.InjectModel)(instructor_schema_1.Instructor.name)),
+    __metadata("design:paramtypes", [mongoose_2.Model])
 ], InstructorService);
 //# sourceMappingURL=instructor.service.js.map

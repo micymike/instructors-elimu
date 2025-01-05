@@ -24,30 +24,39 @@ let CloudinaryService = class CloudinaryService {
     }
     async uploadFile(file, folder = 'course-files') {
         return new Promise((resolve, reject) => {
+            const buffer = file.buffer;
+            const filename = file.originalname;
             const uploadStream = cloudinary_1.v2.uploader.upload_stream({
                 folder,
-                resource_type: 'auto'
+                resource_type: 'auto',
+                filename
             }, (error, result) => {
                 if (error)
                     return reject(error);
                 resolve(result.secure_url);
             });
-            uploadStream.end(file.buffer);
+            uploadStream.end(buffer);
         });
     }
     async uploadVideo(file, folder = 'course-videos') {
         return new Promise((resolve, reject) => {
+            const buffer = file.buffer;
+            const filename = file.originalname;
             const uploadStream = cloudinary_1.v2.uploader.upload_stream({
                 folder,
                 resource_type: 'video',
-                chunk_size: 6000000
+                chunk_size: 6000000,
+                filename
             }, (error, result) => {
                 if (error)
                     return reject(error);
                 resolve(result.secure_url);
             });
-            uploadStream.end(file.buffer);
+            uploadStream.end(buffer);
         });
+    }
+    isCustomFile(file) {
+        return 'originalname' in file && 'buffer' in file && 'mimetype' in file;
     }
     async deleteFile(publicId) {
         await cloudinary_1.v2.uploader.destroy(publicId);

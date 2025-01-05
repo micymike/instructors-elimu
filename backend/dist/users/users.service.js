@@ -19,6 +19,9 @@ const mongoose_2 = require("mongoose");
 const user_schema_1 = require("./schemas/user.schema");
 const bcrypt = require("bcrypt");
 let UsersService = class UsersService {
+    findByEmail(email) {
+        throw new Error('Method not implemented.');
+    }
     constructor(userModel) {
         this.userModel = userModel;
     }

@@ -29,7 +29,7 @@
   "include": [
     "src/**/*.ts",
     "test/**/*.ts"
-  ],
+, "src/modules/content/content.controller.js"  ],
   "exclude": [
     "node_modules"
   ]

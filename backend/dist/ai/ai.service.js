@@ -11,10 +11,16 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AIService = void 0;
 const common_1 = require("@nestjs/common");
-const gemini_service_1 = require("./gemini.service");
+const config_1 = require("@nestjs/config");
+const gemini_service_1 = require("../services/gemini.service");
+const groq_sdk_1 = require("groq-sdk");
 let AIService = class AIService {
-    constructor(geminiService) {
+    constructor(configService, geminiService) {
+        this.configService = configService;
         this.geminiService = geminiService;
+        this.groq = new groq_sdk_1.default({
+            apiKey: this.configService.get('GROQ_API_KEY'),
+        });
     }
     async generateStructuredResponse(prompt) {
         try {
@@ -26,10 +32,15 @@ let AIService = class AIService {
             throw new Error('Failed to generate response');
         }
     }
+    async generateMultimodalResponse(prompt, context) {
+        const geminiResponse = await this.geminiService.generateResponse(prompt, 'multimodal');
+        return geminiResponse;
+    }
 };
 exports.AIService = AIService;
 exports.AIService = AIService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [gemini_service_1.GeminiService])
+    __metadata("design:paramtypes", [config_1.ConfigService,
+        gemini_service_1.GeminiService])
 ], AIService);
 //# sourceMappingURL=ai.service.js.map

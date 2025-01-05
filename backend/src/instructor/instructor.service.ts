@@ -1,49 +1,85 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
-import { Instructor } from './instructor.entity';
-
-interface DashboardStats {
-  coursesCreated: number;
-  studentsEnrolled: number;
-  revenueGenerated: number;
-}
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { Instructor } from '../schemas/instructor.schema';
+import { UpdateInstructorDto } from '../dto/update-instructor.dto';
 
 @Injectable()
 export class InstructorService {
   constructor(
-    @InjectRepository(Instructor)
-    private readonly instructorRepository: Repository<Instructor>,
+    @InjectModel(Instructor.name) private instructorModel: Model<Instructor>
   ) {}
 
-  async findAll(): Promise<Instructor[]> {
-    return this.instructorRepository.find();
+  async findAll() {
+    return this.instructorModel.find().exec();
   }
 
-async findOne(id: number): Promise<Instructor> {
-  return this.instructorRepository.findOne({ where: { id } });
-}
-
-async update(id: number, updateInstructorDto: any): Promise<Instructor> {
-  const instructor = await this.instructorRepository.findOne({ where: { id } });
+  async findOne(id: string) {
+    const instructor = await this.instructorModel.findById(id).exec();
     if (!instructor) {
-      throw new Error('Instructor not found');
+      throw new NotFoundException(`Instructor with ID ${id} not found`);
     }
-    Object.assign(instructor, updateInstructorDto);
-    return this.instructorRepository.save(instructor);
+    return instructor;
   }
 
-async remove(id: number): Promise<void> {
-  await this.instructorRepository.delete(id);
-}
+  async update(id: string, updateInstructorDto: UpdateInstructorDto) {
+    const updatedInstructor = await this.instructorModel
+      .findByIdAndUpdate(id, updateInstructorDto, { new: true })
+      .exec();
+    if (!updatedInstructor) {
+      throw new NotFoundException(`Instructor with ID ${id} not found`);
+    }
+    return updatedInstructor;
+  }
 
-async getDashboardStats(instructorId: string): Promise<DashboardStats> {
-  // Basic implementation: return a placeholder object with some stats
-  return {
-    coursesCreated: 0,
-    studentsEnrolled: 0,
-    revenueGenerated: 0,
-  };
-}
+  async updateProfilePicture(id: string, url: string) {
+    const updatedInstructor = await this.instructorModel
+      .findByIdAndUpdate(
+        id,
+        { profilePicture: url },
+        { new: true }
+      )
+      .exec();
+    if (!updatedInstructor) {
+      throw new NotFoundException(`Instructor with ID ${id} not found`);
+    }
+    return updatedInstructor;
+  }
+
+  async remove(id: string) {
+    const deletedInstructor = await this.instructorModel
+      .findByIdAndDelete(id)
+      .exec();
+    if (!deletedInstructor) {
+      throw new NotFoundException(`Instructor with ID ${id} not found`);
+    }
+    return deletedInstructor;
+  }
+
+  async getUserDetails(instructorId: string): Promise<any> {
+    try {
+      const instructor = await this.instructorModel
+        .findById(instructorId)
+        .select('-password')
+        .exec();
+      
+      if (!instructor) {
+        throw new NotFoundException('Instructor not found');
+      }
+      
+      return {
+        id: instructor._id,
+        firstName: instructor.firstName,
+        lastName: instructor.lastName,
+        email: instructor.email,
+        profilePicture: instructor.profilePicture,
+        expertise: instructor.expertise,
+        bio: instructor.bio,
+        isVerified: instructor.isVerified,
+        status: instructor.status
+      };
+    } catch (error) {
+      throw new NotFoundException('Could not retrieve instructor details');
+    }
+  }
 }

@@ -65,4 +65,31 @@ export class InstructorService {
       revenueGenerated: 0,
     };
   }
+
+  async getUserDetails(instructorId: string): Promise<any> {
+    try {
+      const instructor = await this.instructorModel
+        .findById(instructorId)
+        .select('-password')
+        .exec();
+      
+      if (!instructor) {
+        throw new NotFoundException('Instructor not found');
+      }
+      
+      return {
+        id: instructor._id,
+        firstName: instructor.firstName,
+        lastName: instructor.lastName,
+        email: instructor.email,
+        profilePicture: instructor.profilePicture,
+        expertise: instructor.expertise,
+        bio: instructor.bio,
+        isVerified: instructor.isVerified,
+        status: instructor.status
+      };
+    } catch (error) {
+      throw new NotFoundException('Could not retrieve instructor details');
+    }
+  }
 }

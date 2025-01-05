@@ -5,6 +5,10 @@ import { Book, Users, Clock, Edit, Trash2, ExternalLink, Loader } from 'lucide-r
 import axios from 'axios';
 import { useToast } from '../../hooks/useToast';
 
+// Configure axios base URL and defaults
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+axios.defaults.baseURL = API_BASE_URL;
+
 const Courses = () => {
   const [courses, setCourses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -12,26 +16,52 @@ const Courses = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Centralized token management
+  const getAuthToken = () => {
+    const token = localStorage.getItem('token');
+    return token ? `Bearer ${token}` : null;
+  };
+
   useEffect(() => {
-    fetchCourses();
+    const token = getAuthToken();
+    if (token) {
+      axios.defaults.headers.common['Authorization'] = token;
+      fetchCourses();
+    } else {
+      navigate('/login');
+    }
   }, []);
 
   const fetchCourses = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:3000/api/courses', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      setIsLoading(true);
+      const response = await axios.get('/courses/all');
 
-      // Ensure we have valid course data and filter out any null/undefined entries
-      const validCourses = (response.data || []).filter(course =>
-        course && typeof course === 'object'
-      );
-
+      // New response structure handling
+      const validCourses = response.data?.data || [];
       setCourses(validCourses);
     } catch (error) {
-      console.error('Error fetching courses:', error);
-      toast.error('Failed to fetch courses');
+      console.error('Course fetch error:', error);
+
+      // Improved error handling
+      if (error.response) {
+        // Server responded with an error
+        const errorMessage = error.response.data?.message || 'Failed to fetch courses';
+        toast.error(errorMessage);
+
+        // Handle unauthorized access
+        if (error.response.status === 401) {
+          localStorage.removeItem('token');
+          navigate('/login');
+        }
+      } else if (error.request) {
+        // Request made but no response received
+        toast.error('No response from server. Please check your connection.');
+      } else {
+        // Something else went wrong
+        toast.error('An unexpected error occurred');
+      }
+
       setCourses([]);
     } finally {
       setIsLoading(false);
@@ -42,16 +72,15 @@ const Courses = () => {
     if (!courseId || !updatedData) return;
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.put(`http://localhost:3000/api/courses/${courseId}`, updatedData, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await axios.put(`/courses/${courseId}`, updatedData);
       toast.success('Course updated successfully');
       setEditingCourse(null);
       fetchCourses();
     } catch (error) {
       console.error('Error updating course:', error);
-      toast.error('Failed to update course');
+      
+      const errorMessage = error.response?.data?.message || 'Failed to update course';
+      toast.error(errorMessage);
     }
   };
 
@@ -60,17 +89,89 @@ const Courses = () => {
 
     if (window.confirm('Are you sure you want to delete this course?')) {
       try {
-        const token = localStorage.getItem('token');
-        await axios.delete(`http://localhost:3000/api/courses/${courseId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        await axios.delete(`/courses/${courseId}`);
         toast.success('Course deleted successfully');
         fetchCourses();
       } catch (error) {
         console.error('Error deleting course:', error);
-        toast.error('Failed to delete course');
+        
+        const errorMessage = error.response?.data?.message || 'Failed to delete course';
+        toast.error(errorMessage);
       }
     }
+  };
+
+  const renderCourseCard = (course) => {
+    // Skip rendering if course is invalid
+    if (!course || typeof course !== 'object') return null;
+
+    const courseId = course._id || course.id;
+    if (!courseId) return null;
+
+    return (
+      <motion.div
+        key={courseId}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white rounded-lg shadow-md overflow-hidden"
+      >
+        <div className="p-6">
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <h3 className="text-lg font-semibold">{course.title || 'Untitled Course'}</h3>
+              <p className="text-sm text-gray-500">{course.category || 'No Category'}</p>
+            </div>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setEditingCourse(course)}
+                className="p-1 hover:bg-gray-100 rounded"
+                title="Edit Course"
+              >
+                <Edit className="w-4 h-4 text-gray-600" />
+              </button>
+              <button
+                onClick={() => handleDelete(courseId)}
+                className="p-1 hover:bg-red-100 rounded"
+                title="Delete Course"
+              >
+                <Trash2 className="w-4 h-4 text-red-600" />
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 text-sm text-gray-600 mb-4">
+            <div className="flex items-center">
+              <Book className="w-4 h-4 mr-2" />
+              <span>{course.level || 'Level Not Set'}</span>
+            </div>
+            <div className="flex items-center">
+              <Clock className="w-4 h-4 mr-2" />
+              <span>{course.duration || 'Duration Not Set'}</span>
+            </div>
+            <div className="flex items-center">
+              <Users className="w-4 h-4 mr-2" />
+              <span>{course.students?.length || 0} Students</span>
+            </div>
+          </div>
+
+          <p className="text-sm text-gray-700 mb-4">
+            {course.description || 'No description available'}
+          </p>
+
+          <div className="flex justify-between items-center">
+            <span className="text-sm font-medium text-gray-600">
+              Price: {course.price ? `$${course.price}` : 'Free'}
+            </span>
+            <Link 
+              to={`/instructor/courses/${courseId}`} 
+              className="text-indigo-600 hover:text-indigo-800 text-sm flex items-center"
+            >
+              View Details <ExternalLink className="w-4 h-4 ml-1" />
+            </Link>
+          </div>
+        </div>
+      </motion.div>
+    );
   };
 
   if (isLoading) {
@@ -102,111 +203,14 @@ const Courses = () => {
           </Link>
         </div>
 
-        {!Array.isArray(courses) || courses.length === 0 ? (
+        {!courses || courses.length === 0 ? (
           <div className="text-center py-12">
             <h3 className="text-lg font-medium text-gray-900 mb-2">No courses yet</h3>
             <p className="text-gray-500">Get started by creating your first course</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {courses.map((course) => {
-              // Skip rendering if course is invalid
-              if (!course || typeof course !== 'object') return null;
-
-              const courseId = course._id || course.id;
-              if (!courseId) return null;
-
-              return (
-                <motion.div
-                  key={courseId}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-white rounded-lg shadow-md overflow-hidden"
-                >
-                  {editingCourse?.id === courseId ? (
-                    <div className="p-6">
-                      <input
-                        type="text"
-                        value={editingCourse.title || ''}
-                        onChange={(e) => setEditingCourse({
-                          ...editingCourse,
-                          title: e.target.value
-                        })}
-                        className="w-full p-2 border rounded mb-4"
-                      />
-                      <textarea
-                        value={editingCourse.description || ''}
-                        onChange={(e) => setEditingCourse({
-                          ...editingCourse,
-                          description: e.target.value
-                        })}
-                        className="w-full p-2 border rounded mb-4"
-                        rows={3}
-                      />
-                      <div className="flex justify-end space-x-2">
-                        <button
-                          onClick={() => setEditingCourse(null)}
-                          className="px-3 py-1 border rounded"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={() => handleEdit(courseId, editingCourse)}
-                          className="px-3 py-1 bg-blue-600 text-white rounded"
-                        >
-                          Save
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="p-6">
-                      <div className="flex justify-between items-start">
-                        <h3 className="text-lg font-semibold mb-2">
-                          {course.title || 'Untitled Course'}
-                        </h3>
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => setEditingCourse(course)}
-                            className="p-1 hover:bg-gray-100 rounded"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(courseId)}
-                            className="p-1 hover:bg-gray-100 rounded text-red-600"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                      <p className="text-gray-600 text-sm mb-4">
-                        {course.description || 'No description available'}
-                      </p>
-                      <div className="flex items-center text-sm text-gray-500 mb-4">
-                        <Users className="w-4 h-4 mr-1" />
-                        <span>{course.enrolledStudents || 0} students</span>
-                        <Clock className="w-4 h-4 ml-4 mr-1" />
-                        <span>{course.duration || '0h'}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <Link
-                          to={`/instructor/courses/${courseId}/content`}
-                          className="text-indigo-600 hover:text-indigo-700 flex items-center"
-                        >
-                          Manage Content <ExternalLink className="w-4 h-4 ml-1" />
-                        </Link>
-                        <Link
-                          to={`/instructor/courses/${courseId}/learn`}
-                          className="text-green-600 hover:text-green-700 flex items-center"
-                        >
-                          View Course <Book className="w-4 h-4 ml-1" />
-                        </Link>
-                      </div>
-                    </div>
-                  )}
-                </motion.div>
-              );
-            })}
+            {courses.map(renderCourseCard)}
           </div>
         )}
       </div>

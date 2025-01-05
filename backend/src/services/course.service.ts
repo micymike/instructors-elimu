@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Course } from '../schemas/course.schema';
 import { CreateCourseDto } from '../dto/create-course.dto';
 import { UpdateCourseDto } from '../dto/update-course.dto';
+import { User } from '../users/schemas/user.schema';
 
 @Injectable()
 export class CourseService {
@@ -11,24 +12,228 @@ export class CourseService {
     @InjectModel(Course.name) private courseModel: Model<Course>
   ) {}
 
-  async create(createCourseDto: CreateCourseDto, userId: string): Promise<Course> {
-    const createdCourse = new this.courseModel({
-      ...createCourseDto,
-      instructor: userId,
-    });
-    return createdCourse.save();
-  }
+  async createCourse(
+    createCourseDto: CreateCourseDto, 
+    user: { id?: string, email?: string, role?: string }
+  ): Promise<Course> {
+    try {
+      console.log('🚀 Creating Course', {
+        courseData: createCourseDto,
+        user: user
+      });
 
-  async findAll(userId?: string): Promise<Course[]> {
-    if (userId) {
-      return this.courseModel.find({ instructor: userId }).exec();
-    } else {
-      return this.courseModel.find().exec();
+      if (!user.email) {
+        throw new BadRequestException('No instructor email provided');
+      }
+
+      const createdCourse = new this.courseModel({
+        ...createCourseDto,
+        instructor: user.email,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+
+      const savedCourse = await createdCourse.save();
+
+      console.log('✅ Course Created Successfully', {
+        courseId: savedCourse._id,
+        title: savedCourse.title,
+        instructor: user.email
+      });
+
+      return savedCourse;
+    } catch (error) {
+      console.error('❌ Course Creation Error', {
+        message: error.message,
+        courseData: createCourseDto,
+        user: user
+      });
+
+      throw new BadRequestException(`Failed to create course: ${error.message}`);
     }
   }
 
-  async findOne(id: string): Promise<Course> {
-    return this.courseModel.findById(id).exec();
+  async findAll(userId?: string): Promise<Course[]> {
+    try {
+      console.log('🔍 Course Service - Finding Courses', { 
+        userId: userId || 'Not Provided',
+        timestamp: new Date().toISOString()
+      });
+
+      // If userId is provided, filter courses by this user
+      let courses: Course[];
+      if (userId) {
+        courses = await this.courseModel.find({ instructor: userId }).exec();
+        console.log(`✅ Courses found for userId ${userId}:`, courses.length);
+      } else {
+        // Otherwise, return all courses
+        courses = await this.courseModel.find().exec();
+        console.log('✅ Total courses found:', courses.length);
+      }
+
+      // Additional logging for debugging
+      if (courses.length === 0) {
+        console.warn('⚠️ No courses found');
+      }
+
+      return courses;
+    } catch (error) {
+      console.error('❌ Error in findAll method:', {
+        message: error.message,
+        stack: error.stack,
+        userId: userId
+      });
+
+      throw new InternalServerErrorException({
+        message: 'Failed to retrieve courses',
+        error: error.message,
+        details: {
+          userId: userId,
+          timestamp: new Date().toISOString()
+        }
+      });
+    }
+  }
+
+  async findAllByEmail(email: string): Promise<Course[]> {
+    try {
+      console.log('🔍 Course Service - Finding Courses by Email', { 
+        email,
+        timestamp: new Date().toISOString()
+      });
+
+      // Find courses associated with the email
+      const courses = await this.courseModel.find({ 
+        // Assuming the instructor field is a string or object with an email property
+        $or: [
+          { instructor: email },
+          { 'instructor.email': email }
+        ]
+      }).exec();
+
+      console.log(`✅ Courses found for email ${email}:`, courses.length);
+
+      // Additional logging for debugging
+      if (courses.length === 0) {
+        console.warn(`⚠️ No courses found for email: ${email}`);
+      }
+
+      return courses;
+    } catch (error) {
+      console.error('❌ Error in findAllByEmail method:', {
+        message: error.message,
+        stack: error.stack,
+        email: email
+      });
+
+      throw new InternalServerErrorException({
+        message: 'Failed to retrieve courses by email',
+        error: error.message,
+        details: {
+          email: email,
+          timestamp: new Date().toISOString()
+        }
+      });
+    }
+  }
+
+  async getAllCourses(
+    user: { id?: string, email?: string, role?: string }
+  ): Promise<Course[]> {
+    try {
+      console.log('🔍 Getting All Courses', {
+        userId: user.id,
+        email: user.email,
+        role: user.role
+      });
+
+      // If user is an admin or has a special role, return all courses
+      if (user.role === 'admin' || user.role === 'superadmin') {
+        return await this.courseModel.find().exec();
+      }
+
+      // Find courses by user's ID
+      const courses = await this.courseModel.find({ instructor: user.email }).exec();
+
+      console.log('✅ Courses Retrieved Successfully', {
+        count: courses.length,
+        userIdentifier: user.email
+      });
+
+      return courses;
+    } catch (error) {
+      console.error('❌ Course Retrieval Error', {
+        message: error.message,
+        user: user
+      });
+
+      throw new Error(`Failed to retrieve courses: ${error.message}`);
+    }
+  }
+
+  async findOne(id: string, instructorEmail?: string): Promise<Course> {
+    try {
+      const course = await this.courseModel.findOne({ 
+        _id: id, 
+        ...(instructorEmail && { instructor: instructorEmail }) 
+      });
+
+      if (!course) {
+        throw new NotFoundException('Course not found or access denied');
+      }
+
+      return course;
+    } catch (error) {
+      console.error('Error finding course:', error);
+      
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      
+      throw new InternalServerErrorException('Failed to retrieve course');
+    }
+  }
+
+  async getCourseStats(instructorEmail: string) {
+    try {
+      // Aggregate course statistics for the instructor
+      const totalCourses = await this.courseModel.countDocuments({ 
+        instructor: instructorEmail 
+      });
+
+      const activeCourses = await this.courseModel.countDocuments({ 
+        instructor: instructorEmail, 
+        status: 'published' 
+      });
+
+      const totalStudents = await this.courseModel.aggregate([
+        { $match: { instructor: instructorEmail } },
+        { $group: { 
+            _id: null, 
+            totalStudents: { $sum: { $size: '$students' } } 
+          } 
+        }
+      ]);
+
+      const teachingHours = await this.courseModel.aggregate([
+        { $match: { instructor: instructorEmail } },
+        { $group: { 
+            _id: null, 
+            totalHours: { $sum: { $toDouble: '$duration' } } 
+          } 
+        }
+      ]);
+
+      return {
+        totalCourses,
+        activeCourses,
+        totalStudents: totalStudents[0]?.totalStudents || 0,
+        teachingHours: teachingHours[0]?.totalHours || 0
+      };
+    } catch (error) {
+      console.error('Error retrieving course statistics:', error);
+      throw new InternalServerErrorException('Failed to retrieve course statistics');
+    }
   }
 
   async update(id: string, updateCourseDto: UpdateCourseDto): Promise<Course> {
@@ -47,11 +252,18 @@ export class CourseService {
       throw new NotFoundException('Course not found');
     }
 
-    const module = course.modules.find((module) => module.content);
-    if (!module) {
-      course.modules.push({ title: '', description: '', content: [content] });
+    if (content.type === 'document') {
+      if (!course.materials) {
+        course.materials = [];
+      }
+      course.materials.push(content.url);
     } else {
-      module.content.push(content);
+      const module = course.modules.find((module) => module.content);
+      if (!module) {
+        course.modules.push({ title: '', description: '', content: [content] });
+      } else {
+        module.content.push(content);
+      }
     }
 
     return course.save();
@@ -79,5 +291,72 @@ export class CourseService {
 
     course.modules = updateContentDto.sections;
     return course.save();
+  }
+
+  async getCourseMaterials(courseId: string): Promise<any[]> {
+    try {
+      const course = await this.courseModel.findById(courseId).exec();
+      
+      if (!course) {
+        throw new NotFoundException(`Course with ID ${courseId} not found`);
+      }
+
+      // Assuming course materials are stored in a field called 'materials'
+      // You might need to adjust this based on your actual schema
+      return course.materials || [];
+    } catch (error) {
+      console.error('❌ Error retrieving course materials:', {
+        courseId,
+        errorMessage: error.message
+      });
+
+      throw new InternalServerErrorException({
+        message: 'Failed to retrieve course materials',
+        error: error.message
+      });
+    }
+  }
+
+  async addCourseMaterial(
+    courseId: string, 
+    material: {
+      url: string;
+      name: string;
+      type: 'pdf' | 'video' | 'document';
+      uploadedAt: Date;
+    }
+  ): Promise<Course> {
+    try {
+      const course = await this.courseModel.findById(courseId).exec();
+      
+      if (!course) {
+        throw new NotFoundException(`Course with ID ${courseId} not found`);
+      }
+
+      // Add the new material to the course's materials array
+      course.materials.push(material);
+
+      // Save the updated course
+      const updatedCourse = await course.save();
+
+      console.log('✅ Course material added successfully', {
+        courseId,
+        materialName: material.name,
+        materialType: material.type
+      });
+
+      return updatedCourse;
+    } catch (error) {
+      console.error('❌ Error adding course material:', {
+        courseId,
+        material,
+        errorMessage: error.message
+      });
+
+      throw new InternalServerErrorException({
+        message: 'Failed to add course material',
+        error: error.message
+      });
+    }
   }
 }

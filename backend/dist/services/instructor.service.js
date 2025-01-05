@@ -65,6 +65,31 @@ let InstructorService = class InstructorService {
             revenueGenerated: 0,
         };
     }
+    async getUserDetails(instructorId) {
+        try {
+            const instructor = await this.instructorModel
+                .findById(instructorId)
+                .select('-password')
+                .exec();
+            if (!instructor) {
+                throw new common_1.NotFoundException('Instructor not found');
+            }
+            return {
+                id: instructor._id,
+                firstName: instructor.firstName,
+                lastName: instructor.lastName,
+                email: instructor.email,
+                profilePicture: instructor.profilePicture,
+                expertise: instructor.expertise,
+                bio: instructor.bio,
+                isVerified: instructor.isVerified,
+                status: instructor.status
+            };
+        }
+        catch (error) {
+            throw new common_1.NotFoundException('Could not retrieve instructor details');
+        }
+    }
 };
 exports.InstructorService = InstructorService;
 exports.InstructorService = InstructorService = __decorate([

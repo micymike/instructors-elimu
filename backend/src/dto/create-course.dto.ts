@@ -1,71 +1,36 @@
-import { IsString, IsArray, IsOptional, IsEnum, ValidateNested, IsNotEmpty, IsNumber } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsString, IsOptional, IsArray, IsEnum } from 'class-validator';
 
-class ContentDto {
-  @IsEnum(['video', 'document', 'quiz', 'assignment'])
-  type: string;
-
-  @IsString()
-  title: string;
-
-  @IsString()
-  description: string;
-
-  @IsString()
-  @IsOptional()
-  url?: string;
-
-  @IsOptional()
-  duration?: number;
-}
-
-class ModuleDto {
-  @IsString()
-  title: string;
-
-  @IsString()
-  description: string;
-
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => ContentDto)
-  content: ContentDto[];
+export enum CourseLevel {
+  BEGINNER = 'beginner',
+  INTERMEDIATE = 'intermediate',
+  ADVANCED = 'advanced'
 }
 
 export class CreateCourseDto {
-  @IsOptional()
-  @IsString()
-  additionalRequirements?: string;
-  @IsNotEmpty()
   @IsString()
   title: string;
 
-  @IsNotEmpty()
   @IsString()
   description: string;
 
-  @IsNotEmpty()
+  @IsString()
+  @IsEnum(CourseLevel)
+  level: CourseLevel;
+
   @IsString()
   category: string;
 
-  @IsNotEmpty()
-  @IsString()
-  level: string;
-
-  @IsNotEmpty()
-  @IsString()
-  duration: string;
-
-  @IsNotEmpty()
-  @IsNumber()
-  price: number;
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  topics?: string[];
 
   @IsOptional()
   @IsArray()
-  syllabus: any[];
+  resources?: string[];
 
-  @IsNotEmpty()
-  @IsString()
-  subject: string;
-
+  // These will be added by the backend
+  instructor?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }

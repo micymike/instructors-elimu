@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Course, CourseDocument } from './schemas/course.schema';
 import { CreateCourseDto } from './dto/create-course.dto';
-import { GeminiService } from '../ai/gemini.service';
+import { GeminiService } from '../services/gemini.service';
 
 @Injectable()
 export class CourseService {

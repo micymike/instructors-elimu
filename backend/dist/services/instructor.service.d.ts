@@ -31,4 +31,5 @@ export declare class InstructorService {
         __v: number;
     }>;
     getDashboardStats(instructorId: string): Promise<DashboardStats>;
+    getUserDetails(instructorId: string): Promise<any>;
 }

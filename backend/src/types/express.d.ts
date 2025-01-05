@@ -1,15 +1,21 @@
-declare namespace Express {
-  export interface Multer {
-    File: {
-      fieldname: string;
-      originalname: string;
-      encoding: string;
-      mimetype: string;
-      size: number;
-      destination: string;
-      filename: string;
-      path: string;
-      buffer: Buffer;
+import { User } from './user.interface';
+
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        id?: string;
+        sub?: string;
+        email?: string;
+        role?: string;
+      };
+    }
+
+    namespace Multer {
+      interface File {
+        buffer: Buffer;
+        originalname: string;
+      }
     }
   }
-} 
+}

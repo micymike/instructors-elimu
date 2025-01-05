@@ -24,14 +24,16 @@ async function bootstrap() {
 
   // Enable CORS
   app.enableCors({
-    origin: 'http://localhost:3001', // Your frontend URL
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    origin: ['http://localhost:3000', 'http://localhost:3001'], // Allow both frontend URLs
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    exposedHeaders: ['Content-Range', 'X-Content-Range'],
+    maxAge: 3600,
   });
 
-// Global prefix
-app.setGlobalPrefix('api');
+  // Global prefix
+  app.setGlobalPrefix('api');
 
   // Add raw body logging middleware
   app.use((req, res, next) => {
@@ -58,26 +60,6 @@ app.setGlobalPrefix('api');
     },
     validationError: { target: false },
   }));
-
-  // Increase payload size limit
-  app.use(compression());
-  const authMiddleware = require('../middleware/auth');
-  app.use((req, res, next) => {
-    console.log('Request URL:', req.url); // Add logging
-    console.log('Request Method:', req.method);
-    console.log('Request Headers:', req.headers);
-    if (req.body) console.log('Request Body:', req.body);
-    
-    if (
-      req.url.startsWith('/api/courses') || 
-      req.url.startsWith('/api/course-generation') || 
-      req.url.startsWith('/api/auth/login') || 
-      req.url.startsWith('/api/auth/register')
-    ) {
-      return next();
-    }
-    authMiddleware(req, res, next);
-  });
 
   const port = process.env.PORT || 3000;
 

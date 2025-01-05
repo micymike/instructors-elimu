@@ -17,7 +17,7 @@ const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
 const course_schema_1 = require("./schemas/course.schema");
-const gemini_service_1 = require("../ai/gemini.service");
+const gemini_service_1 = require("../services/gemini.service");
 let CourseService = class CourseService {
     constructor(courseModel, geminiService) {
         this.courseModel = courseModel;

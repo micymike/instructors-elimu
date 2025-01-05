@@ -11,7 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CourseWizardService = void 0;
 const common_1 = require("@nestjs/common");
-const gemini_service_1 = require("../ai/gemini.service");
+const gemini_service_1 = require("../services/gemini.service");
 let CourseWizardService = class CourseWizardService {
     constructor(geminiService) {
         this.geminiService = geminiService;

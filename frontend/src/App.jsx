@@ -7,24 +7,27 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { SnackbarProvider } from 'notistack';
 import InstructorForm from './components/InstructorForm';
 import Login from './components/Login';
-import Dashboard from './pages/instructor/Dashboard';
 import DashboardLayout from './components/layouts/DashboardLayout';
 import ZoomMeetings from './pages/instructor/ZoomMeetings';
-import Courses from './pages/instructor/Courses';
-import Students from './pages/instructor/Students';
-import Schedule from './pages/instructor/Schedule';
-import Settings from './pages/instructor/Settings';
 import CreateSession from './pages/instructor/CreateSession';
 import GroupManagement from './pages/instructor/GroupManagement';
 import InstructorsLanding from './components/InstructorsLanding';
-import CourseContentManager from './pages/instructor/CourseContentManager';
 import CourseLearning from './pages/instructor/CourseLearning';
 import Assessments from './pages/instructor/Assessments';
 import CourseAnalytics from './components/dashboard/CourseAnalytics';
 import CourseWizard from './components/CourseWizard/CourseWizard';
 import PrivacyPolicy from './components/PrivacyPolicy';
-import TermsOfService from './components/TermsOfService'; // Import the TermsOfService component
+import TermsOfService from './components/TermsOfService';
 import StudentCourseView from './pages/student/StudentCourseView';
+import {
+  CourseSettings,
+  CourseContentManager,
+  Courses,
+  Dashboard,
+  Settings,
+  Schedule,
+  Students
+} from './pages/instructor';
 
 const router = createBrowserRouter([
   {
@@ -62,6 +65,10 @@ const router = createBrowserRouter([
       {
         path: 'courses/:id/assessments',
         element: <Assessments />
+      },
+      {
+        path: 'courses/:id/settings',
+        element: <CourseSettings />
       },
       {
         path: 'courses/:id',

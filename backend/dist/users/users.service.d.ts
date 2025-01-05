@@ -2,6 +2,7 @@ import { Model } from 'mongoose';
 import { UserDocument } from './schemas/user.schema';
 export declare class UsersService {
     private userModel;
+    findByEmail(email: string): import("../types/user.interface").User | PromiseLike<import("../types/user.interface").User>;
     constructor(userModel: Model<UserDocument>);
     create(createUserDto: any): Promise<UserDocument>;
     findOne(email: string): Promise<UserDocument | null>;

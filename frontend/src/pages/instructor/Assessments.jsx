@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Upload, Plus, Eye, Save, Library, X } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import AssessmentModal from '../../components/content/AssessmentModal';
+import { AssessmentModal } from '../../components/content/AssessmentModal';
 
 const AssessmentCreator = () => {
   const [assessment, setAssessment] = useState({

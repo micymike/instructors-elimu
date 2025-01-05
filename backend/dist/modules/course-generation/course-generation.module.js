@@ -8,14 +8,18 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CourseGenerationModule = void 0;
 const common_1 = require("@nestjs/common");
-const config_1 = require("@nestjs/config");
-const course_generation_controller_1 = require("../../controllers/course-generation.controller");
 const course_generation_service_1 = require("./course-generation.service");
-const jwt_1 = require("@nestjs/jwt");
-const auth_module_1 = require("../../auth/auth.module");
+const course_controller_1 = require("../../controllers/course.controller");
+const mongoose_1 = require("@nestjs/mongoose");
+const course_schema_1 = require("../../schemas/course.schema");
+const config_1 = require("@nestjs/config");
 const ai_module_1 = require("../../ai/ai.module");
 const ai_service_1 = require("../../ai/ai.service");
 const gemini_service_1 = require("../../services/gemini.service");
+const course_service_1 = require("../../services/course.service");
+const notification_service_1 = require("../../notification/notification.service");
+const notification_module_1 = require("../../notification/notification.module");
+const course_module_1 = require("../../course/course.module");
 let CourseGenerationModule = class CourseGenerationModule {
 };
 exports.CourseGenerationModule = CourseGenerationModule;
@@ -23,19 +27,19 @@ exports.CourseGenerationModule = CourseGenerationModule = __decorate([
     (0, common_1.Module)({
         imports: [
             config_1.ConfigModule,
-            auth_module_1.AuthModule,
-            ai_module_1.AIModule,
-            jwt_1.JwtModule.registerAsync({
-                imports: [config_1.ConfigModule],
-                useFactory: async (configService) => ({
-                    secret: configService.get('JWT_SECRET'),
-                    signOptions: { expiresIn: '24h' },
-                }),
-                inject: [config_1.ConfigService],
-            }),
+            mongoose_1.MongooseModule.forFeature([{ name: course_schema_1.Course.name, schema: course_schema_1.CourseSchema }]),
+            course_module_1.CourseModule,
+            notification_module_1.NotificationModule,
+            ai_module_1.AIModule
         ],
-        controllers: [course_generation_controller_1.CourseGenerationController],
-        providers: [course_generation_service_1.CourseGenerationService, ai_service_1.AIService, gemini_service_1.GeminiService],
+        controllers: [course_controller_1.CourseController],
+        providers: [
+            course_generation_service_1.CourseGenerationService,
+            ai_service_1.AIService,
+            gemini_service_1.GeminiService,
+            course_service_1.CourseService,
+            notification_service_1.NotificationService
+        ],
         exports: [course_generation_service_1.CourseGenerationService],
     })
 ], CourseGenerationModule);

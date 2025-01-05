@@ -13,6 +13,8 @@ const course_controller_1 = require("../controllers/course.controller");
 const course_service_1 = require("../services/course.service");
 const notification_module_1 = require("./notification.module");
 const course_schema_1 = require("../schemas/course.schema");
+const users_module_1 = require("../users/users.module");
+const user_schema_1 = require("../users/schemas/user.schema");
 let CourseModule = class CourseModule {
 };
 exports.CourseModule = CourseModule;
@@ -22,7 +24,9 @@ exports.CourseModule = CourseModule = __decorate([
             mongoose_1.MongooseModule.forFeature([
                 { name: course_schema_1.Course.name, schema: course_schema_1.CourseSchema }
             ]),
-            notification_module_1.NotificationModule
+            notification_module_1.NotificationModule,
+            users_module_1.UsersModule,
+            mongoose_1.MongooseModule.forFeature([{ name: 'User', schema: user_schema_1.UserSchema }])
         ],
         controllers: [course_controller_1.CourseController],
         providers: [course_service_1.CourseService],

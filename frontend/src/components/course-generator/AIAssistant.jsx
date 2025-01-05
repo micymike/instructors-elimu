@@ -50,11 +50,11 @@ const AIAssistant = () => {
   const handleGenerate = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:3000/api/courses/course-generation', {  // Change this line
+      const response = await fetch('http://localhost:3000/courses/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`  // Change token to access_token
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
         },
         body: JSON.stringify({
           title,

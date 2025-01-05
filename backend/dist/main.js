@@ -16,10 +16,12 @@ async function bootstrap() {
     app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
     app.use(compression());
     app.enableCors({
-        origin: 'http://localhost:3001',
-        methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+        origin: ['http://localhost:3000', 'http://localhost:3001'],
+        methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
         credentials: true,
-        allowedHeaders: ['Content-Type', 'Authorization'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+        exposedHeaders: ['Content-Range', 'X-Content-Range'],
+        maxAge: 3600,
     });
     app.setGlobalPrefix('api');
     app.use((req, res, next) => {
@@ -44,22 +46,6 @@ async function bootstrap() {
         },
         validationError: { target: false },
     }));
-    app.use(compression());
-    const authMiddleware = require('../middleware/auth');
-    app.use((req, res, next) => {
-        console.log('Request URL:', req.url);
-        console.log('Request Method:', req.method);
-        console.log('Request Headers:', req.headers);
-        if (req.body)
-            console.log('Request Body:', req.body);
-        if (req.url.startsWith('/api/courses') ||
-            req.url.startsWith('/api/course-generation') ||
-            req.url.startsWith('/api/auth/login') ||
-            req.url.startsWith('/api/auth/register')) {
-            return next();
-        }
-        authMiddleware(req, res, next);
-    });
     const port = process.env.PORT || 3000;
     await app.listen(port, '0.0.0.0', () => {
         console.log(`Server running on port ${port}`);

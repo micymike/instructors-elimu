@@ -1,13 +1,12 @@
-import { CourseGenerationService } from './course-generation.service';
+import { JwtService } from '@nestjs/jwt';
+import { GeminiService } from '../../services/gemini.service';
 export declare class CourseGenerationController {
-    private readonly courseGenerationService;
-    constructor(courseGenerationService: CourseGenerationService);
+    private readonly jwtService;
+    private readonly geminiService;
+    constructor(jwtService: JwtService, geminiService: GeminiService);
     generateCourse(body: {
-        mode: string;
-        subject: string;
-        level: string;
-    }): Promise<any>;
-    enhanceCourse(body: {
-        content: string;
+        message: string;
+        context: any[];
+        access_token: string;
     }): Promise<any>;
 }

@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { PlusCircle, Users, AlertCircle, Loader2, UserPlus, School, Trash2 } from 'lucide-react';
+
+const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
 import DashboardLayout from '../../components/layouts/DashboardLayout';
 
@@ -23,19 +26,19 @@ const GroupManagement = () => {
   const fetchGroups = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/groups');
-      if (response.ok) {
-        const data = await response.json();
-        if (Array.isArray(data)) {
-          setGroups(data);
-        } else {
-          throw new Error('Invalid data format received');
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_URL}/groups`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
-      } else {
-        throw new Error('Failed to fetch groups');
+      });
+      if (response.data) {
+        setGroups(response.data);
       }
     } catch (error) {
-      setError(error.message);
+      setError(error.response?.data?.message || 'Error fetching groups');
+      console.error('Error fetching groups:', error);
     } finally {
       setLoading(false);
     }
@@ -55,30 +58,31 @@ const GroupManagement = () => {
       setIsSubmitting(true);
       setError(null);
       
-      const response = await fetch('/api/groups', {
-        method: 'POST',
+      const token = localStorage.getItem('token');
+      const response = await axios.post(`${API_URL}/groups`, {
+        name: formData.groupName,
+        instructorId: formData.instructorId,
+        studentIds: formData.studentIds.split(',').map(id => id.trim()).filter(Boolean)
+      }, {
         headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: formData.groupName,
-          instructorId: formData.instructorId,
-          studentIds: formData.studentIds.split(',').map(id => id.trim()).filter(Boolean)
-        }),
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
 
-      if (!response.ok) throw new Error('Failed to create group');
-      
-      const newGroup = await response.json();
-      setGroups(prev => [...prev, newGroup]);
-      setFormData({
-        groupName: '',
-        instructorId: '',
-        studentIds: ''
-      });
-      setShowForm(false);
+      if (response.data) {
+        const newGroup = response.data;
+        setGroups(prev => [...prev, newGroup]);
+        setFormData({
+          groupName: '',
+          instructorId: '',
+          studentIds: ''
+        });
+        setShowForm(false);
+      }
     } catch (error) {
-      setError(error.message);
+      setError(error.response?.data?.message || 'Error creating group');
+      console.error('Error creating group:', error);
     } finally {
       setIsSubmitting(false);
     }

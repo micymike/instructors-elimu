@@ -1,48 +1,35 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
-import { JwtModule } from '@nestjs/jwt';
 import { AIModule } from './ai/ai.module';
-import { AuthModule } from './auth/auth.module';
 import { CourseModule } from './course/course.module';
-import { CourseGenerationModule } from './modules/course-generation/course-generation.module';
-import { CourseGenerationController } from './controllers/course-generation.controller';
-import { CourseController } from './controllers/course.controller';
+import { CourseGenerationModule } from './modules/course-generation.module';
 import { GeminiService } from './services/gemini.service';
-import { NotificationModule } from './notification/notification.module'; // Ensure NotificationModule is imported
-import { ZoomModule } from './zoom/zoom.module'; // Import ZoomModule
+import { NotificationModule } from './notification/notification.module';
+import { ZoomModule } from './zoom/zoom.module';
+import { SettingsModule } from './modules/settings.module';
 
 @Module({
-imports: [
-  ConfigModule.forRoot({
-    isGlobal: true,
-    cache: true,
-    envFilePath: '.env',
-  }),
-  MongooseModule.forRootAsync({
-    imports: [ConfigModule],
-    useFactory: async (configService: ConfigService) => ({
-      uri: configService.get<string>('MONGODB_URI'),
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      cache: true,
+      envFilePath: '.env',
     }),
-    inject: [ConfigService],
-  }),
-  JwtModule.registerAsync({
-    imports: [ConfigModule],
-    useFactory: async (configService: ConfigService) => ({
-      secret: configService.get<string>('JWT_SECRET'),
-      signOptions: { expiresIn: '60m' },
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        uri: configService.get<string>('MONGODB_URI'),
+      }),
+      inject: [ConfigService],
     }),
-    inject: [ConfigService],
-    global: true,
-  }),
-  AIModule,
-  AuthModule,
-  CourseModule,
-  CourseGenerationModule,
-  NotificationModule, // Ensure NotificationModule is imported
-  ZoomModule, // Add ZoomModule to imports array
-],
-  controllers: [CourseGenerationController, CourseController],
+    AIModule,
+    CourseModule,
+    CourseGenerationModule,
+    NotificationModule,
+    ZoomModule,
+    SettingsModule,
+  ],
   providers: [GeminiService],
 })
 export class AppModule {}

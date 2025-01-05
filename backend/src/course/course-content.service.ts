@@ -3,53 +3,27 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CourseContent, CourseContentDocument } from './course-content.schema';
 import { CreateContentDto, UpdateContentDto } from './dto/content.dto';
-import AWS from 'aws-sdk';
-
-// Configure AWS SDK
-AWS.config.update({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  region: process.env.AWS_REGION,
-});
-
-const s3 = new AWS.S3();
+import { CloudinaryService } from '../modules/cloudinary/cloudinary.service';
 
 @Injectable()
 export class CourseContentService {
   constructor(
     @InjectModel(CourseContent.name) private contentModel: Model<CourseContentDocument>,
+    private cloudinaryService: CloudinaryService,
   ) {}
 
   async createContent(courseId: string, moduleId: string, createContentDto: CreateContentDto): Promise<CourseContent> {
     let videoUrl;
     let pdfUrl;
 
-    // Handle video upload
+    // Handle video upload using Cloudinary
     if (createContentDto.video) {
-      const videoData = createContentDto.video; 
-      const params = {
-        Bucket: process.env.S3_BUCKET_NAME || 'default-bucket-name',
-        Key: `videos/${Date.now()}_${videoData.originalname}`,
-        Body: videoData.buffer,
-        ContentType: videoData.mimetype,
-      };
-
-      const uploadResult = await s3.upload(params).promise();
-      videoUrl = uploadResult.Location;
+      videoUrl = await this.cloudinaryService.uploadVideo(createContentDto.video, 'course-videos');
     }
 
-    // Handle PDF upload
+    // Handle PDF upload using Cloudinary
     if (createContentDto.pdf) {
-      const pdfData = createContentDto.pdf; 
-      const params = {
-        Bucket: process.env.S3_BUCKET_NAME || 'default-bucket-name',
-        Key: `pdfs/${Date.now()}_${pdfData.originalname}`,
-        Body: pdfData.buffer,
-        ContentType: pdfData.mimetype,
-      };
-
-      const uploadResult = await s3.upload(params).promise();
-      pdfUrl = uploadResult.Location;
+      pdfUrl = await this.cloudinaryService.uploadFile(createContentDto.pdf, 'course-pdfs');
     }
 
     const newContent = new this.contentModel({ ...createContentDto, courseId, moduleId, videoUrl, pdfUrl });

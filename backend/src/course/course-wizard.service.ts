@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { GeminiService } from '../ai/gemini.service';
+import { GeminiService } from '../services/gemini.service';
 
 export interface CourseWizardFormattedResponse {
   sections: {

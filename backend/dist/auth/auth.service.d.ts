@@ -41,4 +41,6 @@ export declare class AuthService {
             };
         };
     }>;
+    validateToken(token: string): Promise<boolean>;
+    getUserFromToken(token: string): Promise<any>;
 }

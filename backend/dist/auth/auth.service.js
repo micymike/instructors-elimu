@@ -141,6 +141,43 @@ let AuthService = class AuthService {
             throw new common_1.HttpException(error.response || error.message || 'Registration failed', error.status || common_1.HttpStatus.BAD_REQUEST);
         }
     }
+    async validateToken(token) {
+        try {
+            const jwtSecret = this.configService.get('JWT_SECRET');
+            if (!jwtSecret) {
+                throw new Error('JWT_SECRET is not configured');
+            }
+            const decoded = this.jwtService.verify(token, { secret: jwtSecret });
+            return !!decoded;
+        }
+        catch (error) {
+            return false;
+        }
+    }
+    async getUserFromToken(token) {
+        try {
+            const jwtSecret = this.configService.get('JWT_SECRET');
+            if (!jwtSecret) {
+                throw new Error('JWT_SECRET is not configured');
+            }
+            const decoded = this.jwtService.verify(token, { secret: jwtSecret });
+            const instructor = await this.instructorModel.findById(decoded.sub).select('-password');
+            if (!instructor) {
+                throw new common_1.UnauthorizedException('User not found');
+            }
+            return {
+                id: instructor._id,
+                email: instructor.email,
+                firstName: instructor.firstName,
+                lastName: instructor.lastName,
+                isVerified: instructor.isVerified,
+                status: instructor.status
+            };
+        }
+        catch (error) {
+            throw new common_1.UnauthorizedException('Invalid token');
+        }
+    }
 };
 exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([

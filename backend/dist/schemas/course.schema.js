@@ -12,9 +12,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CourseSchema = exports.Course = void 0;
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
+const create_course_dto_1 = require("../dto/create-course.dto");
 let Course = class Course {
 };
 exports.Course = Course;
+__decorate([
+    (0, mongoose_1.Prop)({ type: mongoose_2.Schema.Types.ObjectId, auto: true }),
+    __metadata("design:type", mongoose_2.Types.ObjectId)
+], Course.prototype, "_id", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ required: true }),
     __metadata("design:type", String)
@@ -24,9 +29,13 @@ __decorate([
     __metadata("design:type", String)
 ], Course.prototype, "description", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ type: mongoose_2.Schema.Types.ObjectId, ref: 'Instructor', required: true }),
+    (0, mongoose_1.Prop)({ required: true }),
     __metadata("design:type", String)
 ], Course.prototype, "instructor", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ required: true, enum: Object.values(create_course_dto_1.CourseLevel) }),
+    __metadata("design:type", String)
+], Course.prototype, "level", void 0);
 __decorate([
     (0, mongoose_1.Prop)([{
             title: String,
@@ -57,17 +66,30 @@ __decorate([
     __metadata("design:type", String)
 ], Course.prototype, "duration", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ default: 'beginner', enum: ['beginner', 'intermediate', 'advanced'] }),
-    __metadata("design:type", String)
-], Course.prototype, "level", void 0);
-__decorate([
     (0, mongoose_1.Prop)(),
     __metadata("design:type", String)
 ], Course.prototype, "category", void 0);
 __decorate([
+    (0, mongoose_1.Prop)(),
+    __metadata("design:type", Number)
+], Course.prototype, "price", void 0);
+__decorate([
+    (0, mongoose_1.Prop)(),
+    __metadata("design:type", String)
+], Course.prototype, "subject", void 0);
+__decorate([
     (0, mongoose_1.Prop)({ type: [{ type: mongoose_2.Schema.Types.ObjectId, ref: 'Student' }] }),
     __metadata("design:type", Array)
 ], Course.prototype, "students", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ type: [{
+                url: { type: String, required: true },
+                name: { type: String, required: true },
+                type: { type: String, enum: ['pdf', 'video', 'document'], required: true },
+                uploadedAt: { type: Date, default: Date.now }
+            }], default: [] }),
+    __metadata("design:type", Array)
+], Course.prototype, "materials", void 0);
 exports.Course = Course = __decorate([
     (0, mongoose_1.Schema)({ timestamps: true })
 ], Course);

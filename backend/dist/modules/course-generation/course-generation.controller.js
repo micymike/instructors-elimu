@@ -14,46 +14,58 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CourseGenerationController = void 0;
 const common_1 = require("@nestjs/common");
-const course_generation_service_1 = require("./course-generation.service");
+const jwt_1 = require("@nestjs/jwt");
+const gemini_service_1 = require("../../services/gemini.service");
 let CourseGenerationController = class CourseGenerationController {
-    constructor(courseGenerationService) {
-        this.courseGenerationService = courseGenerationService;
+    constructor(jwtService, geminiService) {
+        this.jwtService = jwtService;
+        this.geminiService = geminiService;
     }
     async generateCourse(body) {
-        switch (body.mode) {
-            case 'course':
-                return this.courseGenerationService.generateCourse(body.subject, body.level);
-            case 'objectives':
-                return this.courseGenerationService.generateLearningObjectives(body.subject, body.level);
-            case 'schedule':
-                return this.courseGenerationService.generateCourseSchedule(body.subject, body.level);
-            case 'assessment':
-                return this.courseGenerationService.generateAssessments(body.subject, body.level);
-            default:
-                throw new Error('Invalid generation mode');
+        try {
+            const { message, context, access_token } = body;
+            if (!context || !Array.isArray(context)) {
+                throw new Error('Invalid context format');
+            }
+            if (!access_token) {
+                throw new common_1.UnauthorizedException('Access token is missing');
+            }
+            let user;
+            try {
+                user = this.jwtService.verify(access_token);
+            }
+            catch (error) {
+                throw new common_1.UnauthorizedException('Invalid access token');
+            }
+            console.log('Authenticated user:', user);
+            const stage = this.geminiService.determineStage(context);
+            const response = await this.geminiService.generateResponse(message, stage);
+            if (stage === 'final') {
+                const courseData = await this.geminiService.generateCourse(context[context.length - 1]);
+                return {
+                    message: "I've generated your course structure! You can now review and customize it.",
+                    courseData
+                };
+            }
+            return { message: response };
         }
-    }
-    async enhanceCourse(body) {
-        return this.courseGenerationService.enhanceCourseContent(body.content);
+        catch (error) {
+            console.error('Course generation error:', error);
+            throw error;
+        }
     }
 };
 exports.CourseGenerationController = CourseGenerationController;
 __decorate([
-    (0, common_1.Post)(),
+    (0, common_1.Post)('generate'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], CourseGenerationController.prototype, "generateCourse", null);
-__decorate([
-    (0, common_1.Post)('enhance'),
-    __param(0, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", Promise)
-], CourseGenerationController.prototype, "enhanceCourse", null);
 exports.CourseGenerationController = CourseGenerationController = __decorate([
-    (0, common_1.Controller)('course-generation'),
-    __metadata("design:paramtypes", [course_generation_service_1.CourseGenerationService])
+    (0, common_1.Controller)('api/course-generation'),
+    __metadata("design:paramtypes", [jwt_1.JwtService,
+        gemini_service_1.GeminiService])
 ], CourseGenerationController);
 //# sourceMappingURL=course-generation.controller.js.map

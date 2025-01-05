@@ -1,4 +1,4 @@
-import { GeminiService } from '../ai/gemini.service';
+import { GeminiService } from '../services/gemini.service';
 export interface CourseWizardFormattedResponse {
     sections: {
         title: string;

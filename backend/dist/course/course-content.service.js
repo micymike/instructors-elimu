@@ -17,41 +17,20 @@ const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
 const course_content_schema_1 = require("./course-content.schema");
-const aws_sdk_1 = require("aws-sdk");
-aws_sdk_1.default.config.update({
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    region: process.env.AWS_REGION,
-});
-const s3 = new aws_sdk_1.default.S3();
+const cloudinary_service_1 = require("../modules/cloudinary/cloudinary.service");
 let CourseContentService = class CourseContentService {
-    constructor(contentModel) {
+    constructor(contentModel, cloudinaryService) {
         this.contentModel = contentModel;
+        this.cloudinaryService = cloudinaryService;
     }
     async createContent(courseId, moduleId, createContentDto) {
         let videoUrl;
         let pdfUrl;
         if (createContentDto.video) {
-            const videoData = createContentDto.video;
-            const params = {
-                Bucket: process.env.S3_BUCKET_NAME || 'default-bucket-name',
-                Key: `videos/${Date.now()}_${videoData.originalname}`,
-                Body: videoData.buffer,
-                ContentType: videoData.mimetype,
-            };
-            const uploadResult = await s3.upload(params).promise();
-            videoUrl = uploadResult.Location;
+            videoUrl = await this.cloudinaryService.uploadVideo(createContentDto.video, 'course-videos');
         }
         if (createContentDto.pdf) {
-            const pdfData = createContentDto.pdf;
-            const params = {
-                Bucket: process.env.S3_BUCKET_NAME || 'default-bucket-name',
-                Key: `pdfs/${Date.now()}_${pdfData.originalname}`,
-                Body: pdfData.buffer,
-                ContentType: pdfData.mimetype,
-            };
-            const uploadResult = await s3.upload(params).promise();
-            pdfUrl = uploadResult.Location;
+            pdfUrl = await this.cloudinaryService.uploadFile(createContentDto.pdf, 'course-pdfs');
         }
         const newContent = new this.contentModel({ ...createContentDto, courseId, moduleId, videoUrl, pdfUrl });
         return newContent.save();
@@ -84,6 +63,7 @@ exports.CourseContentService = CourseContentService;
 exports.CourseContentService = CourseContentService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, mongoose_1.InjectModel)(course_content_schema_1.CourseContent.name)),
-    __metadata("design:paramtypes", [mongoose_2.Model])
+    __metadata("design:paramtypes", [mongoose_2.Model,
+        cloudinary_service_1.CloudinaryService])
 ], CourseContentService);
 //# sourceMappingURL=course-content.service.js.map

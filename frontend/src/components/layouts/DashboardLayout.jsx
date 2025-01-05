@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import {
   BarChart2, BookOpen, Video, Users, Calendar, Settings,
   LogOut, Menu, X, Layers, UserPlus, FileText,
   GraduationCap, Bell, Plus, ChevronDown
 } from 'lucide-react';
+
+const API_URL = 'http://localhost:3000/api';
 
 const DashboardLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -15,32 +18,47 @@ const DashboardLayout = () => {
   const location = useLocation();
 
   useEffect(() => {
-    // Get user data from localStorage
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
+    const fetchSettings = async () => {
       try {
-        setUser(JSON.parse(storedUser));
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-      }
-    } else {
-      navigate('/login');
-    }
+        const token = localStorage.getItem('token');
+        if (!token) {
+          navigate('/login');
+          return;
+        }
 
-    // Handle responsive sidebar
-    const handleResize = () => {
-      const isMobileView = window.innerWidth < 1024;
-      setIsMobile(isMobileView);
-      if (isMobileView) {
-        setIsSidebarOpen(false);
-      } else {
-        setIsSidebarOpen(true);
+        const response = await axios.get(`${API_URL}/settings`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (response.data && response.data.data) {
+          setUser(response.data.data.personalInfo || response.data.data);
+        }
+      } catch (error) {
+        console.error('Error fetching settings:', error);
+        if (error.response?.status === 401) {
+          // Clear token and redirect to login
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          navigate('/login');
+        }
       }
     };
 
-    handleResize();
+    fetchSettings();
+    const handleResize = () => {
+      const isMobileView = window.innerWidth < 1024;
+      setIsMobile(isMobileView);
+      setIsSidebarOpen(!isMobileView);
+    };
+
+    handleResize(); // Initial check
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
   }, [navigate]);
 
   const menuItems = [
