@@ -205,9 +205,8 @@ export default function InstructorDashboard() {
           mt: 8,
         }}
       >
-        {showCourseWizard ? (
-          <CourseWizard onClose={() => setShowCourseWizard(false)} />
-        ) : (
+        {showCourseWizard && <CourseWizard onClose={() => setShowCourseWizard(false)} />}
+        {!showCourseWizard && (
           <Container maxWidth="lg">
             <Box sx={{ mb: 4 }}>
               <Grid container justifyContent="space-between" alignItems="center">

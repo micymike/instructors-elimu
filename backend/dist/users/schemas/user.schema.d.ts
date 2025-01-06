@@ -19,6 +19,8 @@ export declare class User {
         language: string;
         theme: string;
     };
+    emailVerificationToken: string;
+    emailVerificationTokenExpires: Date;
 }
 export declare const UserSchema: import("mongoose").Schema<User, import("mongoose").Model<User, any, any, any, Document<unknown, any, User> & User & {
     _id: import("mongoose").Types.ObjectId;

@@ -26,11 +26,23 @@ let SettingsService = SettingsService_1 = class SettingsService {
     async getUserSettings(email) {
         try {
             this.logger.log(`Attempting to retrieve settings for email: ${email}`);
-            const instructor = await this.instructorModel.findOne({ email });
+            if (!email) {
+                this.logger.error('No email provided');
+                throw new common_1.InternalServerErrorException('Email is required');
+            }
+            try {
+                await this.instructorModel.db.db.admin().ping();
+                this.logger.log('Database connection is active');
+            }
+            catch (connectionError) {
+                this.logger.error('Database connection failed', connectionError);
+                throw new common_1.InternalServerErrorException('Database connection error');
+            }
+            const instructor = await this.instructorModel.findOne({ email }).lean();
             this.logger.log(`Instructor query result: ${JSON.stringify(instructor)}`);
             if (!instructor) {
                 this.logger.error(`No instructor found with email: ${email}`);
-                const allInstructors = await this.instructorModel.find({}, { email: 1 });
+                const allInstructors = await this.instructorModel.find({}, { email: 1 }).lean();
                 this.logger.log(`Existing instructors: ${JSON.stringify(allInstructors.map(i => i.email))}`);
                 throw new common_1.InternalServerErrorException(`Instructor not found with email: ${email}`);
             }
@@ -60,8 +72,19 @@ let SettingsService = SettingsService_1 = class SettingsService {
             };
         }
         catch (error) {
-            this.logger.error(`Error retrieving instructor settings for ${email}`, error.stack);
-            throw new common_1.InternalServerErrorException('Failed to retrieve instructor settings');
+            this.logger.error(`Comprehensive error retrieving instructor settings for ${email}`, {
+                errorName: error.name,
+                errorMessage: error.message,
+                errorStack: error.stack,
+                email: email
+            });
+            throw new common_1.InternalServerErrorException({
+                message: 'Failed to retrieve instructor settings',
+                details: {
+                    email: email,
+                    errorMessage: error.message
+                }
+            });
         }
     }
 };

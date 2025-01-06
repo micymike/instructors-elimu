@@ -36,6 +36,19 @@ const resourceSchema = new mongoose.Schema({
         enum: ['beginner', 'intermediate', 'advanced'],
         required: true
     },
+    courseId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Course',
+        default: null
+    },
+    filename: {
+        type: String,
+        trim: true
+    },
+    fileUrl: {
+        type: String,
+        trim: true
+    },
     tags: [{
         type: String,
         trim: true
@@ -72,5 +85,6 @@ const resourceSchema = new mongoose.Schema({
 
 resourceSchema.index({ subject: 1, type: 1 });
 resourceSchema.index({ tags: 1 });
+resourceSchema.index({ courseId: 1 });
 
 export const Resource = mongoose.model('Resource', resourceSchema); 

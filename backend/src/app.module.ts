@@ -8,6 +8,8 @@ import { GeminiService } from './services/gemini.service';
 import { NotificationModule } from './notification/notification.module';
 import { ZoomModule } from './zoom/zoom.module';
 import { SettingsModule } from './modules/settings.module';
+import { ContentModule } from './modules/content/content.module';
+import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
   imports: [
@@ -29,6 +31,8 @@ import { SettingsModule } from './modules/settings.module';
     NotificationModule,
     ZoomModule,
     SettingsModule,
+    ContentModule,
+    AuthModule,
   ],
   providers: [GeminiService],
 })

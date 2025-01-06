@@ -15,8 +15,23 @@ export class SettingsService {
     try {
       this.logger.log(`Attempting to retrieve settings for email: ${email}`);
 
+      // Validate email
+      if (!email) {
+        this.logger.error('No email provided');
+        throw new InternalServerErrorException('Email is required');
+      }
+
+      // Check database connection
+      try {
+        await this.instructorModel.db.db.admin().ping();
+        this.logger.log('Database connection is active');
+      } catch (connectionError) {
+        this.logger.error('Database connection failed', connectionError);
+        throw new InternalServerErrorException('Database connection error');
+      }
+
       // Find instructor by email
-      const instructor = await this.instructorModel.findOne({ email });
+      const instructor = await this.instructorModel.findOne({ email }).lean();
 
       this.logger.log(`Instructor query result: ${JSON.stringify(instructor)}`);
 
@@ -24,7 +39,7 @@ export class SettingsService {
         this.logger.error(`No instructor found with email: ${email}`);
         
         // Fetch all instructors to help diagnose the issue
-        const allInstructors = await this.instructorModel.find({}, { email: 1 });
+        const allInstructors = await this.instructorModel.find({}, { email: 1 }).lean();
         this.logger.log(`Existing instructors: ${JSON.stringify(allInstructors.map(i => i.email))}`);
 
         throw new InternalServerErrorException(`Instructor not found with email: ${email}`);
@@ -56,8 +71,21 @@ export class SettingsService {
         }
       };
     } catch (error) {
-      this.logger.error(`Error retrieving instructor settings for ${email}`, error.stack);
-      throw new InternalServerErrorException('Failed to retrieve instructor settings');
+      this.logger.error(`Comprehensive error retrieving instructor settings for ${email}`, {
+        errorName: error.name,
+        errorMessage: error.message,
+        errorStack: error.stack,
+        email: email
+      });
+
+      // Rethrow with more context
+      throw new InternalServerErrorException({
+        message: 'Failed to retrieve instructor settings',
+        details: {
+          email: email,
+          errorMessage: error.message
+        }
+      });
     }
   }
 }

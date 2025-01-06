@@ -17,6 +17,8 @@ const gemini_service_1 = require("./services/gemini.service");
 const notification_module_1 = require("./notification/notification.module");
 const zoom_module_1 = require("./zoom/zoom.module");
 const settings_module_1 = require("./modules/settings.module");
+const content_module_1 = require("./modules/content/content.module");
+const auth_module_1 = require("./modules/auth/auth.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -41,6 +43,8 @@ exports.AppModule = AppModule = __decorate([
             notification_module_1.NotificationModule,
             zoom_module_1.ZoomModule,
             settings_module_1.SettingsModule,
+            content_module_1.ContentModule,
+            auth_module_1.AuthModule,
         ],
         providers: [gemini_service_1.GeminiService],
     })

@@ -1,7 +1,7 @@
-import { Controller, Post, Get, Patch, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Delete, Body, Param, UseGuards, Query } from '@nestjs/common';
 import { ZoomService } from './zoom.service';
 //import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { NotificationService } from '../notification/notification.service';
 
 @ApiTags('zoom')
@@ -9,6 +9,14 @@ import { NotificationService } from '../notification/notification.service';
 
 export class ZoomController {
   constructor(private readonly zoomService: ZoomService, private readonly notificationService: NotificationService) {}
+
+  @Get('meetings')
+  @ApiOperation({ summary: 'Get all meetings' })
+  @ApiResponse({ status: 200, description: 'Meetings retrieved successfully' })
+  @ApiQuery({ name: 'userId', required: false, description: 'Optional user ID to get meetings for' })
+  async getAllMeetings(@Query('userId') userId?: string) {
+    return this.zoomService.getAllMeetings(userId);
+  }
 
   @Post('meetings')
   @ApiOperation({ summary: 'Create a new Zoom meeting' })
@@ -38,6 +46,16 @@ export class ZoomController {
   @ApiResponse({ status: 200, description: 'Meeting details retrieved successfully' })
   async getMeeting(@Param('meetingId') meetingId: string) {
     return this.zoomService.getMeeting(meetingId);
+  }
+
+  @Get('meetings/:meetingId/join')
+  @ApiOperation({ summary: 'Get join URL for a specific meeting' })
+  @ApiResponse({ status: 200, description: 'Meeting join URL retrieved successfully' })
+  async joinMeeting(
+    @Param('meetingId') meetingId: string,
+    @Query('userId') userId?: string,
+  ) {
+    return this.zoomService.joinMeeting(meetingId, userId);
   }
 
   @Patch('meetings/:meetingId')
@@ -80,9 +98,12 @@ export class ZoomController {
   }
 
   @Delete('meetings/:meetingId')
-  @ApiOperation({ summary: 'Delete a meeting' })
+  @ApiOperation({ summary: 'Delete a specific meeting' })
   @ApiResponse({ status: 200, description: 'Meeting deleted successfully' })
-  async deleteMeeting(@Param('meetingId') meetingId: string) {
-    return this.zoomService.deleteMeeting(meetingId);
+  async deleteMeeting(
+    @Param('meetingId') meetingId: string,
+    @Query('userId') userId?: string,
+  ) {
+    return this.zoomService.deleteMeeting(meetingId, userId);
   }
 }

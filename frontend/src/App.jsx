@@ -28,6 +28,9 @@ import {
   Schedule,
   Students
 } from './pages/instructor';
+import Content from './pages/instructor/Content';
+//import CreateCourse from './pages/instructor/CreateCourse';
+import VideoManagement from './pages/instructor/VideoManagement';
 
 const router = createBrowserRouter([
   {
@@ -44,75 +47,108 @@ const router = createBrowserRouter([
     children: [
       {
         path: 'dashboard',
-        element: <Dashboard />
+        element: <Dashboard />,
+        errorElement: <div>Error loading Dashboard page</div>
       },
       {
         path: 'courses',
-        element: <Courses />
+        element: <Courses />,
+        errorElement: <div>Error loading Courses page</div>
       },
       {
-        path: 'courses/:id/analytics',
-        element: <CourseAnalytics />
+        path: 'content',
+        element: <Content />,
+        errorElement: <div>Error loading Content page</div>
       },
       {
-        path: 'courses/new',
-        element: <CourseWizard />
+        path: 'course-content',
+        element: <CourseContentManager />,
+        errorElement: <div>Error loading Course Content page</div>
       },
       {
-        path: 'courses/:id/learn',
-        element: <CourseLearning />
+        path: 'course-settings',
+        element: <CourseSettings />,
+        errorElement: <div>Error loading Course Settings page</div>
       },
       {
-        path: 'courses/:id/assessments',
-        element: <Assessments />
-      },
-      {
-        path: 'courses/:id/settings',
-        element: <CourseSettings />
-      },
-      {
-        path: 'courses/:id',
-        element: <CourseContentManager />
-      },
-      {
-        path: 'courses/:id/content',
-        element: <CourseContentManager />
+        path: 'groups',
+        element: <GroupManagement />,
+        errorElement: <div>Error loading Groups page</div>
       },
       {
         path: 'zoom-meetings',
-        element: <ZoomMeetings />
+        element: <ZoomMeetings />,
+        errorElement: <div>Error loading Zoom Meetings page</div>
+      },
+      {
+        path: 'course-learning',
+        element: <CourseLearning />,
+        errorElement: <div>Error loading Course Learning page</div>
       },
       {
         path: 'students',
-        element: <Students />
-      },
-      {
-        path: 'schedule',
-        element: <Schedule />
-      },
-      {
-        path: 'group-management',
-        element: <GroupManagement />
+        element: <Students />,
+        errorElement: <div>Error loading Students page</div>
       },
       {
         path: 'settings',
-        element: <Settings />
+        element: <Settings />,
+        errorElement: <div>Error loading Settings page</div>
+      },
+      {
+        path: 'create-course',
+        element: <CourseWizard />,
+        errorElement: <div>Error loading Create Course page</div>
+      },
+      {
+        path: 'assessments',
+        element: <Assessments />,
+        errorElement: <div>Error loading Assessments page</div>
+      },
+      {
+        path: 'video-management',
+        element: <VideoManagement />,
+        errorElement: <div>Error loading Video Management page</div>
+      },
+      {
+        path: 'create-session',
+        element: <CreateSession />,
+        errorElement: <div>Error loading Create Session page</div>
+      },
+      {
+        path: 'schedule',
+        element: <Schedule />,
+        errorElement: <div>Error loading Schedule page</div>
+      },
+      {
+        path: '',
+        element: <Navigate to="dashboard" replace />,
+        errorElement: <div>Error loading Dashboard page</div>
       }
     ]
   },
   {
-    path: '/student/courses/:id',
-    element: <StudentCourseView />
+    path: '/',
+    element: <InstructorsLanding />,
+    errorElement: <div>Error loading Instructors Landing page</div>
   },
   {
-    path: '/',
-    element: <Navigate to="/instructor/dashboard" replace />
+    path: '/privacy-policy',
+    element: <PrivacyPolicy />,
+    errorElement: <div>Error loading Privacy Policy page</div>
+  },
+  {
+    path: '/terms-of-service',
+    element: <TermsOfService />,
+    errorElement: <div>Error loading Terms of Service page</div>
+  },
+  {
+    path: '*',
+    element: <Navigate to="/instructor/dashboard" replace />,
+    errorElement: <div>Error loading page</div>
   }
 ], {
-  future: {
-    v7_startTransition: true,
-    v7_relativeSplatPath: true
-  }
+  basename: '/'
 });
 
 function App() {
@@ -120,16 +156,18 @@ function App() {
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <SnackbarProvider maxSnack={3}>
         <AnimatePresence mode="wait">
-          <motion.div
-            className="App min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <Toaster position="top-center" />
-            <RouterProvider router={router} />
-          </motion.div>
+          <RouterProvider 
+            router={router} 
+            fallbackElement={<div>Loading...</div>}
+          />
         </AnimatePresence>
+        <Toaster 
+          position="top-right" 
+          toastOptions={{
+            success: { duration: 3000 },
+            error: { duration: 5000 }
+          }} 
+        />
       </SnackbarProvider>
     </LocalizationProvider>
   );

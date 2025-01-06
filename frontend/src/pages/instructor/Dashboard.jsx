@@ -140,7 +140,7 @@ const Dashboard = () => {
     {
       title: 'Create Course',
       icon: Plus,
-      path: '/instructor/courses/new',
+      path: '/instructor/create-course',
       color: 'bg-blue-500'
     },
     {

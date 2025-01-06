@@ -83,7 +83,7 @@ const DashboardLayout = () => {
         {
           icon: Plus,
           label: 'Create Course',
-          path: '/instructor/courses/new',
+          path: '/instructor/create-course',
           description: 'Add new course'
         }
       ]
@@ -109,7 +109,7 @@ const DashboardLayout = () => {
     {
       icon: UserPlus,
       label: 'Group Management',
-      path: '/instructor/group-management',
+      path: '/instructor/groups',
       description: 'Manage student groups'
     },
     {

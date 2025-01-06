@@ -50,6 +50,12 @@ export class User {
     language: string;
     theme: string;
   };
+
+  @Prop()
+  emailVerificationToken: string;
+
+  @Prop()
+  emailVerificationTokenExpires: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

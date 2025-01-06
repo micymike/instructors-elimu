@@ -9,6 +9,7 @@ export declare class ZoomService {
     private tokenExpiry;
     constructor(configService: ConfigService);
     private getAccessToken;
+    getAllMeetings(userId?: string): Promise<any>;
     createMeeting(instructorId: string, courseData: {
         topic: string;
         startTime: string;
@@ -27,5 +28,12 @@ export declare class ZoomService {
         duration?: number;
         agenda?: string;
     }): Promise<any>;
-    deleteMeeting(meetingId: string): Promise<boolean>;
+    deleteMeeting(meetingId: string, userId?: string): Promise<{
+        message: string;
+    }>;
+    joinMeeting(meetingId: string, userId?: string): Promise<{
+        joinUrl: any;
+        topic: any;
+        startTime: any;
+    }>;
 }

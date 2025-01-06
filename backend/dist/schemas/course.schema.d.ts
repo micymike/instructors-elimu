@@ -9,6 +9,7 @@ export declare class Course {
     description: string;
     instructor: string;
     level: CourseLevel;
+    deliveryMethod: string;
     modules: Array<{
         title: string;
         description: string;
@@ -18,11 +19,21 @@ export declare class Course {
             description: string;
             url?: string;
             duration?: number;
+            scheduledTime?: Date;
+            meetingLink?: string;
+            maxDuration?: number;
+            resourceType?: string;
+            isRequired?: boolean;
+            dueDate?: Date;
         }>;
     }>;
     status: string;
     thumbnail: string;
-    duration: string;
+    duration: {
+        totalHours: number;
+        weeksDuration: number;
+        selfPacedDeadline?: Date;
+    };
     category: string;
     price: number;
     subject: string;
@@ -32,7 +43,37 @@ export declare class Course {
         name: string;
         type: 'pdf' | 'video' | 'document';
         uploadedAt: Date;
+        duration?: number;
+        size?: number;
+        isDownloadable: boolean;
     }>;
+    liveSessions: Array<{
+        sessionDate: Date;
+        startTime: string;
+        endTime: string;
+        topic: string;
+        meetingLink: string;
+        recordingUrl?: string;
+        materials: Array<{
+            url: string;
+            name: string;
+            type: string;
+        }>;
+    }>;
+    courseSettings: {
+        isEnrollmentOpen: boolean;
+        startDate?: Date;
+        endDate?: Date;
+        maxStudents?: number;
+        prerequisites: string[];
+        objectives: string[];
+        certificateAvailable: boolean;
+        completionCriteria?: {
+            minAttendance: number;
+            minAssignments: number;
+            minQuizScore: number;
+        };
+    };
 }
 export declare const CourseSchema: MongooseSchema<Course, import("mongoose").Model<Course, any, any, any, Document<unknown, any, Course> & Course & Required<{
     _id: Types.ObjectId;

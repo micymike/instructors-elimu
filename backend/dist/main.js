@@ -19,7 +19,7 @@ async function bootstrap() {
         origin: ['http://localhost:3000', 'http://localhost:3001'],
         methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
         credentials: true,
-        allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'x-user-id'],
         exposedHeaders: ['Content-Range', 'X-Content-Range'],
         maxAge: 3600,
     });
@@ -37,13 +37,6 @@ async function bootstrap() {
     app.useGlobalPipes(new common_1.ValidationPipe({
         whitelist: true,
         transform: true,
-        forbidNonWhitelisted: false,
-        validateCustomDecorators: true,
-        stopAtFirstError: true,
-        enableDebugMessages: true,
-        transformOptions: {
-            enableImplicitConversion: true,
-        },
         validationError: { target: false },
     }));
     const port = process.env.PORT || 3000;

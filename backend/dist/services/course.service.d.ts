@@ -2,9 +2,12 @@ import { Model } from 'mongoose';
 import { Course } from '../schemas/course.schema';
 import { CreateCourseDto } from '../dto/create-course.dto';
 import { UpdateCourseDto } from '../dto/update-course.dto';
+import { CloudinaryService } from '../modules/cloudinary/cloudinary.service';
 export declare class CourseService {
     private courseModel;
-    constructor(courseModel: Model<Course>);
+    private cloudinaryService;
+    private readonly logger;
+    constructor(courseModel: Model<Course>, cloudinaryService: CloudinaryService);
     createCourse(createCourseDto: CreateCourseDto, user: {
         id?: string;
         email?: string;
@@ -30,6 +33,15 @@ export declare class CourseService {
     removeContent(courseId: string, contentIndex: number): Promise<Course>;
     updateContent(courseId: string, updateContentDto: any): Promise<Course>;
     getCourseMaterials(courseId: string): Promise<any[]>;
+    addMaterial(courseId: string, material: {
+        url: string;
+        name: string;
+        type: 'pdf' | 'video' | 'document';
+        uploadedAt: Date;
+        isDownloadable: boolean;
+        duration?: number;
+        size?: number;
+    }): Promise<Course>;
     addCourseMaterial(courseId: string, material: {
         url: string;
         name: string;

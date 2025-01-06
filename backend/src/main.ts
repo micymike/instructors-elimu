@@ -27,7 +27,7 @@ async function bootstrap() {
     origin: ['http://localhost:3000', 'http://localhost:3001'], // Allow both frontend URLs
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'x-user-id'],
     exposedHeaders: ['Content-Range', 'X-Content-Range'],
     maxAge: 3600,
   });
@@ -51,13 +51,6 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
     transform: true,
-    forbidNonWhitelisted: false, // Allow non-whitelisted properties
-    validateCustomDecorators: true,
-    stopAtFirstError: true,
-    enableDebugMessages: true, // Enable debug messages
-    transformOptions: {
-      enableImplicitConversion: true,
-    },
     validationError: { target: false },
   }));
 

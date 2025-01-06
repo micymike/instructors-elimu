@@ -37,18 +37,31 @@ __decorate([
     __metadata("design:type", String)
 ], Course.prototype, "level", void 0);
 __decorate([
+    (0, mongoose_1.Prop)({ required: true, enum: ['on-demand', 'live', 'self-paced'], default: 'on-demand' }),
+    __metadata("design:type", String)
+], Course.prototype, "deliveryMethod", void 0);
+__decorate([
     (0, mongoose_1.Prop)([{
             title: String,
             description: String,
             content: [{
                     type: {
                         type: String,
-                        enum: ['video', 'document', 'quiz', 'assignment'],
+                        enum: ['video', 'document', 'quiz', 'assignment', 'live-session'],
                     },
                     title: String,
                     description: String,
                     url: String,
                     duration: Number,
+                    scheduledTime: Date,
+                    meetingLink: String,
+                    maxDuration: { type: Number, max: 45 },
+                    resourceType: {
+                        type: String,
+                        enum: ['pdf', 'video', 'document', 'quiz']
+                    },
+                    isRequired: { type: Boolean, default: false },
+                    dueDate: Date,
                 }]
         }]),
     __metadata("design:type", Array)
@@ -62,8 +75,14 @@ __decorate([
     __metadata("design:type", String)
 ], Course.prototype, "thumbnail", void 0);
 __decorate([
-    (0, mongoose_1.Prop)(),
-    __metadata("design:type", String)
+    (0, mongoose_1.Prop)({
+        type: {
+            totalHours: Number,
+            weeksDuration: Number,
+            selfPacedDeadline: Date,
+        }
+    }),
+    __metadata("design:type", Object)
 ], Course.prototype, "duration", void 0);
 __decorate([
     (0, mongoose_1.Prop)(),
@@ -86,10 +105,46 @@ __decorate([
                 url: { type: String, required: true },
                 name: { type: String, required: true },
                 type: { type: String, enum: ['pdf', 'video', 'document'], required: true },
-                uploadedAt: { type: Date, default: Date.now }
+                uploadedAt: { type: Date, default: Date.now },
+                duration: { type: Number },
+                size: { type: Number },
+                isDownloadable: { type: Boolean, default: true }
             }], default: [] }),
     __metadata("design:type", Array)
 ], Course.prototype, "materials", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ type: [{
+                sessionDate: Date,
+                startTime: String,
+                endTime: String,
+                topic: String,
+                meetingLink: String,
+                recordingUrl: String,
+                materials: [{
+                        url: String,
+                        name: String,
+                        type: { type: String, enum: ['pdf', 'video', 'document'] }
+                    }]
+            }], default: [] }),
+    __metadata("design:type", Array)
+], Course.prototype, "liveSessions", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ type: {
+            isEnrollmentOpen: { type: Boolean, default: true },
+            startDate: Date,
+            endDate: Date,
+            maxStudents: Number,
+            prerequisites: [String],
+            objectives: [String],
+            certificateAvailable: { type: Boolean, default: false },
+            completionCriteria: {
+                minAttendance: Number,
+                minAssignments: Number,
+                minQuizScore: Number
+            }
+        } }),
+    __metadata("design:type", Object)
+], Course.prototype, "courseSettings", void 0);
 exports.Course = Course = __decorate([
     (0, mongoose_1.Schema)({ timestamps: true })
 ], Course);

@@ -1,15 +1,25 @@
-import { Injectable, NotFoundException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import { 
+  Injectable, 
+  NotFoundException, 
+  BadRequestException, 
+  InternalServerErrorException 
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Course } from '../schemas/course.schema';
 import { CreateCourseDto } from '../dto/create-course.dto';
 import { UpdateCourseDto } from '../dto/update-course.dto';
 import { User } from '../users/schemas/user.schema';
+import { Logger } from '@nestjs/common';
+import { CloudinaryService } from '../modules/cloudinary/cloudinary.service';
 
 @Injectable()
 export class CourseService {
+  private readonly logger = new Logger(CourseService.name);
+
   constructor(
-    @InjectModel(Course.name) private courseModel: Model<Course>
+    @InjectModel(Course.name) private courseModel: Model<Course>,
+    private cloudinaryService: CloudinaryService
   ) {}
 
   async createCourse(
@@ -17,7 +27,7 @@ export class CourseService {
     user: { id?: string, email?: string, role?: string }
   ): Promise<Course> {
     try {
-      console.log('🚀 Creating Course', {
+      this.logger.log('🚀 Creating Course', {
         courseData: createCourseDto,
         user: user
       });
@@ -35,7 +45,7 @@ export class CourseService {
 
       const savedCourse = await createdCourse.save();
 
-      console.log('✅ Course Created Successfully', {
+      this.logger.log('✅ Course Created Successfully', {
         courseId: savedCourse._id,
         title: savedCourse.title,
         instructor: user.email
@@ -43,7 +53,7 @@ export class CourseService {
 
       return savedCourse;
     } catch (error) {
-      console.error('❌ Course Creation Error', {
+      this.logger.error('❌ Course Creation Error', {
         message: error.message,
         courseData: createCourseDto,
         user: user
@@ -55,7 +65,7 @@ export class CourseService {
 
   async findAll(userId?: string): Promise<Course[]> {
     try {
-      console.log('🔍 Course Service - Finding Courses', { 
+      this.logger.log('🔍 Course Service - Finding Courses', { 
         userId: userId || 'Not Provided',
         timestamp: new Date().toISOString()
       });
@@ -64,21 +74,21 @@ export class CourseService {
       let courses: Course[];
       if (userId) {
         courses = await this.courseModel.find({ instructor: userId }).exec();
-        console.log(`✅ Courses found for userId ${userId}:`, courses.length);
+        this.logger.log(`✅ Courses found for userId ${userId}:`, courses.length);
       } else {
         // Otherwise, return all courses
         courses = await this.courseModel.find().exec();
-        console.log('✅ Total courses found:', courses.length);
+        this.logger.log('✅ Total courses found:', courses.length);
       }
 
       // Additional logging for debugging
       if (courses.length === 0) {
-        console.warn('⚠️ No courses found');
+        this.logger.warn('⚠️ No courses found');
       }
 
       return courses;
     } catch (error) {
-      console.error('❌ Error in findAll method:', {
+      this.logger.error('❌ Error in findAll method:', {
         message: error.message,
         stack: error.stack,
         userId: userId
@@ -97,7 +107,7 @@ export class CourseService {
 
   async findAllByEmail(email: string): Promise<Course[]> {
     try {
-      console.log('🔍 Course Service - Finding Courses by Email', { 
+      this.logger.log('🔍 Course Service - Finding Courses by Email', { 
         email,
         timestamp: new Date().toISOString()
       });
@@ -111,16 +121,16 @@ export class CourseService {
         ]
       }).exec();
 
-      console.log(`✅ Courses found for email ${email}:`, courses.length);
+      this.logger.log(`✅ Courses found for email ${email}:`, courses.length);
 
       // Additional logging for debugging
       if (courses.length === 0) {
-        console.warn(`⚠️ No courses found for email: ${email}`);
+        this.logger.warn(`⚠️ No courses found for email: ${email}`);
       }
 
       return courses;
     } catch (error) {
-      console.error('❌ Error in findAllByEmail method:', {
+      this.logger.error('❌ Error in findAllByEmail method:', {
         message: error.message,
         stack: error.stack,
         email: email
@@ -141,7 +151,7 @@ export class CourseService {
     user: { id?: string, email?: string, role?: string }
   ): Promise<Course[]> {
     try {
-      console.log('🔍 Getting All Courses', {
+      this.logger.log('🔍 Getting All Courses', {
         userId: user.id,
         email: user.email,
         role: user.role
@@ -155,14 +165,14 @@ export class CourseService {
       // Find courses by user's ID
       const courses = await this.courseModel.find({ instructor: user.email }).exec();
 
-      console.log('✅ Courses Retrieved Successfully', {
+      this.logger.log('✅ Courses Retrieved Successfully', {
         count: courses.length,
         userIdentifier: user.email
       });
 
       return courses;
     } catch (error) {
-      console.error('❌ Course Retrieval Error', {
+      this.logger.error('❌ Course Retrieval Error', {
         message: error.message,
         user: user
       });
@@ -184,7 +194,7 @@ export class CourseService {
 
       return course;
     } catch (error) {
-      console.error('Error finding course:', error);
+      this.logger.error('Error finding course:', error);
       
       if (error instanceof NotFoundException) {
         throw error;
@@ -231,7 +241,7 @@ export class CourseService {
         teachingHours: teachingHours[0]?.totalHours || 0
       };
     } catch (error) {
-      console.error('Error retrieving course statistics:', error);
+      this.logger.error('Error retrieving course statistics:', error);
       throw new InternalServerErrorException('Failed to retrieve course statistics');
     }
   }
@@ -305,7 +315,7 @@ export class CourseService {
       // You might need to adjust this based on your actual schema
       return course.materials || [];
     } catch (error) {
-      console.error('❌ Error retrieving course materials:', {
+      this.logger.error('❌ Error retrieving course materials:', {
         courseId,
         errorMessage: error.message
       });
@@ -317,46 +327,47 @@ export class CourseService {
     }
   }
 
-  async addCourseMaterial(
+  async addMaterial(
     courseId: string, 
-    material: {
-      url: string;
-      name: string;
-      type: 'pdf' | 'video' | 'document';
-      uploadedAt: Date;
+    material: { 
+      url: string; 
+      name: string; 
+      type: 'pdf' | 'video' | 'document'; 
+      uploadedAt: Date; 
+      isDownloadable: boolean;
+      duration?: number;
+      size?: number;
     }
   ): Promise<Course> {
     try {
-      const course = await this.courseModel.findById(courseId).exec();
+      const course = await this.courseModel.findById(courseId);
       
       if (!course) {
-        throw new NotFoundException(`Course with ID ${courseId} not found`);
+        throw new Error('Course not found');
       }
 
-      // Add the new material to the course's materials array
       course.materials.push(material);
+      await course.save();
 
-      // Save the updated course
-      const updatedCourse = await course.save();
-
-      console.log('✅ Course material added successfully', {
-        courseId,
-        materialName: material.name,
-        materialType: material.type
-      });
-
-      return updatedCourse;
+      return course;
     } catch (error) {
-      console.error('❌ Error adding course material:', {
-        courseId,
-        material,
-        errorMessage: error.message
-      });
-
-      throw new InternalServerErrorException({
-        message: 'Failed to add course material',
-        error: error.message
-      });
+      this.logger.error('Failed to add material to course', error);
+      throw new Error(`Failed to add material: ${error.message}`);
     }
+  }
+
+  async addCourseMaterial(
+    courseId: string, 
+    material: { 
+      url: string; 
+      name: string; 
+      type: 'pdf' | 'video' | 'document'; 
+      uploadedAt: Date; 
+    }
+  ): Promise<Course> {
+    return this.addMaterial(courseId, {
+      ...material,
+      isDownloadable: true
+    });
   }
 }

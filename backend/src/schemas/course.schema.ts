@@ -23,18 +23,30 @@ export class Course {
   @Prop({ required: true, enum: Object.values(CourseLevel) })
   level: CourseLevel;
 
+  @Prop({ required: true, enum: ['on-demand', 'live', 'self-paced'], default: 'on-demand' })
+  deliveryMethod: string;
+
   @Prop([{
     title: String,
     description: String,
     content: [{
       type: {
         type: String,
-        enum: ['video', 'document', 'quiz', 'assignment'],
+        enum: ['video', 'document', 'quiz', 'assignment', 'live-session'],
       },
       title: String,
       description: String,
       url: String,
-      duration: Number,
+      duration: Number, // in minutes
+      scheduledTime: Date, // for live sessions
+      meetingLink: String, // for live sessions
+      maxDuration: { type: Number, max: 45 }, // max 45 minutes for videos
+      resourceType: { 
+        type: String, 
+        enum: ['pdf', 'video', 'document', 'quiz'] 
+      },
+      isRequired: { type: Boolean, default: false },
+      dueDate: Date, // for assignments
     }]
   }])
   modules: Array<{
@@ -46,6 +58,12 @@ export class Course {
       description: string;
       url?: string;
       duration?: number;
+      scheduledTime?: Date;
+      meetingLink?: string;
+      maxDuration?: number;
+      resourceType?: string;
+      isRequired?: boolean;
+      dueDate?: Date;
     }>;
   }>;
 
@@ -55,8 +73,18 @@ export class Course {
   @Prop()
   thumbnail: string;
 
-  @Prop()
-  duration: string;
+  @Prop({ 
+    type: {
+      totalHours: Number,
+      weeksDuration: Number,
+      selfPacedDeadline: Date, // for self-paced courses
+    }
+  })
+  duration: {
+    totalHours: number;
+    weeksDuration: number;
+    selfPacedDeadline?: Date;
+  };
 
   @Prop()
   category: string;
@@ -74,14 +102,76 @@ export class Course {
     url: { type: String, required: true },
     name: { type: String, required: true },
     type: { type: String, enum: ['pdf', 'video', 'document'], required: true },
-    uploadedAt: { type: Date, default: Date.now }
+    uploadedAt: { type: Date, default: Date.now },
+    duration: { type: Number }, // in minutes for videos
+    size: { type: Number }, // in bytes
+    isDownloadable: { type: Boolean, default: true }
   }], default: [] })
   materials: Array<{
     url: string;
     name: string;
     type: 'pdf' | 'video' | 'document';
     uploadedAt: Date;
+    duration?: number;
+    size?: number;
+    isDownloadable: boolean;
   }>;
+
+  @Prop({ type: [{
+    sessionDate: Date,
+    startTime: String,
+    endTime: String,
+    topic: String,
+    meetingLink: String,
+    recordingUrl: String,
+    materials: [{
+      url: String,
+      name: String,
+      type: { type: String, enum: ['pdf', 'video', 'document'] }
+    }]
+  }], default: [] })
+  liveSessions: Array<{
+    sessionDate: Date;
+    startTime: string;
+    endTime: string;
+    topic: string;
+    meetingLink: string;
+    recordingUrl?: string;
+    materials: Array<{
+      url: string;
+      name: string;
+      type: string;
+    }>;
+  }>;
+
+  @Prop({ type: {
+    isEnrollmentOpen: { type: Boolean, default: true },
+    startDate: Date,
+    endDate: Date,
+    maxStudents: Number,
+    prerequisites: [String],
+    objectives: [String],
+    certificateAvailable: { type: Boolean, default: false },
+    completionCriteria: {
+      minAttendance: Number, // percentage
+      minAssignments: Number,
+      minQuizScore: Number
+    }
+  }})
+  courseSettings: {
+    isEnrollmentOpen: boolean;
+    startDate?: Date;
+    endDate?: Date;
+    maxStudents?: number;
+    prerequisites: string[];
+    objectives: string[];
+    certificateAvailable: boolean;
+    completionCriteria?: {
+      minAttendance: number;
+      minAssignments: number;
+      minQuizScore: number;
+    };
+  };
 }
 
 export const CourseSchema = SchemaFactory.createForClass(Course);

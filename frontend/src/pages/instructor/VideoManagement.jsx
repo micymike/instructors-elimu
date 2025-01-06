@@ -78,6 +78,8 @@ const VideoManagement = () => {
       setError(err.message);
     } finally {
       URL.revokeObjectURL(objectUrl);
+    }
+  };
 
   const handleUpload = async (file) => {
     try {
@@ -206,101 +208,60 @@ const VideoManagement = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8 flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Video Management</h1>
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-        >
-          <Upload size={20} />
-          Upload Video
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="video/*"
+    <div className="video-management">
+      <h1>Video Management</h1>
+      {error && <div className="error-message">{error}</div>}
+      
+      <div className="upload-section">
+        <input 
+          type="file" 
+          ref={fileInputRef} 
           onChange={handleFileSelect}
-          className="hidden"
+          accept="video/*"
+          style={{ display: 'none' }}
         />
+        <button 
+          onClick={() => fileInputRef.current.click()}
+          disabled={loading}
+        >
+          <Upload /> Upload Video
+        </button>
+        {uploadProgress > 0 && (
+          <div className="progress-bar">
+            <div 
+              className="progress" 
+              style={{ width: `${uploadProgress}%` }}
+            ></div>
+          </div>
+        )}
       </div>
 
-      {error && (
-        <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-lg flex items-center justify-between">
-          <span>{error}</span>
-          <button onClick={() => setError(null)}>
-            <X size={20} />
-          </button>
-        </div>
-      )}
-
-      {uploadProgress > 0 && (
-        <div className="mb-4">
-          <div className="h-2 bg-gray-200 rounded-full">
-            <div
-              className="h-full bg-blue-600 rounded-full transition-all duration-300"
-              style={{ width: `${uploadProgress}%` }}
-            />
-          </div>
-          <p className="text-sm text-gray-600 mt-1">
-            Uploading... {uploadProgress}%
-          </p>
-        </div>
-      )}
-
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="video-list">
         {videos.map(video => (
-          <div key={video.id} className="rounded-lg border border-gray-200 overflow-hidden">
-            <div className="relative aspect-video bg-gray-100">
-              <img
-                src={video.thumbnail}
-                alt={video.title}
-                className="w-full h-full object-cover"
-              />
-              <button
-                onClick={() => window.open(video.url, '_blank')}
-                className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 hover:opacity-100 transition-opacity"
-              >
-                <Play size={48} className="text-white" />
-              </button>
-            </div>
-            
-            <div className="p-4">
-              <h3 className="font-semibold mb-2">{video.title}</h3>
-              <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
-                <span className="flex items-center gap-1">
-                  <Clock size={16} />
-                  {Math.floor(video.duration / 60)}:{String(video.duration % 60).padStart(2, '0')}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Users size={16} />
-                  {video.views || 0} views
-                </span>
-              </div>
-              
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    setSelectedVideo(video);
-                    setEditForm({
-                      title: video.title,
-                      description: video.description || '',
-                      visibility: video.visibility || 'private',
-                      tags: video.tags || []
-                    });
-                    setShowEditModal(true);
-                  }}
-                  className="flex items-center gap-1 text-blue-600 hover:text-blue-800"
-                >
-                  <Edit2 size={16} />
-                  Edit
+          <div key={video.id} className="video-item">
+            <img 
+              src={video.thumbnail} 
+              alt={video.title} 
+              className="video-thumbnail" 
+            />
+            <div className="video-details">
+              <h3>{video.title}</h3>
+              <p>Duration: {Math.round(video.duration)} seconds</p>
+              <div className="video-actions">
+                <button onClick={() => {
+                  setSelectedVideo(video);
+                  setEditForm({
+                    title: video.title,
+                    description: video.description || '',
+                    visibility: video.visibility || 'private',
+                    tags: video.tags || []
+                  });
+                  setShowEditModal(true);
+                }}>
+                  <Edit2 /> Edit
                 </button>
-                <button
-                  onClick={() => handleDeleteVideo(video.id)}
-                  className="flex items-center gap-1 text-red-600 hover:text-red-800"
-                >
-                  <Trash2 size={16} />
-                  Delete
+                <button onClick={() => handleDeleteVideo(video.id)}>
+                  <Trash2 /> Delete
                 </button>
               </div>
             </div>
@@ -308,76 +269,35 @@ const VideoManagement = () => {
         ))}
       </div>
 
-      {/* Edit Modal */}
-      {showEditModal && selectedVideo && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h2 className="text-xl font-bold mb-4">Edit Video</h2>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Title</label>
-                <input
-                  type="text"
-                  value={editForm.title}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full px-3 py-2 border rounded-md"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1">Description</label>
-                <textarea
-                  value={editForm.description}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
-                  className="w-full px-3 py-2 border rounded-md"
-                  rows={3}
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1">Visibility</label>
-                <select
-                  value={editForm.visibility}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, visibility: e.target.value }))}
-                  className="w-full px-3 py-2 border rounded-md"
-                >
-                  <option value="private">Private</option>
-                  <option value="public">Public</option>
-                  <option value="unlisted">Unlisted</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1">Tags</label>
-                <input
-                  type="text"
-                  value={editForm.tags.join(', ')}
-                  onChange={(e) => setEditForm(prev => ({
-                    ...prev,
-                    tags: e.target.value.split(',').map(tag => tag.trim()).filter(Boolean)
-                  }))}
-                  className="w-full px-3 py-2 border rounded-md"
-                  placeholder="Enter tags separated by commas"
-                />
-              </div>
-            </div>
-            
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                onClick={() => setShowEditModal(false)}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleEditVideo(selectedVideo.id)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-              >
-                Save Changes
-              </button>
-            </div>
-          </div>
+      {showEditModal && (
+        <div className="edit-modal">
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            handleEditVideo(selectedVideo.id);
+          }}>
+            <input 
+              type="text" 
+              value={editForm.title}
+              onChange={(e) => setEditForm({...editForm, title: e.target.value})}
+              placeholder="Video Title"
+            />
+            <textarea 
+              value={editForm.description}
+              onChange={(e) => setEditForm({...editForm, description: e.target.value})}
+              placeholder="Video Description"
+            ></textarea>
+            <select 
+              value={editForm.visibility}
+              onChange={(e) => setEditForm({...editForm, visibility: e.target.value})}
+            >
+              <option value="private">Private</option>
+              <option value="public">Public</option>
+            </select>
+            <button type="submit">Save Changes</button>
+            <button type="button" onClick={() => setShowEditModal(false)}>
+              <X /> Cancel
+            </button>
+          </form>
         </div>
       )}
     </div>

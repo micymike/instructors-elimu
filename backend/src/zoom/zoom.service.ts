@@ -53,8 +53,37 @@ export class ZoomService {
       this.tokenExpiry = Date.now() + (response.data.expires_in * 1000);
       return this.accessToken;
     } catch (error) {
-      const axiosError = error as AxiosError;
-      throw new Error(`Failed to get Zoom access token: ${axiosError.message}`);
+      if (error instanceof AxiosError) {
+        throw new Error(`Failed to get Zoom access token: ${error.response?.data?.message || error.message}`);
+      }
+      throw error;
+    }
+  }
+
+  async getAllMeetings(userId?: string) {
+    try {
+      const accessToken = await this.getAccessToken();
+      const response = await axios.get(`${this.baseUrl}/users/${userId || 'me'}/meetings`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        params: {
+          type: 'scheduled',
+          page_size: 100,
+        },
+      });
+
+      // Sort meetings by start time
+      const sortedMeetings = response.data.meetings.sort((a, b) => 
+        new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+      );
+
+      return sortedMeetings;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        throw new Error(`Failed to get meetings: ${error.response?.data?.message || error.message}`);
+      }
+      throw error;
     }
   }
 
@@ -153,23 +182,58 @@ export class ZoomService {
     }
   }
 
-  async deleteMeeting(meetingId: string) {
-    const token = await this.getAccessToken();
-    
+  async deleteMeeting(meetingId: string, userId?: string) {
     try {
-      await axios.delete(
-        `${this.baseUrl}/meetings/${meetingId}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        }
-      );
+      const accessToken = await this.getAccessToken();
+      await axios.delete(`${this.baseUrl}/meetings/${meetingId}`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        params: {
+          user_id: userId || 'me',
+        },
+      });
 
-      return true;
+      return { message: 'Meeting deleted successfully' };
     } catch (error) {
-      const axiosError = error as AxiosError;
-      throw new Error(`Failed to delete Zoom meeting: ${axiosError.message}`);
+      if (error instanceof AxiosError) {
+        throw new Error(`Failed to delete meeting: ${error.response?.data?.message || error.message}`);
+      }
+      throw error;
+    }
+  }
+
+  async joinMeeting(meetingId: string, userId?: string) {
+    try {
+      const accessToken = await this.getAccessToken();
+      
+      // Fetch meeting details first to get the join URL
+      const meetingResponse = await axios.get(`${this.baseUrl}/meetings/${meetingId}`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        params: {
+          occurrence_id: 'false', // Fetch main meeting details
+        },
+      });
+
+      const meeting = meetingResponse.data;
+      
+      // Check if the meeting has a join URL
+      if (!meeting.join_url) {
+        throw new Error('No join URL available for this meeting');
+      }
+
+      return {
+        joinUrl: meeting.join_url,
+        topic: meeting.topic,
+        startTime: meeting.start_time,
+      };
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        throw new Error(`Failed to get meeting join URL: ${error.response?.data?.message || error.message}`);
+      }
+      throw error;
     }
   }
 }

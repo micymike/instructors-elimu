@@ -506,19 +506,19 @@ ${createCourseDto.resources?.map(resource => `  - ${resource}`).join('\n') || ' 
       const fileUrl = await this.cloudinaryService.uploadFile(file, 'course-materials');
 
       // Add material to course
-      const course = await this.courseService.addCourseMaterial(
-        courseId, 
-        {
-          url: fileUrl,
-          name: file.originalname,
-          type: this.getFileType(file.originalname),
-          uploadedAt: new Date()
-        }
-      );
+      const materialData = {
+        url: fileUrl,
+        name: file.originalname,
+        type: this.getFileType(file.originalname),
+        uploadedAt: new Date(),
+        isDownloadable: true
+      };
+
+      await this.courseService.addMaterial(courseId, materialData);
 
       return {
         message: 'Material added successfully',
-        data: course.materials
+        data: materialData
       };
     } catch (error) {
       console.error('Error adding course material:', error);

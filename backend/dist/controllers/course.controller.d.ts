@@ -61,6 +61,12 @@ export declare class CourseController {
                 description: string;
                 url?: string;
                 duration?: number;
+                scheduledTime?: Date;
+                meetingLink?: string;
+                maxDuration?: number;
+                resourceType?: string;
+                isRequired?: boolean;
+                dueDate?: Date;
             }>;
         }[];
     }>;
@@ -85,7 +91,8 @@ export declare class CourseController {
             name: string;
             type: "pdf" | "video" | "document";
             uploadedAt: Date;
-        }[];
+            isDownloadable: boolean;
+        };
     }>;
     private getFileType;
 }

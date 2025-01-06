@@ -22,6 +22,9 @@ let ZoomController = class ZoomController {
         this.zoomService = zoomService;
         this.notificationService = notificationService;
     }
+    async getAllMeetings(userId) {
+        return this.zoomService.getAllMeetings(userId);
+    }
     async createMeeting(createMeetingDto) {
         return this.zoomService.createMeeting(createMeetingDto.instructorId, {
             topic: createMeetingDto.topic,
@@ -33,6 +36,9 @@ let ZoomController = class ZoomController {
     async getMeeting(meetingId) {
         return this.zoomService.getMeeting(meetingId);
     }
+    async joinMeeting(meetingId, userId) {
+        return this.zoomService.joinMeeting(meetingId, userId);
+    }
     async updateMeeting(meetingId, updateMeetingDto) {
         return this.zoomService.updateMeeting(meetingId, updateMeetingDto);
     }
@@ -41,11 +47,21 @@ let ZoomController = class ZoomController {
         await this.notificationService.notifyGroupMeeting(groupId, meeting);
         return meeting;
     }
-    async deleteMeeting(meetingId) {
-        return this.zoomService.deleteMeeting(meetingId);
+    async deleteMeeting(meetingId, userId) {
+        return this.zoomService.deleteMeeting(meetingId, userId);
     }
 };
 exports.ZoomController = ZoomController;
+__decorate([
+    (0, common_1.Get)('meetings'),
+    (0, swagger_1.ApiOperation)({ summary: 'Get all meetings' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Meetings retrieved successfully' }),
+    (0, swagger_1.ApiQuery)({ name: 'userId', required: false, description: 'Optional user ID to get meetings for' }),
+    __param(0, (0, common_1.Query)('userId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], ZoomController.prototype, "getAllMeetings", null);
 __decorate([
     (0, common_1.Post)('meetings'),
     (0, swagger_1.ApiOperation)({ summary: 'Create a new Zoom meeting' }),
@@ -64,6 +80,16 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], ZoomController.prototype, "getMeeting", null);
+__decorate([
+    (0, common_1.Get)('meetings/:meetingId/join'),
+    (0, swagger_1.ApiOperation)({ summary: 'Get join URL for a specific meeting' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Meeting join URL retrieved successfully' }),
+    __param(0, (0, common_1.Param)('meetingId')),
+    __param(1, (0, common_1.Query)('userId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], ZoomController.prototype, "joinMeeting", null);
 __decorate([
     (0, common_1.Patch)('meetings/:meetingId'),
     (0, swagger_1.ApiOperation)({ summary: 'Update meeting details' }),
@@ -86,11 +112,12 @@ __decorate([
 ], ZoomController.prototype, "createGroupMeeting", null);
 __decorate([
     (0, common_1.Delete)('meetings/:meetingId'),
-    (0, swagger_1.ApiOperation)({ summary: 'Delete a meeting' }),
+    (0, swagger_1.ApiOperation)({ summary: 'Delete a specific meeting' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Meeting deleted successfully' }),
     __param(0, (0, common_1.Param)('meetingId')),
+    __param(1, (0, common_1.Query)('userId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
 ], ZoomController.prototype, "deleteMeeting", null);
 exports.ZoomController = ZoomController = __decorate([

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { MessageCircle, Upload, X } from 'lucide-react';
-import { AIAssistant } from '../course-generator/AIAssistant';
+import AIAssistant from '../course-generator/AIAssistant';
 
 export const CourseForm = () => {
   const [formData, setFormData] = useState({

@@ -373,15 +373,17 @@ ${createCourseDto.resources?.map(resource => `  - ${resource}`).join('\n') || ' 
                 throw new common_1.BadRequestException('No file uploaded');
             }
             const fileUrl = await this.cloudinaryService.uploadFile(file, 'course-materials');
-            const course = await this.courseService.addCourseMaterial(courseId, {
+            const materialData = {
                 url: fileUrl,
                 name: file.originalname,
                 type: this.getFileType(file.originalname),
-                uploadedAt: new Date()
-            });
+                uploadedAt: new Date(),
+                isDownloadable: true
+            };
+            await this.courseService.addMaterial(courseId, materialData);
             return {
                 message: 'Material added successfully',
-                data: course.materials
+                data: materialData
             };
         }
         catch (error) {
