@@ -37,7 +37,7 @@ let CourseService = CourseService_1 = class CourseService {
             }
             const createdCourse = new this.courseModel({
                 ...createCourseDto,
-                instructor: user.email,
+                instructor: { email: user.email },
                 createdAt: new Date(),
                 updatedAt: new Date()
             });
@@ -66,7 +66,7 @@ let CourseService = CourseService_1 = class CourseService {
             });
             let courses;
             if (userId) {
-                courses = await this.courseModel.find({ instructor: userId }).exec();
+                courses = await this.courseModel.find({ 'instructor.email': userId }).exec();
                 this.logger.log(`✅ Courses found for userId ${userId}:`, courses.length);
             }
             else {
@@ -101,14 +101,15 @@ let CourseService = CourseService_1 = class CourseService {
                 timestamp: new Date().toISOString()
             });
             const courses = await this.courseModel.find({
-                $or: [
-                    { instructor: email },
-                    { 'instructor.email': email }
-                ]
+                'instructor.email': email
             }).exec();
             this.logger.log(`✅ Courses found for email ${email}:`, courses.length);
             if (courses.length === 0) {
                 this.logger.warn(`⚠️ No courses found for email: ${email}`);
+                const allCourses = await this.courseModel.find().exec();
+                this.logger.log('Total courses in database:', allCourses.length);
+                const courseInstructorEmails = allCourses.map(course => course.instructor?.email || 'No email');
+                this.logger.log('All course instructor emails:', courseInstructorEmails);
             }
             return courses;
         }
@@ -138,7 +139,7 @@ let CourseService = CourseService_1 = class CourseService {
             if (user.role === 'admin' || user.role === 'superadmin') {
                 return await this.courseModel.find().exec();
             }
-            const courses = await this.courseModel.find({ instructor: user.email }).exec();
+            const courses = await this.courseModel.find({ 'instructor.email': user.email }).exec();
             this.logger.log('✅ Courses Retrieved Successfully', {
                 count: courses.length,
                 userIdentifier: user.email
@@ -157,7 +158,7 @@ let CourseService = CourseService_1 = class CourseService {
         try {
             const course = await this.courseModel.findOne({
                 _id: id,
-                ...(instructorEmail && { instructor: instructorEmail })
+                ...(instructorEmail && { 'instructor.email': instructorEmail })
             });
             if (!course) {
                 throw new common_1.NotFoundException('Course not found or access denied');
@@ -172,41 +173,151 @@ let CourseService = CourseService_1 = class CourseService {
             throw new common_1.InternalServerErrorException('Failed to retrieve course');
         }
     }
+    parseDurationToHours(duration) {
+        if (!duration)
+            return 0;
+        if (duration.totalHours) {
+            return duration.totalHours;
+        }
+        if (duration.weeksDuration) {
+            return duration.weeksDuration * 40;
+        }
+        return 0;
+    }
     async getCourseStats(instructorEmail) {
         try {
             const totalCourses = await this.courseModel.countDocuments({
-                instructor: instructorEmail
+                'instructor.email': instructorEmail
             });
             const activeCourses = await this.courseModel.countDocuments({
-                instructor: instructorEmail,
+                'instructor.email': instructorEmail,
                 status: 'published'
             });
             const totalStudents = await this.courseModel.aggregate([
-                { $match: { instructor: instructorEmail } },
-                { $group: {
+                { $match: { 'instructor.email': instructorEmail } },
+                {
+                    $project: {
+                        studentsCount: {
+                            $cond: {
+                                if: { $isArray: '$students' },
+                                then: { $size: '$students' },
+                                else: 0
+                            }
+                        }
+                    }
+                },
+                {
+                    $group: {
+                        _id: null,
+                        totalStudents: { $sum: '$studentsCount' }
+                    }
+                }
+            ]);
+            const courses = await this.courseModel.find({ 'instructor.email': instructorEmail }, { duration: 1 });
+            const totalHours = courses.reduce((acc, course) => {
+                return acc + this.parseDurationToHours(course.duration);
+            }, 0);
+            return {
+                totalCourses,
+                activeCourses,
+                totalStudents: totalStudents[0]?.totalStudents || 0,
+                teachingHours: Number(totalHours.toFixed(2))
+            };
+        }
+        catch (error) {
+            this.logger.error('Error retrieving course statistics:', error);
+            this.logger.error('Detailed error:', {
+                name: error.name,
+                message: error.message,
+                stack: error.stack
+            });
+            throw new common_1.InternalServerErrorException('Failed to retrieve course statistics');
+        }
+    }
+    async getInstructorStats(instructorEmail) {
+        try {
+            this.logger.log('📊 Fetching Instructor Course Stats', {
+                instructorEmail
+            });
+            const totalCourses = await this.courseModel.countDocuments({
+                'instructor.email': instructorEmail
+            });
+            const activeCourses = await this.courseModel.countDocuments({
+                'instructor.email': instructorEmail,
+                status: 'published'
+            });
+            const studentAggregation = await this.courseModel.aggregate([
+                { $match: { 'instructor.email': instructorEmail } },
+                {
+                    $group: {
                         _id: null,
                         totalStudents: { $sum: { $size: '$students' } }
                     }
                 }
             ]);
-            const teachingHours = await this.courseModel.aggregate([
-                { $match: { instructor: instructorEmail } },
-                { $group: {
+            const teachingHoursAggregation = await this.courseModel.aggregate([
+                { $match: { 'instructor.email': instructorEmail } },
+                {
+                    $group: {
                         _id: null,
-                        totalHours: { $sum: { $toDouble: '$duration' } }
+                        totalTeachingHours: {
+                            $sum: {
+                                $ifNull: ['$duration.totalHours', 0]
+                            }
+                        }
                     }
                 }
+            ]);
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            const recentActivity = await this.courseModel.aggregate([
+                { $match: {
+                        'instructor.email': instructorEmail,
+                        updatedAt: { $gte: thirtyDaysAgo }
+                    } },
+                { $project: {
+                        title: 1,
+                        status: 1,
+                        updatedAt: 1,
+                        students: { $size: '$students' }
+                    } },
+                { $sort: { updatedAt: -1 } },
+                { $limit: 5 }
+            ]);
+            const upcomingSchedule = await this.courseModel.aggregate([
+                { $match: {
+                        'instructor.email': instructorEmail,
+                        'liveSessions.sessionDate': { $gte: new Date() }
+                    } },
+                { $unwind: '$liveSessions' },
+                { $match: {
+                        'liveSessions.sessionDate': { $gte: new Date() }
+                    } },
+                { $project: {
+                        courseTitle: '$title',
+                        sessionTopic: '$liveSessions.topic',
+                        sessionDate: '$liveSessions.sessionDate',
+                        startTime: '$liveSessions.startTime',
+                        endTime: '$liveSessions.endTime'
+                    } },
+                { $sort: { 'sessionDate': 1 } },
+                { $limit: 5 }
             ]);
             return {
                 totalCourses,
                 activeCourses,
-                totalStudents: totalStudents[0]?.totalStudents || 0,
-                teachingHours: teachingHours[0]?.totalHours || 0
+                totalStudents: studentAggregation[0]?.totalStudents || 0,
+                teachingHours: teachingHoursAggregation[0]?.totalTeachingHours || 0,
+                recentActivity,
+                upcomingSchedule
             };
         }
         catch (error) {
-            this.logger.error('Error retrieving course statistics:', error);
-            throw new common_1.InternalServerErrorException('Failed to retrieve course statistics');
+            this.logger.error('❌ Error fetching instructor stats', {
+                message: error.message,
+                instructorEmail
+            });
+            throw new common_1.InternalServerErrorException('Failed to retrieve instructor stats');
         }
     }
     async update(id, updateCourseDto) {
@@ -297,6 +408,119 @@ let CourseService = CourseService_1 = class CourseService {
             ...material,
             isDownloadable: true
         });
+    }
+    async updateCourse(courseId, updateCourseDto, user) {
+        try {
+            this.logger.log('🔄 Updating Course', {
+                courseId,
+                updateData: updateCourseDto,
+                user: user
+            });
+            const course = await this.courseModel.findById(courseId);
+            if (!course) {
+                throw new common_1.NotFoundException('Course not found');
+            }
+            if (user.role !== 'admin' && course.instructor.email !== user.email) {
+                throw new common_1.ForbiddenException('You do not have permission to update this course');
+            }
+            const updatedCourse = await this.courseModel.findByIdAndUpdate(courseId, {
+                ...updateCourseDto,
+                updatedAt: new Date()
+            }, { new: true });
+            if (!updatedCourse) {
+                throw new common_1.InternalServerErrorException('Failed to update course');
+            }
+            this.logger.log('✅ Course Updated Successfully', {
+                courseId: updatedCourse._id,
+                title: updatedCourse.title
+            });
+            return updatedCourse;
+        }
+        catch (error) {
+            this.logger.error('❌ Course Update Error', {
+                message: error.message,
+                courseId,
+                user: user
+            });
+            if (error instanceof common_1.NotFoundException || error instanceof common_1.ForbiddenException) {
+                throw error;
+            }
+            throw new common_1.InternalServerErrorException('Failed to update course');
+        }
+    }
+    async updateCourseContent(courseId, contentData, user) {
+        try {
+            this.logger.log('🔄 Updating Course Content', {
+                courseId,
+                contentData,
+                user: user
+            });
+            const course = await this.findOne(courseId, user.email);
+            if (!course) {
+                throw new common_1.NotFoundException('Course not found');
+            }
+            if (user.role !== 'admin' && course.instructor.email !== user.email) {
+                throw new common_1.ForbiddenException('You do not have permission to update this course content');
+            }
+            const updateObject = {
+                ...contentData,
+                updatedAt: new Date()
+            };
+            Object.keys(updateObject).forEach(key => updateObject[key] === undefined && delete updateObject[key]);
+            const updatedCourse = await this.courseModel.findByIdAndUpdate(courseId, { $set: updateObject }, { new: true, runValidators: true });
+            if (!updatedCourse) {
+                throw new common_1.InternalServerErrorException('Failed to update course content');
+            }
+            this.logger.log('✅ Course Content Updated Successfully', {
+                courseId: updatedCourse._id,
+                updatedFields: Object.keys(updateObject)
+            });
+            return updatedCourse;
+        }
+        catch (error) {
+            this.logger.error('❌ Course Content Update Error', {
+                message: error.message,
+                courseId,
+                user: user.email
+            });
+            if (error instanceof common_1.NotFoundException || error instanceof common_1.ForbiddenException) {
+                throw error;
+            }
+            throw new common_1.InternalServerErrorException(`Failed to update course content: ${error.message}`);
+        }
+    }
+    async deleteCourse(courseId, user) {
+        try {
+            this.logger.log('🗑️ Deleting Course', {
+                courseId,
+                user: user
+            });
+            const course = await this.courseModel.findById(courseId);
+            if (!course) {
+                throw new common_1.NotFoundException('Course not found');
+            }
+            if (user.role !== 'admin' && course.instructor.email !== user.email) {
+                throw new common_1.ForbiddenException('You do not have permission to delete this course');
+            }
+            const result = await this.courseModel.findByIdAndDelete(courseId);
+            if (!result) {
+                throw new common_1.InternalServerErrorException('Failed to delete course');
+            }
+            this.logger.log('✅ Course Deleted Successfully', {
+                courseId
+            });
+        }
+        catch (error) {
+            this.logger.error('❌ Course Deletion Error', {
+                message: error.message,
+                courseId,
+                user: user
+            });
+            if (error instanceof common_1.NotFoundException || error instanceof common_1.ForbiddenException) {
+                throw error;
+            }
+            throw new common_1.InternalServerErrorException('Failed to delete course');
+        }
     }
 };
 exports.CourseService = CourseService;

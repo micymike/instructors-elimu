@@ -1,16 +1,23 @@
 export declare enum CourseLevel {
-    BEGINNER = "beginner",
-    INTERMEDIATE = "intermediate",
-    ADVANCED = "advanced"
+    BEGINNER = "Beginner",
+    INTERMEDIATE = "Intermediate",
+    ADVANCED = "Advanced"
+}
+export declare class InstructorDto {
+    id: string;
+    name: string;
+    email: string;
 }
 export declare class CreateCourseDto {
     title: string;
     description: string;
+    instructor: InstructorDto;
     level: CourseLevel;
-    category: string;
+    category?: string;
     topics?: string[];
     resources?: string[];
-    instructor?: string;
+    price?: number;
+    status?: string;
     createdAt?: Date;
     updatedAt?: Date;
 }

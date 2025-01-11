@@ -19,6 +19,9 @@ const zoom_module_1 = require("./zoom/zoom.module");
 const settings_module_1 = require("./modules/settings.module");
 const content_module_1 = require("./modules/content/content.module");
 const auth_module_1 = require("./modules/auth/auth.module");
+const instructor_stats_gateway_1 = require("./gateways/instructor-stats.gateway");
+const passport_1 = require("@nestjs/passport");
+const jwt_1 = require("@nestjs/jwt");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -37,6 +40,14 @@ exports.AppModule = AppModule = __decorate([
                 }),
                 inject: [config_1.ConfigService],
             }),
+            passport_1.PassportModule.register({
+                defaultStrategy: 'jwt',
+                session: true
+            }),
+            jwt_1.JwtModule.register({
+                secret: process.env.JWT_SECRET,
+                signOptions: { expiresIn: '1d' }
+            }),
             ai_module_1.AIModule,
             course_module_1.CourseModule,
             course_generation_module_1.CourseGenerationModule,
@@ -46,7 +57,7 @@ exports.AppModule = AppModule = __decorate([
             content_module_1.ContentModule,
             auth_module_1.AuthModule,
         ],
-        providers: [gemini_service_1.GeminiService],
+        providers: [gemini_service_1.GeminiService, instructor_stats_gateway_1.InstructorStatsGateway],
     })
 ], AppModule);
 //# sourceMappingURL=app.module.js.map

@@ -11,6 +11,9 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ContentController = void 0;
 const common_1 = require("@nestjs/common");
@@ -18,7 +21,7 @@ const platform_express_1 = require("@nestjs/platform-express");
 const content_service_1 = require("./content.service");
 const jwt_1 = require("@nestjs/jwt");
 const common_2 = require("@nestjs/common");
-const node_fetch_1 = require("node-fetch");
+const node_fetch_1 = __importDefault(require("node-fetch"));
 let ContentController = class ContentController {
     constructor(contentService, jwtService) {
         this.contentService = contentService;

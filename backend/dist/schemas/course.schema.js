@@ -29,8 +29,15 @@ __decorate([
     __metadata("design:type", String)
 ], Course.prototype, "description", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ required: true }),
-    __metadata("design:type", String)
+    (0, mongoose_1.Prop)({
+        type: {
+            id: { type: mongoose_2.Schema.Types.ObjectId, ref: 'User' },
+            name: { type: String, required: true },
+            email: { type: String, required: true }
+        },
+        required: true
+    }),
+    __metadata("design:type", Object)
 ], Course.prototype, "instructor", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ required: true, enum: Object.values(create_course_dto_1.CourseLevel) }),
@@ -145,6 +152,26 @@ __decorate([
         } }),
     __metadata("design:type", Object)
 ], Course.prototype, "courseSettings", void 0);
+__decorate([
+    (0, mongoose_1.Prop)([String]),
+    __metadata("design:type", Array)
+], Course.prototype, "topics", void 0);
+__decorate([
+    (0, mongoose_1.Prop)([String]),
+    __metadata("design:type", Array)
+], Course.prototype, "learningOutcomes", void 0);
+__decorate([
+    (0, mongoose_1.Prop)([String]),
+    __metadata("design:type", Array)
+], Course.prototype, "prerequisites", void 0);
+__decorate([
+    (0, mongoose_1.Prop)([String]),
+    __metadata("design:type", Array)
+], Course.prototype, "resources", void 0);
+__decorate([
+    (0, mongoose_1.Prop)([String]),
+    __metadata("design:type", Array)
+], Course.prototype, "sections", void 0);
 exports.Course = Course = __decorate([
     (0, mongoose_1.Schema)({ timestamps: true })
 ], Course);

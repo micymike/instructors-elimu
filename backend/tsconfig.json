@@ -6,17 +6,19 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
-    "target": "ES2021",
+    "target": "es2017",
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./",
     "incremental": true,
     "skipLibCheck": true,
-    "strict": false,
+    "strictNullChecks": false,
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
+    "esModuleInterop": true,
+    "moduleResolution": "node",
     "types": [
       "node",
       "express"
@@ -29,7 +31,7 @@
   "include": [
     "src/**/*.ts",
     "test/**/*.ts"
-, "src/modules/content/content.controller.js"  ],
+  ],
   "exclude": [
     "node_modules"
   ]

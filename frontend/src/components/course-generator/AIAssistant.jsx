@@ -1,12 +1,50 @@
 import React, { useState } from 'react';
+import { Sparkles, Copy, Check } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
-import { Sparkles, BookOpen, Target, Clock, Brain } from 'lucide-react';
+import { BookOpen, Target, Clock, Brain } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const AIAssistant = () => {
+const AIAssistant = ({ 
+  context = {}, 
+  onSuggestionSelect 
+}) => {
+  const [suggestions, setSuggestions] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [copiedSuggestion, setCopiedSuggestion] = useState(null);
   const navigate = useNavigate();
-  const handleGeneratedCourse = (data) => {
-    console.log('Generated Course:', data);
+
+  const generateSuggestions = async () => {
+    setIsLoading(true);
+    try {
+      // Simulate AI generation with context
+      const mockSuggestions = [
+        `Comprehensive ${context.level || 'Beginner'} course on ${context.title || 'Web Development'} covering fundamental concepts and practical skills.`,
+        `Dive deep into ${context.category || 'Programming'} with this engaging and hands-on learning experience designed for ${context.level || 'aspiring'} professionals.`,
+        `Master the art of ${context.title || 'Software Engineering'} through real-world projects and in-depth theoretical knowledge tailored for ${context.level || 'learners'}.`
+      ];
+
+      setSuggestions(mockSuggestions);
+    } catch (error) {
+      toast.error('Failed to generate suggestions');
+      console.error('AI Suggestion Error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCopySuggestion = (suggestion) => {
+    navigator.clipboard.writeText(suggestion);
+    setCopiedSuggestion(suggestion);
+    toast.success('Suggestion copied!');
+    
+    // Reset copied state after 2 seconds
+    setTimeout(() => setCopiedSuggestion(null), 2000);
+  };
+
+  const handleSelectSuggestion = (suggestion) => {
+    onSuggestionSelect(suggestion);
+    toast.success('Suggestion applied to course description');
   };
 
   const [title, setTitle] = useState('');
@@ -17,7 +55,6 @@ const AIAssistant = () => {
   const [duration, setDuration] = useState('');
   const [price, setPrice] = useState(0);
   const [mode, setMode] = useState('course');
-  const [isLoading, setIsLoading] = useState(false);
   const [generatedCourse, setGeneratedCourse] = useState(null);
 
   const features = [
@@ -259,6 +296,64 @@ const AIAssistant = () => {
               Save Course
             </button>
           </div>
+        )}
+      </div>
+
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-gray-800">AI Course Description Generator</h3>
+          <button
+            onClick={generateSuggestions}
+            disabled={isLoading}
+            className="flex items-center px-3 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+          >
+            <Sparkles className="mr-2 h-4 w-4" />
+            {isLoading ? 'Generating...' : 'Generate Suggestions'}
+          </button>
+        </div>
+
+        {isLoading ? (
+          <div className="flex justify-center items-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-indigo-500"></div>
+          </div>
+        ) : (
+          suggestions.length > 0 && (
+            <div className="space-y-4">
+              {suggestions.map((suggestion, index) => (
+                <div 
+                  key={index} 
+                  className="bg-gray-50 p-4 rounded-lg border border-gray-200 flex items-center justify-between"
+                >
+                  <p className="text-gray-700 mr-4">{suggestion}</p>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => handleCopySuggestion(suggestion)}
+                      className="text-gray-500 hover:text-gray-700"
+                      title="Copy Suggestion"
+                    >
+                      {copiedSuggestion === suggestion ? (
+                        <Check className="h-5 w-5 text-green-500" />
+                      ) : (
+                        <Copy className="h-5 w-5" />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => handleSelectSuggestion(suggestion)}
+                      className="text-indigo-600 hover:text-indigo-800 font-medium"
+                    >
+                      Select
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        )}
+
+        {suggestions.length === 0 && !isLoading && (
+          <p className="text-gray-500 text-center py-8">
+            Click "Generate Suggestions" to get AI-powered course description ideas.
+          </p>
         )}
       </div>
     </div>

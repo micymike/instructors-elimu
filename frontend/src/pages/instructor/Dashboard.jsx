@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Users,
@@ -15,8 +15,10 @@ import UpcomingSchedule from '../../components/dashboard/UpcomingSchedule';
 import RecentActivity from '../../components/dashboard/RecentActivity';
 import StatCard from '../../components/dashboard/StatCard';
 import axios from 'axios';
+import io from 'socket.io-client';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3000';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -29,11 +31,47 @@ const Dashboard = () => {
     totalCourses: 0,
     activeCourses: 0,
     totalStudents: 0,
-    teachingHours: 0
+    teachingHours: 0,
+    recentActivity: [],
+    upcomingSchedule: []
   });
-  const [courseStats, setCourseStats] = useState(null);
+  const [socket, setSocket] = useState(null);
   const [error, setError] = useState(null);
 
+  // Establish socket connection
+  useEffect(() => {
+    const newSocket = io(SOCKET_URL, {
+      auth: {
+        token: localStorage.getItem('token')
+      }
+    });
+
+    newSocket.on('connect', () => {
+      console.log('Socket connected');
+    });
+
+    newSocket.on('instructor_stats_update', (updatedStats) => {
+      setStats(prevStats => ({
+        ...prevStats,
+        ...updatedStats
+      }));
+    });
+
+    newSocket.on('connect_error', (err) => {
+      console.error('Socket connection error:', err);
+    });
+
+    setSocket(newSocket);
+
+    // Cleanup socket on unmount
+    return () => {
+      if (newSocket) {
+        newSocket.disconnect();
+      }
+    };
+  }, []);
+
+  // Fetch initial data
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
@@ -90,7 +128,9 @@ const Dashboard = () => {
         totalCourses: statsData.totalCourses || 0,
         activeCourses: statsData.activeCourses || 0,
         totalStudents: statsData.totalStudents || 0,
-        teachingHours: statsData.teachingHours || 0
+        teachingHours: statsData.teachingHours || 0,
+        recentActivity: statsData.recentActivity || [],
+        upcomingSchedule: statsData.upcomingSchedule || []
       });
     } catch (error) {
       console.error('Error fetching course stats:', error);
@@ -99,39 +139,41 @@ const Dashboard = () => {
         totalCourses: 0,
         activeCourses: 0,
         totalStudents: 0,
-        teachingHours: 0
+        teachingHours: 0,
+        recentActivity: [],
+        upcomingSchedule: []
       });
     }
   };
 
-  // Temporary static stats for testing
+  // Stat cards with dynamic values
   const statCards = [
     {
       name: 'Total Courses',
       value: stats.totalCourses,
       icon: BookOpen,
-      change: '+0%',
+      change: `+${Math.round((stats.totalCourses / (stats.totalCourses || 1)) * 100)}%`,
       changeType: 'positive'
     },
     {
       name: 'Active Courses',
       value: stats.activeCourses,
       icon: BookOpen,
-      change: '+0%',
+      change: `+${Math.round((stats.activeCourses / (stats.totalCourses || 1)) * 100)}%`,
       changeType: 'positive'
     },
     {
       name: 'Total Students',
       value: stats.totalStudents,
       icon: Users,
-      change: '+0%',
+      change: `+${Math.round((stats.totalStudents / (stats.totalCourses * 10 || 1)) * 100)}%`,
       changeType: 'positive'
     },
     {
       name: 'Teaching Hours',
       value: stats.teachingHours,
       icon: Clock,
-      change: '+0%',
+      change: `+${Math.round((stats.teachingHours / (stats.totalCourses * 10 || 1)) * 100)}%`,
       changeType: 'positive'
     }
   ];
@@ -196,53 +238,20 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Course Analytics */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-lg font-semibold">Course Analytics</h2>
-              <select
-                value={selectedTimeRange}
-                onChange={(e) => setSelectedTimeRange(e.target.value)}
-                className="px-3 py-1.5 border rounded-lg text-sm"
-              >
-                <option value="week">This Week</option>
-                <option value="month">This Month</option>
-                <option value="year">This Year</option>
-              </select>
-            </div>
-            <CourseAnalytics timeRange={selectedTimeRange} />
-          </div>
+          <CourseAnalytics />
           
-          <RecentActivity />
+          {/* Recent Activity */}
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-lg font-semibold mb-4">Recent Activity</h2>
+            <RecentActivity activities={stats.recentActivity} />
+          </div>
         </div>
 
-        {/* Right Column - Schedule and Active Courses */}
+        {/* Right Column - Upcoming Schedule */}
         <div className="space-y-6">
-          <UpcomingSchedule />
-          
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-lg font-semibold mb-4">Active Courses</h2>
-            <div className="space-y-3">
-              {courseStats?.activeCoursesList?.map((course, index) => (
-<Link
-  key={index}
-  to={`/instructor/courses/${course.id}/learn`}
-  className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors"
->
-  <div className="flex items-center gap-3">
-    <div className="p-2 bg-blue-50 rounded-lg">
-      <BookOpen className="h-4 w-4 text-blue-600" />
-    </div>
-    <div>
-      <p className="font-medium text-sm">{course.title}</p>
-      <p className="text-xs text-gray-500">
-        {course.students} students • {course.progress}% complete
-      </p>
-    </div>
-  </div>
-  <ArrowRight className="h-4 w-4 text-gray-400" />
-</Link>
-              ))}
-            </div>
+            <h2 className="text-lg font-semibold mb-4">Upcoming Sessions</h2>
+            <UpcomingSchedule sessions={stats.upcomingSchedule} />
           </div>
         </div>
       </div>

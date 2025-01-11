@@ -7,7 +7,11 @@ export declare class Course {
     _id: Types.ObjectId;
     title: string;
     description: string;
-    instructor: string;
+    instructor: {
+        id: Types.ObjectId;
+        name: string;
+        email: string;
+    };
     level: CourseLevel;
     deliveryMethod: string;
     modules: Array<{
@@ -74,6 +78,11 @@ export declare class Course {
             minQuizScore: number;
         };
     };
+    topics?: string[];
+    learningOutcomes?: string[];
+    prerequisites?: string[];
+    resources?: string[];
+    sections?: string[];
 }
 export declare const CourseSchema: MongooseSchema<Course, import("mongoose").Model<Course, any, any, any, Document<unknown, any, Course> & Course & Required<{
     _id: Types.ObjectId;

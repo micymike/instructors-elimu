@@ -24,4 +24,11 @@ export interface Course extends Document {
   students: string[];
   createdAt?: Date;
   updatedAt?: Date;
+
+  // New properties for comprehensive course management
+  topics?: string[];
+  learningOutcomes?: string[];
+  prerequisites?: string[];
+  resources?: string[];
+  sections?: string[];
 }

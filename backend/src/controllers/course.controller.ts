@@ -27,13 +27,22 @@ import axios from 'axios';
 import { Request as ExpressRequest } from 'express';
 import { TokenPayload, User } from '../types/user.interface';
 import { Course as CourseInterface } from '../types/course.interface';
+import { Course as CourseSchema } from '../schemas/course.schema';
 import * as jwt from 'jsonwebtoken';
 import { CourseLevel } from '../dto/create-course.dto';
 import mongoose, { Types } from 'mongoose';
 import { CloudinaryService } from '../modules/cloudinary/cloudinary.service';
+import { 
+  ApiTags, 
+  ApiOperation, 
+  ApiResponse, 
+  ApiBearerAuth 
+} from '@nestjs/swagger';
 
 @Controller('courses')
+@ApiTags('courses')
 export class CourseController {
+  logger: any;
   constructor(
     private readonly courseService: CourseService,
     private readonly notificationService: NotificationService,
@@ -107,7 +116,14 @@ export class CourseController {
   async createCourse(
     @Req() req: ExpressRequest,
     @Body() courseData: CreateCourseDto
-  ): Promise<any> {
+  ): Promise<{ 
+    statusCode: number; 
+    message: string; 
+    data: { 
+      course: CourseSchema & { id: string }; 
+      insights: any 
+    } 
+  }> {
     try {
       console.log(' Course Creation Request', {
         headers: req.headers,
@@ -157,7 +173,7 @@ export class CourseController {
         data: {
           course: {
             ...newCourse,
-            _id: newCourse._id.toString(), // Explicitly convert _id to string
+            _id: newCourse._id,
             id: newCourse._id.toString() // Add id for compatibility
           },
           insights: courseInsights
@@ -185,7 +201,24 @@ export class CourseController {
         Description: ${courseData.description}
         Category: ${courseData.category}
         Level: ${courseData.level}
-        Topics: ${courseData.topics?.join(', ') || 'No specific topics'}`;
+        Topics: ${courseData.topics?.map(topic => `  - ${topic}`).join('\n') || '  - No topics specified'}
+
+        Learning Objectives
+
+        Suggestion: Define specific learning outcomes that students should achieve by the end of the course, such as:
+          - Understand the core concepts of the course
+          - Be able to apply learned skills in practical scenarios
+          - Develop problem-solving skills related to the course topic
+
+        Teaching Methods
+          - Interactive lectures
+          - Hands-on projects
+          - Peer learning
+          - Real-world case studies
+
+        Recommended Resources
+        ${courseData.resources?.map(resource => `  - ${resource}`).join('\n') || '  - No resources specified'}
+`;
 
       const response = await this.geminiService.generateResponse(prompt, 'course_insights');
       
@@ -232,7 +265,7 @@ export class CourseController {
     const user = await this.authenticateRequest(req);
 
     try {
-      const courses = await this.courseService.findAll(user.email);
+      const courses = await this.courseService.findAllByEmail(user.email);
       return {
         message: 'Courses retrieved successfully',
         data: courses
@@ -338,38 +371,106 @@ ${createCourseDto.resources?.map(resource => `  - ${resource}`).join('\n') || ' 
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string, @Req() req: ExpressRequest) {
+  @ApiOperation({ summary: 'Get a specific course by ID' })
+  @ApiResponse({ status: 200, description: 'Course found successfully' })
+  @ApiResponse({ status: 404, description: 'Course not found' })
+  @ApiBearerAuth('JWT-auth')
+  async getCourseById(
+    @Req() req: ExpressRequest,
+    @Param('id') courseId: string
+  ): Promise<CourseSchema> {
     try {
-      // Validate MongoDB ObjectId format
-      if (!Types.ObjectId.isValid(id)) {
-        throw new BadRequestException('Invalid course ID format');
+      // Authenticate the request
+      const user = await this.authenticateRequest(req);
+
+      // Validate course ID
+      if (!mongoose.Types.ObjectId.isValid(courseId)) {
+        throw new BadRequestException('Invalid course ID');
       }
 
-      const user = await this.authenticateRequest(req);
-      const course = await this.courseService.findOne(id);
+      // Find the course, ensuring the user has access
+      const course = await this.courseService.findOne(courseId, user.email);
 
       if (!course) {
         throw new NotFoundException('Course not found');
       }
 
-      // Check if user has access to this course
-      if (course.instructor !== user.email && user.role !== 'admin') {
-        throw new ForbiddenException('You do not have access to this course');
-      }
-
-      return {
-        statusCode: 200,
-        message: 'Course retrieved successfully',
-        data: course
-      };
+      return course;
     } catch (error) {
-      console.error('Error retrieving course:', error);
-      if (error instanceof BadRequestException || 
-          error instanceof NotFoundException || 
-          error instanceof ForbiddenException) {
+      console.error('Get Course Error', {
+        error: error.message,
+        stack: error.stack
+      });
+
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
       }
+
       throw new InternalServerErrorException('Failed to retrieve course');
+    }
+  }
+
+  @Put(':id/content')
+  @ApiOperation({ summary: 'Update course content' })
+  @ApiResponse({ status: 200, description: 'Course content updated successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid course content' })
+  @ApiResponse({ status: 404, description: 'Course not found' })
+  @ApiBearerAuth('JWT-auth')
+  async updateCourseContent(
+    @Req() req: ExpressRequest,
+    @Param('id') courseId: string,
+    @Body() contentData: any
+  ): Promise<CourseSchema> {
+    try {
+      // Authenticate the request
+      const user = await this.authenticateRequest(req);
+
+      // Validate course ID
+      if (!mongoose.Types.ObjectId.isValid(courseId)) {
+        throw new BadRequestException('Invalid course ID');
+      }
+
+      // Update course content
+      const updatedCourse = await this.courseService.updateCourseContent(
+        courseId, 
+        contentData, 
+        { 
+          id: user.id, 
+          email: user.email, 
+          role: user.role 
+        }
+      );
+
+      // Send update notification
+      try {
+        await this.notificationService.create({
+          userId: user.id,
+          title: 'Course Content Updated',
+          message: `Content for course "${updatedCourse.title}" has been updated.`,
+          type: 'info',
+          category: 'course',
+          metadata: {
+            courseId: updatedCourse._id.toString(),
+            instructorId: user.id,
+            actionUrl: `/courses/${updatedCourse._id.toString()}`
+          }
+        });
+      } catch (notificationError) {
+        console.warn('Failed to create notification:', notificationError);
+      }
+
+      return updatedCourse;
+    } catch (error) {
+      console.error('Course Content Update Error', {
+        error: error.message,
+        stack: error.stack
+      });
+
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException('Failed to update course content');
     }
   }
 
@@ -399,20 +500,183 @@ ${createCourseDto.resources?.map(resource => `  - ${resource}`).join('\n') || ' 
     }
   }
 
+  @Get('instructor/stats')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get comprehensive instructor course statistics' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Successfully retrieved instructor course statistics' 
+  })
+  async getInstructorStats(
+    @Req() req: ExpressRequest
+  ): Promise<{
+    statusCode: number;
+    message: string;
+    data: {
+      totalCourses: number;
+      activeCourses: number;
+      totalStudents: number;
+      teachingHours: number;
+      recentActivity: any[];
+      upcomingSchedule: any[];
+    }
+  }> {
+    try {
+      // Authenticate the request
+      const user = await this.authenticateRequest(req);
+
+      // Fetch comprehensive instructor stats
+      const stats = await this.courseService.getInstructorStats(user.email);
+
+      return {
+        statusCode: 200,
+        message: 'Instructor course statistics retrieved successfully',
+        data: stats
+      };
+    } catch (error) {
+      this.logger.error('Error retrieving instructor stats', {
+        error: error.message,
+        stack: error.stack
+      });
+
+      throw new InternalServerErrorException('Failed to retrieve instructor statistics');
+    }
+  }
+
   @Put(':id')
-  async update(
+  @ApiOperation({ summary: 'Update an existing course' })
+  @ApiResponse({ status: 200, description: 'Course successfully updated' })
+  @ApiResponse({ status: 400, description: 'Invalid course data' })
+  @ApiResponse({ status: 404, description: 'Course not found' })
+  @ApiBearerAuth('JWT-auth')
+  async updateCourse(
     @Req() req: ExpressRequest,
-    @Param('id') id: string,
-    @Body() updateCourseDto: UpdateCourseDto
-  ) {
-    const user = await this.authenticateRequest(req);
-    const course = await this.courseService.update(id, updateCourseDto);
-    await this.notificationService.notifyCourseCreated(
-      course._id.toString(), // Convert to string
-      user.id,
-      course.title
-    );
-    return { message: 'Course updated successfully', data: course };
+    @Param('id') courseId: string,
+    @Body() updateData: UpdateCourseDto
+  ): Promise<{ 
+    statusCode: number; 
+    message: string; 
+    data: { 
+      course: CourseSchema & { id: string }; 
+      improvementSuggestions: any 
+    } 
+  }> {
+    try {
+      // Authenticate the request
+      const user = await this.authenticateRequest(req);
+
+      // Validate course ID
+      if (!mongoose.Types.ObjectId.isValid(courseId)) {
+        throw new BadRequestException('Invalid course ID');
+      }
+
+      // Perform course update
+      const updatedCourse: CourseSchema = await this.courseService.updateCourse(
+        courseId, 
+        updateData, 
+        { 
+          id: user.id, 
+          email: user.email, 
+          role: user.role 
+        }
+      );
+
+      // Send update notification
+      try {
+        await this.notificationService.create({
+          userId: user.id,
+          title: 'Course Updated Successfully',
+          message: `Your course "${updatedCourse.title}" has been updated.`,
+          type: 'info',
+          category: 'course',
+          metadata: {
+            courseId: updatedCourse._id.toString(),
+            instructorId: user.id,
+            actionUrl: `/courses/${updatedCourse._id.toString()}`
+          }
+        });
+      } catch (notificationError) {
+        console.warn('Failed to create notification:', notificationError);
+      }
+
+      // Convert Mongoose document to plain object using type assertion
+      const courseObject: CourseInterface = updatedCourse as unknown as CourseInterface;
+
+      // Generate improvement suggestions using the converted object
+      const improvementSuggestions = await this.generateCourseImprovementSuggestions(courseObject);
+
+      return {
+        statusCode: 200,
+        message: 'Course updated successfully',
+        data: {
+          course: {
+            ...updatedCourse,
+            _id: updatedCourse._id,
+            id: updatedCourse._id.toString()
+          },
+          improvementSuggestions
+        }
+      };
+    } catch (error) {
+      console.error('Course Update Error', {
+        error: error.message,
+        stack: error.stack
+      });
+
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException('Failed to update course');
+    }
+  }
+
+  private async generateCourseImprovementSuggestions(course: CourseInterface): Promise<any> {
+    try {
+      const prompt = `Analyze and provide improvement suggestions for a course:
+        Title: ${course.title || 'Untitled Course'}
+        Description: ${course.description || 'No description provided'}
+        Category: ${course.category || 'Uncategorized'}
+        Current Level: ${course.level || 'Not specified'}
+        Existing Topics: ${course.topics?.join(', ') || 'No specific topics'}
+        Learning Outcomes: ${course.learningOutcomes?.join(', ') || 'No specific learning outcomes'}
+        Prerequisites: ${course.prerequisites?.join(', ') || 'No specific prerequisites'}
+        Resources: ${course.resources?.join(', ') || 'No specific resources'}
+        Sections: ${course.sections?.join(', ') || 'No specific sections'}`;
+
+      const response = await this.geminiService.generateResponse(prompt, 'course_improvement');
+      
+      return {
+        aiGeneratedSuggestions: response,
+        potentialEnhancements: this.extractPotentialEnhancements(course)
+      };
+    } catch (error) {
+      console.warn('Failed to generate course improvement suggestions', error);
+      return null;
+    }
+  }
+
+  private extractPotentialEnhancements(course: CourseInterface): string[] {
+    const enhancements: string[] = [];
+
+    // Example enhancement suggestions based on course properties
+    if (!course.learningOutcomes || course.learningOutcomes.length === 0) {
+      enhancements.push('Add clear learning outcomes');
+    }
+
+    if (!course.prerequisites || course.prerequisites.length === 0) {
+      enhancements.push('Define course prerequisites');
+    }
+
+    if (!course.resources || course.resources.length === 0) {
+      enhancements.push('Include additional learning resources');
+    }
+
+    if (!course.sections || course.sections.length < 3) {
+      enhancements.push('Expand course content with more sections');
+    }
+
+    return enhancements;
   }
 
   @Put(':id/content')

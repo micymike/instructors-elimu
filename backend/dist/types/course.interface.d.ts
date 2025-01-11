@@ -23,4 +23,9 @@ export interface Course extends Document {
     students: string[];
     createdAt?: Date;
     updatedAt?: Date;
+    topics?: string[];
+    learningOutcomes?: string[];
+    prerequisites?: string[];
+    resources?: string[];
+    sections?: string[];
 }

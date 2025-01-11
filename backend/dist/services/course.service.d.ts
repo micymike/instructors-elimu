@@ -21,11 +21,20 @@ export declare class CourseService {
         role?: string;
     }): Promise<Course[]>;
     findOne(id: string, instructorEmail?: string): Promise<Course>;
+    private parseDurationToHours;
     getCourseStats(instructorEmail: string): Promise<{
         totalCourses: number;
         activeCourses: number;
         totalStudents: any;
-        teachingHours: any;
+        teachingHours: number;
+    }>;
+    getInstructorStats(instructorEmail: string): Promise<{
+        totalCourses: number;
+        activeCourses: number;
+        totalStudents: number;
+        teachingHours: number;
+        recentActivity: any[];
+        upcomingSchedule: any[];
     }>;
     update(id: string, updateCourseDto: UpdateCourseDto): Promise<Course>;
     remove(id: string): Promise<any>;
@@ -48,4 +57,19 @@ export declare class CourseService {
         type: 'pdf' | 'video' | 'document';
         uploadedAt: Date;
     }): Promise<Course>;
+    updateCourse(courseId: string, updateCourseDto: UpdateCourseDto, user: {
+        id?: string;
+        email?: string;
+        role?: string;
+    }): Promise<Course>;
+    updateCourseContent(courseId: string, contentData: any, user: {
+        id?: string;
+        email?: string;
+        role?: string;
+    }): Promise<Course>;
+    deleteCourse(courseId: string, user: {
+        id?: string;
+        email?: string;
+        role?: string;
+    }): Promise<void>;
 }

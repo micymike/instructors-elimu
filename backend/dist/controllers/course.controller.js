@@ -1,15 +1,51 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CourseController = void 0;
@@ -21,10 +57,11 @@ const course_service_1 = require("../services/course.service");
 const notification_service_1 = require("../notification/notification.service");
 const create_course_dto_1 = require("../dto/create-course.dto");
 const update_course_dto_1 = require("../dto/update-course.dto");
-const jwt = require("jsonwebtoken");
+const jwt = __importStar(require("jsonwebtoken"));
 const create_course_dto_2 = require("../dto/create-course.dto");
-const mongoose_1 = require("mongoose");
+const mongoose_1 = __importDefault(require("mongoose"));
 const cloudinary_service_1 = require("../modules/cloudinary/cloudinary.service");
+const swagger_1 = require("@nestjs/swagger");
 let CourseController = class CourseController {
     constructor(courseService, notificationService, geminiService, cloudinaryService) {
         this.courseService = courseService;
@@ -118,7 +155,7 @@ let CourseController = class CourseController {
                 data: {
                     course: {
                         ...newCourse,
-                        _id: newCourse._id.toString(),
+                        _id: newCourse._id,
                         id: newCourse._id.toString()
                     },
                     insights: courseInsights
@@ -143,7 +180,24 @@ let CourseController = class CourseController {
         Description: ${courseData.description}
         Category: ${courseData.category}
         Level: ${courseData.level}
-        Topics: ${courseData.topics?.join(', ') || 'No specific topics'}`;
+        Topics: ${courseData.topics?.map(topic => `  - ${topic}`).join('\n') || '  - No topics specified'}
+
+        Learning Objectives
+
+        Suggestion: Define specific learning outcomes that students should achieve by the end of the course, such as:
+          - Understand the core concepts of the course
+          - Be able to apply learned skills in practical scenarios
+          - Develop problem-solving skills related to the course topic
+
+        Teaching Methods
+          - Interactive lectures
+          - Hands-on projects
+          - Peer learning
+          - Real-world case studies
+
+        Recommended Resources
+        ${courseData.resources?.map(resource => `  - ${resource}`).join('\n') || '  - No resources specified'}
+`;
             const response = await this.geminiService.generateResponse(prompt, 'course_insights');
             return {
                 aiGeneratedInsights: response,
@@ -179,7 +233,7 @@ let CourseController = class CourseController {
     async getAllCourses(req) {
         const user = await this.authenticateRequest(req);
         try {
-            const courses = await this.courseService.findAll(user.email);
+            const courses = await this.courseService.findAllByEmail(user.email);
             return {
                 message: 'Courses retrieved successfully',
                 data: courses
@@ -266,33 +320,68 @@ ${createCourseDto.resources?.map(resource => `  - ${resource}`).join('\n') || ' 
             }
         };
     }
-    async findOne(id, req) {
+    async getCourseById(req, courseId) {
         try {
-            if (!mongoose_1.Types.ObjectId.isValid(id)) {
-                throw new common_1.BadRequestException('Invalid course ID format');
-            }
             const user = await this.authenticateRequest(req);
-            const course = await this.courseService.findOne(id);
+            if (!mongoose_1.default.Types.ObjectId.isValid(courseId)) {
+                throw new common_1.BadRequestException('Invalid course ID');
+            }
+            const course = await this.courseService.findOne(courseId, user.email);
             if (!course) {
                 throw new common_1.NotFoundException('Course not found');
             }
-            if (course.instructor !== user.email && user.role !== 'admin') {
-                throw new common_1.ForbiddenException('You do not have access to this course');
-            }
-            return {
-                statusCode: 200,
-                message: 'Course retrieved successfully',
-                data: course
-            };
+            return course;
         }
         catch (error) {
-            console.error('Error retrieving course:', error);
-            if (error instanceof common_1.BadRequestException ||
-                error instanceof common_1.NotFoundException ||
-                error instanceof common_1.ForbiddenException) {
+            console.error('Get Course Error', {
+                error: error.message,
+                stack: error.stack
+            });
+            if (error instanceof common_1.NotFoundException || error instanceof common_1.BadRequestException) {
                 throw error;
             }
             throw new common_1.InternalServerErrorException('Failed to retrieve course');
+        }
+    }
+    async updateCourseContent(req, courseId, contentData) {
+        try {
+            const user = await this.authenticateRequest(req);
+            if (!mongoose_1.default.Types.ObjectId.isValid(courseId)) {
+                throw new common_1.BadRequestException('Invalid course ID');
+            }
+            const updatedCourse = await this.courseService.updateCourseContent(courseId, contentData, {
+                id: user.id,
+                email: user.email,
+                role: user.role
+            });
+            try {
+                await this.notificationService.create({
+                    userId: user.id,
+                    title: 'Course Content Updated',
+                    message: `Content for course "${updatedCourse.title}" has been updated.`,
+                    type: 'info',
+                    category: 'course',
+                    metadata: {
+                        courseId: updatedCourse._id.toString(),
+                        instructorId: user.id,
+                        actionUrl: `/courses/${updatedCourse._id.toString()}`
+                    }
+                });
+            }
+            catch (notificationError) {
+                console.warn('Failed to create notification:', notificationError);
+            }
+            return updatedCourse;
+        }
+        catch (error) {
+            console.error('Course Content Update Error', {
+                error: error.message,
+                stack: error.stack
+            });
+            if (error instanceof common_1.BadRequestException) {
+                throw error;
+            }
+            throw new common_1.InternalServerErrorException('Failed to update course content');
         }
     }
     async getCourseStats(req) {
@@ -317,11 +406,116 @@ ${createCourseDto.resources?.map(resource => `  - ${resource}`).join('\n') || ' 
             }
         }
     }
-    async update(req, id, updateCourseDto) {
-        const user = await this.authenticateRequest(req);
-        const course = await this.courseService.update(id, updateCourseDto);
-        await this.notificationService.notifyCourseCreated(course._id.toString(), user.id, course.title);
-        return { message: 'Course updated successfully', data: course };
+    async getInstructorStats(req) {
+        try {
+            const user = await this.authenticateRequest(req);
+            const stats = await this.courseService.getInstructorStats(user.email);
+            return {
+                statusCode: 200,
+                message: 'Instructor course statistics retrieved successfully',
+                data: stats
+            };
+        }
+        catch (error) {
+            this.logger.error('Error retrieving instructor stats', {
+                error: error.message,
+                stack: error.stack
+            });
+            throw new common_1.InternalServerErrorException('Failed to retrieve instructor statistics');
+        }
+    }
+    async updateCourse(req, courseId, updateData) {
+        try {
+            const user = await this.authenticateRequest(req);
+            if (!mongoose_1.default.Types.ObjectId.isValid(courseId)) {
+                throw new common_1.BadRequestException('Invalid course ID');
+            }
+            const updatedCourse = await this.courseService.updateCourse(courseId, updateData, {
+                id: user.id,
+                email: user.email,
+                role: user.role
+            });
+            try {
+                await this.notificationService.create({
+                    userId: user.id,
+                    title: 'Course Updated Successfully',
+                    message: `Your course "${updatedCourse.title}" has been updated.`,
+                    type: 'info',
+                    category: 'course',
+                    metadata: {
+                        courseId: updatedCourse._id.toString(),
+                        instructorId: user.id,
+                        actionUrl: `/courses/${updatedCourse._id.toString()}`
+                    }
+                });
+            }
+            catch (notificationError) {
+                console.warn('Failed to create notification:', notificationError);
+            }
+            const courseObject = updatedCourse;
+            const improvementSuggestions = await this.generateCourseImprovementSuggestions(courseObject);
+            return {
+                statusCode: 200,
+                message: 'Course updated successfully',
+                data: {
+                    course: {
+                        ...updatedCourse,
+                        _id: updatedCourse._id,
+                        id: updatedCourse._id.toString()
+                    },
+                    improvementSuggestions
+                }
+            };
+        }
+        catch (error) {
+            console.error('Course Update Error', {
+                error: error.message,
+                stack: error.stack
+            });
+            if (error instanceof common_1.BadRequestException) {
+                throw error;
+            }
+            throw new common_1.InternalServerErrorException('Failed to update course');
+        }
+    }
+    async generateCourseImprovementSuggestions(course) {
+        try {
+            const prompt = `Analyze and provide improvement suggestions for a course:
+        Title: ${course.title || 'Untitled Course'}
+        Description: ${course.description || 'No description provided'}
+        Category: ${course.category || 'Uncategorized'}
+        Current Level: ${course.level || 'Not specified'}
+        Existing Topics: ${course.topics?.join(', ') || 'No specific topics'}
+        Learning Outcomes: ${course.learningOutcomes?.join(', ') || 'No specific learning outcomes'}
+        Prerequisites: ${course.prerequisites?.join(', ') || 'No specific prerequisites'}
+        Resources: ${course.resources?.join(', ') || 'No specific resources'}
+        Sections: ${course.sections?.join(', ') || 'No specific sections'}`;
+            const response = await this.geminiService.generateResponse(prompt, 'course_improvement');
+            return {
+                aiGeneratedSuggestions: response,
+                potentialEnhancements: this.extractPotentialEnhancements(course)
+            };
+        }
+        catch (error) {
+            console.warn('Failed to generate course improvement suggestions', error);
+            return null;
+        }
+    }
+    extractPotentialEnhancements(course) {
+        const enhancements = [];
+        if (!course.learningOutcomes || course.learningOutcomes.length === 0) {
+            enhancements.push('Add clear learning outcomes');
+        }
+        if (!course.prerequisites || course.prerequisites.length === 0) {
+            enhancements.push('Define course prerequisites');
+        }
+        if (!course.resources || course.resources.length === 0) {
+            enhancements.push('Include additional learning resources');
+        }
+        if (!course.sections || course.sections.length < 3) {
+            enhancements.push('Expand course content with more sections');
+        }
+        return enhancements;
     }
     async updateContent(id, updateContentDto, req) {
         const user = await this.authenticateRequest(req);
@@ -446,12 +640,30 @@ __decorate([
 ], CourseController.prototype, "generateCourse", null);
 __decorate([
     (0, common_1.Get)(':id'),
-    __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Req)()),
+    (0, swagger_1.ApiOperation)({ summary: 'Get a specific course by ID' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Course found successfully' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Course not found' }),
+    (0, swagger_1.ApiBearerAuth)('JWT-auth'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", Promise)
-], CourseController.prototype, "findOne", null);
+], CourseController.prototype, "getCourseById", null);
+__decorate([
+    (0, common_1.Put)(':id/content'),
+    (0, swagger_1.ApiOperation)({ summary: 'Update course content' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Course content updated successfully' }),
+    (0, swagger_1.ApiResponse)({ status: 400, description: 'Invalid course content' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Course not found' }),
+    (0, swagger_1.ApiBearerAuth)('JWT-auth'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Param)('id')),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String, Object]),
+    __metadata("design:returntype", Promise)
+], CourseController.prototype, "updateCourseContent", null);
 __decorate([
     (0, common_1.Get)('instructor/stats'),
     __param(0, (0, common_1.Req)()),
@@ -460,14 +672,32 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], CourseController.prototype, "getCourseStats", null);
 __decorate([
+    (0, common_1.Get)('instructor/stats'),
+    (0, swagger_1.ApiBearerAuth)(),
+    (0, swagger_1.ApiOperation)({ summary: 'Get comprehensive instructor course statistics' }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: 'Successfully retrieved instructor course statistics'
+    }),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], CourseController.prototype, "getInstructorStats", null);
+__decorate([
     (0, common_1.Put)(':id'),
+    (0, swagger_1.ApiOperation)({ summary: 'Update an existing course' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Course successfully updated' }),
+    (0, swagger_1.ApiResponse)({ status: 400, description: 'Invalid course data' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Course not found' }),
+    (0, swagger_1.ApiBearerAuth)('JWT-auth'),
     __param(0, (0, common_1.Req)()),
     __param(1, (0, common_1.Param)('id')),
     __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, String, update_course_dto_1.UpdateCourseDto]),
     __metadata("design:returntype", Promise)
-], CourseController.prototype, "update", null);
+], CourseController.prototype, "updateCourse", null);
 __decorate([
     (0, common_1.Put)(':id/content'),
     __param(0, (0, common_1.Param)('id')),
@@ -539,6 +769,7 @@ __decorate([
 ], CourseController.prototype, "addCourseMaterial", null);
 exports.CourseController = CourseController = __decorate([
     (0, common_1.Controller)('courses'),
+    (0, swagger_1.ApiTags)('courses'),
     __metadata("design:paramtypes", [course_service_1.CourseService,
         notification_service_1.NotificationService,
         gemini_service_1.GeminiService,

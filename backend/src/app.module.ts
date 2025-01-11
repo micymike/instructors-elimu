@@ -10,6 +10,9 @@ import { ZoomModule } from './zoom/zoom.module';
 import { SettingsModule } from './modules/settings.module';
 import { ContentModule } from './modules/content/content.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { InstructorStatsGateway } from './gateways/instructor-stats.gateway';
+import { PassportModule } from '@nestjs/passport';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
   imports: [
@@ -25,6 +28,14 @@ import { AuthModule } from './modules/auth/auth.module';
       }),
       inject: [ConfigService],
     }),
+    PassportModule.register({ 
+      defaultStrategy: 'jwt',
+      session: true 
+    }),
+    JwtModule.register({
+      secret: process.env.JWT_SECRET,
+      signOptions: { expiresIn: '1d' }
+    }),
     AIModule,
     CourseModule,
     CourseGenerationModule,
@@ -34,6 +45,6 @@ import { AuthModule } from './modules/auth/auth.module';
     ContentModule,
     AuthModule,
   ],
-  providers: [GeminiService],
+  providers: [GeminiService, InstructorStatsGateway],
 })
 export class AppModule {}

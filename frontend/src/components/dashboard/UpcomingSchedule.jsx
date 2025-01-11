@@ -1,58 +1,42 @@
 import React from 'react';
-import { Card } from '../ui/Card';
-import { Badge } from '../ui/Badge';
+import { Calendar, Clock } from 'lucide-react';
+import { format, formatDistance } from 'date-fns';
 
-const UpcomingSchedule = () => {
-  const schedules = [
-    {
-      id: 1,
-      title: 'Introduction to React',
-      time: '10:00 AM - 11:30 AM',
-      date: 'Today',
-      type: 'lecture',
-      status: 'default'
-    },
-    {
-      id: 2,
-      title: 'JavaScript Fundamentals',
-      time: '2:00 PM - 3:30 PM',
-      date: 'Tomorrow',
-      type: 'workshop',
-      status: 'secondary'
-    },
-    {
-      id: 3,
-      title: 'Project Review',
-      time: '4:00 PM - 5:00 PM',
-      date: 'Jan 28',
-      type: 'meeting',
-      status: 'outline'
-    }
-  ];
+const UpcomingSchedule = ({ sessions = [] }) => {
+  if (sessions.length === 0) {
+    return (
+      <div className="text-center text-gray-500 py-4">
+        No upcoming sessions
+      </div>
+    );
+  }
 
   return (
-    <Card>
-      <div className="p-6">
-        <h3 className="text-lg font-semibold mb-4">Upcoming Schedule</h3>
-        <div className="space-y-4">
-          {schedules.map((schedule) => (
-            <div key={schedule.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center space-x-3">
-                <Badge variant={schedule.status}>{schedule.type}</Badge>
-                <div>
-                  <p className="font-medium">{schedule.title}</p>
-                  <div className="flex items-center space-x-2 text-sm text-gray-500">
-                    <span>{schedule.date}</span>
-                    <span>•</span>
-                    <span>{schedule.time}</span>
-                  </div>
-                </div>
-              </div>
+    <div className="space-y-3">
+      {sessions.map((session, index) => (
+        <div 
+          key={index} 
+          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+        >
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-50 rounded-lg">
+              <Calendar className="h-4 w-4 text-blue-600" />
             </div>
-          ))}
+            <div>
+              <p className="font-medium text-sm">
+                {session.sessionTopic || 'Course Session'}
+              </p>
+              <p className="text-xs text-gray-500">
+                {session.courseTitle} • {format(new Date(session.sessionDate), 'MMM dd, yyyy')}
+              </p>
+            </div>
+          </div>
+          <div className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
+            {session.startTime} - {session.endTime}
+          </div>
         </div>
-      </div>
-    </Card>
+      ))}
+    </div>
   );
 };
 

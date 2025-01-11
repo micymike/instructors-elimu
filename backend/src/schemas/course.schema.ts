@@ -17,8 +17,19 @@ export class Course {
   @Prop({ required: true })
   description: string;
 
-  @Prop({ required: true })
-  instructor: string;
+  @Prop({ 
+    type: {
+      id: { type: MongooseSchema.Types.ObjectId, ref: 'User' },
+      name: { type: String, required: true },
+      email: { type: String, required: true }
+    },
+    required: true 
+  })
+  instructor: {
+    id: Types.ObjectId;
+    name: string;
+    email: string;
+  };
 
   @Prop({ required: true, enum: Object.values(CourseLevel) })
   level: CourseLevel;
@@ -172,6 +183,21 @@ export class Course {
       minQuizScore: number;
     };
   };
+
+  @Prop([String])
+  topics?: string[];
+
+  @Prop([String])
+  learningOutcomes?: string[];
+
+  @Prop([String])
+  prerequisites?: string[];
+
+  @Prop([String])
+  resources?: string[];
+
+  @Prop([String])
+  sections?: string[];
 }
 
 export const CourseSchema = SchemaFactory.createForClass(Course);

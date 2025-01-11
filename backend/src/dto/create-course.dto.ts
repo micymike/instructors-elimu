@@ -1,24 +1,54 @@
-import { IsString, IsOptional, IsArray, IsEnum } from 'class-validator';
+import { 
+  IsString, 
+  IsNotEmpty, 
+  IsOptional, 
+  IsArray, 
+  IsEnum, 
+  ValidateNested, 
+  IsNumber 
+} from 'class-validator';
+import { Type } from 'class-transformer';
 
 export enum CourseLevel {
-  BEGINNER = 'beginner',
-  INTERMEDIATE = 'intermediate',
-  ADVANCED = 'advanced'
+  BEGINNER = 'Beginner',
+  INTERMEDIATE = 'Intermediate',
+  ADVANCED = 'Advanced'
+}
+
+export class InstructorDto {
+  @IsString()
+  @IsNotEmpty()
+  id: string;
+
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @IsString()
+  @IsNotEmpty()
+  email: string;
 }
 
 export class CreateCourseDto {
   @IsString()
+  @IsNotEmpty()
   title: string;
 
   @IsString()
+  @IsNotEmpty()
   description: string;
+
+  @ValidateNested()
+  @Type(() => InstructorDto)
+  instructor: InstructorDto;
 
   @IsString()
   @IsEnum(CourseLevel)
   level: CourseLevel;
 
+  @IsOptional()
   @IsString()
-  category: string;
+  category?: string;
 
   @IsOptional()
   @IsArray()
@@ -29,8 +59,15 @@ export class CreateCourseDto {
   @IsArray()
   resources?: string[];
 
+  @IsOptional()
+  @IsNumber()
+  price?: number;
+
+  @IsOptional()
+  @IsString()
+  status?: string;
+
   // These will be added by the backend
-  instructor?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }

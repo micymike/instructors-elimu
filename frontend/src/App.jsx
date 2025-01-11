@@ -29,8 +29,10 @@ import {
   Students
 } from './pages/instructor';
 import Content from './pages/instructor/Content';
-//import CreateCourse from './pages/instructor/CreateCourse';
+import CreateCourse from './pages/instructor/CreateCourse';
+import CourseDetails from './pages/instructor/CourseDetails';
 import VideoManagement from './pages/instructor/VideoManagement';
+import EditCourse from './pages/instructor/EditCourse'; // Added import statement
 
 const router = createBrowserRouter([
   {
@@ -121,9 +123,24 @@ const router = createBrowserRouter([
         errorElement: <div>Error loading Schedule page</div>
       },
       {
+        path: 'courses/new',
+        element: <CreateCourse />,
+        errorElement: <div>Error loading Create Course page</div>
+      },
+      {
+        path: 'courses/:courseId',
+        element: <CourseDetails />,
+        errorElement: <div>Error loading Course Details page</div>
+      },
+      {
+        path: 'courses/:courseId/edit',
+        element: <EditCourse />,
+        errorElement: <div>Error loading Edit Course page</div>
+      },
+      {
         path: '',
-        element: <Navigate to="dashboard" replace />,
-        errorElement: <div>Error loading Dashboard page</div>
+        element: <Navigate to="courses/new" replace />,
+        errorElement: <div>Error loading Course Creation page</div>
       }
     ]
   },
