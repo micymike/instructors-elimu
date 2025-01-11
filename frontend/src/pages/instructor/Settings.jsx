@@ -1,10 +1,175 @@
-import React, { useState, useRef } from 'react';
-import { Settings, Bell, Shield, UserCircle, Mail, Key, Globe, Book, Upload } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Settings, Bell, Shield, UserCircle, Mail, Key, Globe, Book, Upload, Trash2 } from 'lucide-react';
 import axios from 'axios';
+import { settingsAPI } from '../../services/api';
+import toast from 'react-hot-toast';
 
 const InstructorSettings = () => {
   const fileInputRef = useRef(null);
-  const [profileImage, setProfileImage] = useState(null);
+
+  // Profile Picture State
+  const [profilePicture, setProfilePicture] = useState({
+    preview: null,
+    file: null
+  });
+
+  // Profile Form State
+  const [profileForm, setProfileForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    expertise: '',
+    bio: ''
+  });
+
+  // Password Form State
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+
+  // Fetch initial settings on component mount
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await settingsAPI.getSettings();
+        const { personalInfo } = response.data;
+        
+        // Populate profile form
+        setProfileForm({
+          firstName: personalInfo.firstName || '',
+          lastName: personalInfo.lastName || '',
+          email: personalInfo.email || '',
+          phone: personalInfo.phone || '',
+          expertise: personalInfo.expertise || '',
+          bio: personalInfo.bio || ''
+        });
+
+        // Set existing profile picture
+        if (personalInfo.profilePicture) {
+          setProfilePicture({
+            preview: personalInfo.profilePicture,
+            file: null
+          });
+        }
+      } catch (error) {
+        console.error('Settings fetch error:', error);
+      }
+    };
+
+    fetchSettings();
+  }, []);
+
+  // Handle file upload
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size must be less than 5MB');
+      return;
+    }
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (!validTypes.includes(file.type)) {
+      alert('Only JPEG, PNG, and GIF files are allowed');
+      return;
+    }
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      try {
+        // Upload to server
+        const uploadResponse = await settingsAPI.uploadProfilePicture(file);
+        
+        // Update state with server response
+        setProfilePicture({
+          preview: uploadResponse.profilePictureUrl,
+          file: file
+        });
+
+        alert('Profile picture uploaded successfully');
+      } catch (error) {
+        alert('Failed to upload profile picture');
+        console.error('Profile picture upload error:', error);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Remove profile picture
+  const handleRemoveProfilePicture = async () => {
+    try {
+      // Assuming there's an API method to remove profile picture
+      await settingsAPI.updateProfile({ profilePicture: null });
+      
+      setProfilePicture({
+        preview: null,
+        file: null
+      });
+      
+      alert('Profile picture removed');
+    } catch (error) {
+      alert('Failed to remove profile picture');
+      console.error('Profile picture removal error:', error);
+    }
+  };
+
+  // Update profile details
+  const handleProfileUpdate = async (e) => {
+    e.preventDefault();
+    try {
+      await settingsAPI.updateProfile({
+        firstName: profileForm.firstName,
+        lastName: profileForm.lastName,
+        email: profileForm.email,
+        phone: profileForm.phone,
+        expertise: profileForm.expertise,
+        bio: profileForm.bio,
+        profilePicture: profilePicture.preview
+      });
+      toast.success('Profile updated successfully');
+    } catch (error) {
+      toast.error('Failed to update profile');
+      console.error('Profile update error:', error);
+    }
+  };
+
+  // Change password
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    
+    // Validate password
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      alert('New passwords do not match');
+      return;
+    }
+
+    try {
+      await settingsAPI.changePassword({
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword
+      });
+      
+      alert('Password changed successfully');
+      
+      // Reset password form
+      setPasswordForm({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+    } catch (error) {
+      alert('Failed to change password');
+      console.error('Password change error:', error);
+    }
+  };
+
   const [notifications, setNotifications] = useState({
     emailNotifications: true,
     courseUpdates: true,
@@ -17,38 +182,6 @@ const InstructorSettings = () => {
     showRatings: true,
     showCourseCount: true
   });
-
-  const [passwordForm, setPasswordForm] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  });
-
-  const [passwordError, setPasswordError] = useState('');
-
-  const handlePasswordChange = (e) => {
-    const { name, value } = e.target;
-    setPasswordForm(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    setPasswordError('');
-  };
-
-  const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert('File size should be less than 5MB');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfileImage(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
 
   const handleNotificationChange = (key) => {
     setNotifications(prev => ({
@@ -64,49 +197,66 @@ const InstructorSettings = () => {
     }));
   };
 
-  const handlePasswordSubmit = async (e) => {
-    e.preventDefault();
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      setPasswordError('Passwords do not match');
-      return;
-    }
-    try {
-      const response = await axios.post('https://eba3-102-0-10-118.ngrok-free.app/api/change-password', {
-        currentPassword: passwordForm.currentPassword,
-        newPassword: passwordForm.newPassword,
-      });
-      if (response.data.success) {
-        alert('Password changed successfully');
-      } else {
-        setPasswordError(response.data.message);
-      }
-    } catch (error) {
-      setPasswordError('An error occurred while changing the password');
-    }
-  };
-
-  const handleProfileUpdate = async () => {
-    try {
-      const response = await axios.post('https://eba3-102-0-10-118.ngrok-free.app/api/update-profile', {
-        profileImage,
-        // Add other profile fields here
-      });
-      if (response.data.success) {
-        alert('Profile updated successfully');
-      } else {
-        alert('Failed to update profile');
-      }
-    } catch (error) {
-      alert('An error occurred while updating the profile');
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto p-6">
         <div className="flex items-center mb-8">
           <Settings className="w-8 h-8 text-blue-600 mr-3" />
           <h1 className="text-3xl font-bold text-gray-900">Instructor Settings</h1>
+        </div>
+
+        {/* Profile Picture Section */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <div className="flex items-center mb-4">
+            <UserCircle className="w-6 h-6 text-blue-600 mr-2" />
+            <h2 className="text-xl font-semibold text-gray-800">Profile Picture</h2>
+          </div>
+          
+          <div className="flex items-center space-x-6">
+            <div className="shrink-0">
+              <div className="h-32 w-32 rounded-full overflow-hidden bg-gray-100">
+                {profilePicture.preview ? (
+                  <img 
+                    src={profilePicture.preview} 
+                    alt="Profile" 
+                    className="h-full w-full object-cover" 
+                  />
+                ) : (
+                  <div className="h-full w-full flex items-center justify-center bg-gray-100">
+                    <UserCircle className="w-20 h-20 text-gray-400" />
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center space-x-4">
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+                accept="image/jpeg,image/png,image/gif"
+                className="hidden"
+              />
+              <button
+                onClick={() => fileInputRef.current.click()}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                Upload Photo
+              </button>
+              {profilePicture.preview && (
+                <button
+                  onClick={handleRemoveProfilePicture}
+                  className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Remove
+                </button>
+              )}
+            </div>
+          </div>
+          <p className="mt-2 text-sm text-gray-500">
+            Allowed formats: PNG, JPEG, GIF. Max file size: 5MB.
+          </p>
         </div>
 
         {/* Profile Section */}
@@ -116,40 +266,6 @@ const InstructorSettings = () => {
             <h2 className="text-xl font-semibold text-gray-800">Profile Settings</h2>
           </div>
           
-          {/* Profile Picture Upload */}
-          <div className="mb-6">
-            <div className="flex items-center space-x-6">
-              <div className="shrink-0">
-                <div className="h-32 w-32 rounded-full overflow-hidden bg-gray-100">
-                  {profileImage ? (
-                    <img src={profileImage} alt="Profile" className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="h-full w-full flex items-center justify-center bg-gray-100">
-                      <UserCircle className="w-20 h-20 text-gray-400" />
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileUpload}
-                  accept="image/*"
-                  className="hidden"
-                />
-                <button
-                  onClick={() => fileInputRef.current.click()}
-                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  Upload Photo
-                </button>
-                <p className="mt-1 text-sm text-gray-500">PNG, JPG up to 5MB</p>
-              </div>
-            </div>
-          </div>
-
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">Display Name</label>
@@ -182,14 +298,14 @@ const InstructorSettings = () => {
             <Key className="w-6 h-6 text-blue-600 mr-2" />
             <h2 className="text-xl font-semibold text-gray-800">Change Password</h2>
           </div>
-          <form onSubmit={handlePasswordSubmit} className="space-y-4">
+          <form onSubmit={handlePasswordChange} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">Current Password</label>
               <input
                 type="password"
                 name="currentPassword"
                 value={passwordForm.currentPassword}
-                onChange={handlePasswordChange}
+                onChange={(e) => setPasswordForm(prev => ({ ...prev, [e.target.name]: e.target.value }))}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
             </div>
@@ -199,7 +315,7 @@ const InstructorSettings = () => {
                 type="password"
                 name="newPassword"
                 value={passwordForm.newPassword}
-                onChange={handlePasswordChange}
+                onChange={(e) => setPasswordForm(prev => ({ ...prev, [e.target.name]: e.target.value }))}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
             </div>
@@ -209,13 +325,10 @@ const InstructorSettings = () => {
                 type="password"
                 name="confirmPassword"
                 value={passwordForm.confirmPassword}
-                onChange={handlePasswordChange}
+                onChange={(e) => setPasswordForm(prev => ({ ...prev, [e.target.name]: e.target.value }))}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
             </div>
-            {passwordError && (
-              <p className="text-red-500 text-sm">{passwordError}</p>
-            )}
             <button
               type="submit"
               className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"

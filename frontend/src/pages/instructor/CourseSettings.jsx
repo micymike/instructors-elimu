@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { courseAPI } from '../../services/api';
 import { 
   Save, 
   ArrowLeft, 
@@ -26,22 +27,8 @@ const CourseSettings = () => {
     const fetchCourse = async () => {
       try {
         setIsLoading(true);
-        const token = localStorage.getItem('token');
-        if (!token) {
-          navigate('/login');
-          return;
-        }
-
-        const response = await axios.get(
-          `http://localhost:3000/api/courses/${id}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        setCourse(response.data.data);
+        const response = await courseAPI.getCourse(id);
+        setCourse(response);
       } catch (error) {
         console.error('Error fetching course:', error);
         toast.error('Failed to load course settings');
@@ -65,22 +52,7 @@ const CourseSettings = () => {
   const handleSaveSettings = async () => {
     try {
       setIsSaving(true);
-      const token = localStorage.getItem('token');
-      if (!token) {
-        navigate('/login');
-        return;
-      }
-
-      await axios.put(
-        `http://localhost:3000/api/courses/${id}`,
-        course,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
+      await courseAPI.updateCourse(id, course);
       toast.success('Course settings saved successfully');
     } catch (error) {
       console.error('Error saving settings:', error);

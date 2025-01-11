@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Play, Book, FileText, CheckCircle, Loader } from 'lucide-react';
 import axios from 'axios';
 import { useToast } from '../../hooks/useToast';
+import { courseAPI, courseProgressAPI } from '../../services/api';
 
 const CourseLearning = () => {
     const [course, setCourse] = useState(null);
@@ -21,61 +22,37 @@ const CourseLearning = () => {
             navigate('/instructor/courses');
             return;
         }
-        fetchCourse();
-        fetchProgress();
+        const fetchCourseData = async () => {
+            try {
+                const courseResponse = await courseAPI.getCourse(courseId);
+                setCourse(courseResponse);
+
+                const progressResponse = await courseProgressAPI.getCourseProgress(courseId);
+                setProgress(progressResponse.progress);
+            } catch (error) {
+                console.error('Error fetching course data:', error);
+                toast.error('Failed to fetch course data');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchCourseData();
     }, [courseId, navigate]);
 
-const fetchCourse = async () => {
-    try {
-        const token = localStorage.getItem('token');
-        const response = await axios.get(`http://localhost:3000/api/courses/${courseId}`, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
-
-        if (!response.data || !response.data.sections) {
-            throw new Error('Invalid course data');
-        }
-
-        setCourse(response.data);
-    } catch (error) {
-        console.error('Error fetching course:', error);
-        if (error.response.status === 404) {
-            toast.error('Course not found');
-        } else {
-            toast.error('Failed to fetch course');
-        }
-        navigate('/instructor/courses');
-    } finally {
-        setIsLoading(false);
-    }
-};
-
-    const fetchProgress = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get(`http://localhost:3000/api/courses/${courseId}/progress`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setProgress(response.data || {});
-        } catch (error) {
-            console.error('Failed to fetch progress:', error);
-            setProgress({});
-        }
-    };
-
-    const markComplete = async (itemId) => {
+    const handleProgressUpdate = async (itemId) => {
         if (!itemId) return;
 
         try {
-            const token = localStorage.getItem('token');
-            await axios.post(`http://localhost:3000/api/courses/${courseId}/progress`, {
-                itemId,
-                completed: true
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
+            await courseProgressAPI.updateCourseProgress(courseId, {
+                completedContent: itemId,
+                timestamp: new Date().toISOString()
             });
-            fetchProgress();
-            toast.success('Progress updated');
+            toast.success('Progress updated successfully');
+            
+            // Refresh progress
+            const progressResponse = await courseProgressAPI.getCourseProgress(courseId);
+            setProgress(progressResponse.progress);
         } catch (error) {
             console.error('Error updating progress:', error);
             toast.error('Failed to update progress');
@@ -170,7 +147,7 @@ const fetchCourse = async () => {
                                 </div>
                             )}
                             <button
-                                onClick={() => markComplete(currentContent.id)}
+                                onClick={() => handleProgressUpdate(currentContent.id)}
                                 className="mt-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
                             >
                                 Mark as Complete

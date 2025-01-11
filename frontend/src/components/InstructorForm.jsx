@@ -9,6 +9,7 @@ import BlobButton from './ui/BlobButton';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { API_URL } from '../config';
+import { authAPI } from '../services/api';
 
 // Move InputField outside the main component
 const InputField = ({ 
@@ -91,6 +92,8 @@ const InstructorForm = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -101,40 +104,20 @@ const InstructorForm = () => {
     }));
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    const instructorData = {
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      email: formData.email.toLowerCase(),
-      password: formData.password,
-      phoneNumber: formData.phoneNumber,
-      expertise: formData.expertise,
-      bio: formData.bio,
-      education: formData.education,
-      experience: formData.experience,
-      teachingAreas: [formData.expertise],
-    };
-
-    if (!instructorData.email || !instructorData.password) {
-      toast.error('Email and password are required');
-      return;
-    }
-
-    if (instructorData.password !== formData.confirmPassword) {
-      toast.error('Passwords do not match');
-      return;
-    }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
 
     try {
-      const response = await axios.post(`${API_URL}/api/instructors/register`, instructorData);
-      if (response.data) {
-        toast.success('Registration successful!');
-        navigate('/login');
-      }
+      await authAPI.register(formData);
+      toast.success('Registration successful! Please check your email to verify your account.');
+      navigate('/login');
     } catch (error) {
-      console.error('Submission error:', error);
-      toast.error(error.response?.data?.message || 'Registration failed');
+      console.error('Registration error:', error);
+      setError(error.response?.data?.message || 'Failed to register. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 

@@ -41,6 +41,7 @@ import {
 import { DateTimePicker } from '@mui/x-date-pickers';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { courseAPI, liveSessionAPI } from '../../services/api';
 
 const CourseContentManager = () => {
   const { id } = useParams();
@@ -85,20 +86,12 @@ const CourseContentManager = () => {
         }
 
         // Fetch course details
-        const courseResponse = await axios.get(
-          `http://localhost:3000/api/courses/${id}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        setCourse(courseResponse.data.data);
+        const courseResponse = await courseAPI.getCourse(id);
+        setCourse(courseResponse);
 
         // If there are modules, set the first one as active
-        if (courseResponse.data.data.modules?.length > 0) {
-          setActiveModule(courseResponse.data.data.modules[0]._id);
+        if (courseResponse.modules?.length > 0) {
+          setActiveModule(courseResponse.modules[0]._id);
         }
       } catch (error) {
         console.error('Error fetching course:', error);
@@ -363,18 +356,14 @@ const CourseContentManager = () => {
 
   const handleDeleteLiveSession = async (sessionId) => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`/api/live-sessions/${id}/${sessionId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
+      await liveSessionAPI.deleteLiveSession(id, sessionId);
+      toast.success('Live session deleted successfully');
+      
       // Remove session from course state
       setCourse(prev => ({
         ...prev,
         liveSessions: prev.liveSessions.filter(session => session._id !== sessionId)
       }));
-
-      toast.success('Live session deleted successfully');
     } catch (error) {
       toast.error('Failed to delete live session');
     }

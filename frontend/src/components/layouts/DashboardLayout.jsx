@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { settingsAPI } from '../../services/api';
 import {
   BarChart2, BookOpen, Video, Users, Calendar, Settings,
   LogOut, Menu, X, Layers, UserPlus, FileText,
   GraduationCap, Bell, Plus, ChevronDown
 } from 'lucide-react';
-
-const API_URL = 'http://localhost:3000/api';
 
 const DashboardLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -26,14 +24,9 @@ const DashboardLayout = () => {
           return;
         }
 
-        const response = await axios.get(`${API_URL}/settings`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        if (response.data && response.data.data) {
-          setUser(response.data.data.personalInfo || response.data.data);
+        const response = await settingsAPI.getSettings();
+        if (response && response.data) {
+          setUser(response.data.personalInfo || response.data);
         }
       } catch (error) {
         console.error('Error fetching settings:', error);

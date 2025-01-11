@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, Clock, Users, Video, Plus, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import axios from 'axios';
 import { useToast } from '../../hooks/useToast';
+import { scheduleAPI } from '../../services/api';
 
 const Schedule = () => {
   const [events, setEvents] = useState([]);
@@ -27,38 +28,30 @@ const Schedule = () => {
   };
 
   useEffect(() => {
-    fetchEvents();
-  }, [selectedDate]);
+    const fetchEvents = async () => {
+      try {
+        const response = await scheduleAPI.getSchedule();
+        setEvents(response.events);
+      } catch (error) {
+        console.error('Error fetching events:', error);
+        toast.error('Failed to fetch events');
+      }
+    };
 
-  const fetchEvents = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:3000/api/schedule', {
-        headers: { Authorization: `Bearer ${token}` },
-        params: {
-          month: selectedDate.getMonth() + 1,
-          year: selectedDate.getFullYear()
-        }
-      });
-      setEvents(response.data);
-    } catch (error) {
-      toast.error('No schedule at the moment');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    fetchEvents();
+  }, []);
 
   const handleCreateEvent = async () => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.post('http://localhost:3000/api/schedule', newEvent, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await scheduleAPI.createEvent(newEvent);
       toast.success('Event created successfully');
+      // Refresh events
+      const response = await scheduleAPI.getSchedule();
+      setEvents(response.events);
       setIsModalOpen(false);
-      fetchEvents();
     } catch (error) {
-      toast.error('Failed to create event');
+      console.error('Error adding event:', error);
+      toast.error('Failed to add event');
     }
   };
 

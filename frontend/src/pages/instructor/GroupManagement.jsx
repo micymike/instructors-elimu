@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { PlusCircle, Users, AlertCircle, Loader2, UserPlus, School, Trash2 } from 'lucide-react';
+import { groupAPI } from '../../services/api';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
@@ -20,29 +21,20 @@ const GroupManagement = () => {
   const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
+    const fetchGroups = async () => {
+      try {
+        const response = await groupAPI.getAllGroups();
+        setGroups(response.groups);
+      } catch (error) {
+        console.error('Error fetching groups:', error);
+        setError(error.response?.data?.message || 'Error fetching groups');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchGroups();
   }, []);
-
-  const fetchGroups = async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/groups`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      if (response.data) {
-        setGroups(response.data);
-      }
-    } catch (error) {
-      setError(error.response?.data?.message || 'Error fetching groups');
-      console.error('Error fetching groups:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -58,28 +50,19 @@ const GroupManagement = () => {
       setIsSubmitting(true);
       setError(null);
       
-      const token = localStorage.getItem('token');
-      const response = await axios.post(`${API_URL}/groups`, {
+      await groupAPI.createGroup({
         name: formData.groupName,
         instructorId: formData.instructorId,
         studentIds: formData.studentIds.split(',').map(id => id.trim()).filter(Boolean)
-      }, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
       });
-
-      if (response.data) {
-        const newGroup = response.data;
-        setGroups(prev => [...prev, newGroup]);
-        setFormData({
-          groupName: '',
-          instructorId: '',
-          studentIds: ''
-        });
-        setShowForm(false);
-      }
+      const response = await groupAPI.getAllGroups();
+      setGroups(response.groups);
+      setFormData({
+        groupName: '',
+        instructorId: '',
+        studentIds: ''
+      });
+      setShowForm(false);
     } catch (error) {
       setError(error.response?.data?.message || 'Error creating group');
       console.error('Error creating group:', error);
