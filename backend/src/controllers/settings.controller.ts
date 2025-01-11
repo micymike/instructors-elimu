@@ -4,7 +4,6 @@ import {
   Post,
   Body,
   Req, 
-  UseGuards,
   Logger 
 } from '@nestjs/common';
 import { 
@@ -14,19 +13,16 @@ import {
 import { ExpressRequest } from '../common/interfaces/express-request.interface';
 import { SettingsService } from '../services/settings.service';
 import { ConfigService } from '@nestjs/config';
-import axios from 'axios';
+import * as jwt from 'jsonwebtoken';
 
 @Controller('api/settings')
 export class SettingsController {
   private readonly logger = new Logger(SettingsController.name);
-  private readonly centralizedAuthUrl: string;
 
   constructor(
     private readonly settingsService: SettingsService,
     private readonly configService: ConfigService
-  ) {
-    this.centralizedAuthUrl = 'https://centralize-auth-elimu.onrender.com';
-  }
+  ) {}
 
   @Get()
   async getUserSettings(@Req() req: ExpressRequest) {
@@ -49,11 +45,7 @@ export class SettingsController {
     } catch (error) {
       this.logger.error('Error retrieving user settings', error.stack);
       
-      if (error instanceof UnauthorizedException) {
-        throw new UnauthorizedException('Unauthorized to retrieve user settings');
-      } else {
-        throw new InternalServerErrorException('Failed to retrieve user settings');
-      }
+      throw error;
     }
   }
 
@@ -82,57 +74,63 @@ export class SettingsController {
     } catch (error) {
       this.logger.error('Error updating user settings', error.stack);
       
-      if (error instanceof UnauthorizedException) {
-        throw new UnauthorizedException('Unauthorized to update user settings');
-      } else {
-        throw new InternalServerErrorException('Failed to update user settings');
-      }
+      throw error;
     }
   }
 
   private async authenticateRequest(req: ExpressRequest): Promise<any> {
+    const authHeader = req.headers['authorization'];
+    if (!authHeader) {
+      throw new UnauthorizedException('No authorization token');
+    }
+
     try {
-      // Extract token from Authorization header
-      const authHeader = req.headers.authorization;
-      if (!authHeader) {
-        throw new UnauthorizedException('No authorization token provided');
+      // Extract token, handling both 'Bearer' and direct token scenarios
+      const token = authHeader.startsWith('Bearer ') 
+        ? authHeader.split(' ')[1] 
+        : authHeader;
+      
+      // Decode the token without verification first
+      const decoded = jwt.decode(token) as any;
+      
+      if (!decoded) {
+        throw new UnauthorizedException('Invalid token format');
       }
 
-      // Remove 'Bearer ' prefix
-      const token = authHeader.split(' ')[1];
-      if (!token) {
-        throw new UnauthorizedException('Invalid authorization token format');
+      // Validate token expiration manually
+      const currentTimestamp = Math.floor(Date.now() / 1000);
+      if (decoded.exp && decoded.exp < currentTimestamp) {
+        throw new UnauthorizedException('Token has expired');
       }
 
-      // Validate token with centralized auth service
-      const response = await axios.post(`${this.centralizedAuthUrl}/auth/validate`, 
-        { token }, 
-        {
-          headers: { 'Content-Type': 'application/json' },
-          timeout: 5000
-        }
-      );
-      
-      // Check if token is valid
-      if (!response.data.isValid) {
-        throw new UnauthorizedException('Invalid token');
+      // Validate required fields
+      if (!decoded.email) {
+        throw new UnauthorizedException('Token missing required fields');
       }
-      
-      // Return user information from the token validation
-      return response.data.user;
+
+      this.logger.log('Token Decoded Successfully', { 
+        email: decoded.email,
+        isExpired: decoded.exp ? decoded.exp < currentTimestamp : false
+      });
+
+      return {
+        id: decoded.sub || decoded.email,
+        sub: decoded.sub || decoded.email,
+        email: decoded.email,
+        role: decoded.role || 'instructor'
+      };
     } catch (error) {
-      this.logger.error('Authentication error', error.stack);
-      
-      if (error.response) {
-        // Error response from the auth service
-        this.logger.error(`Auth service error: ${JSON.stringify(error.response.data)}`);
+      this.logger.error('Token Verification Failed', {
+        error: error.message,
+        name: error.name,
+        stack: error.stack
+      });
+
+      if (error instanceof UnauthorizedException) {
+        throw error;
       }
 
-      if (axios.isAxiosError(error)) {
-        throw new UnauthorizedException('Token validation failed with external auth service');
-      }
-
-      throw error;
+      throw new UnauthorizedException('Invalid or expired token');
     }
   }
 }

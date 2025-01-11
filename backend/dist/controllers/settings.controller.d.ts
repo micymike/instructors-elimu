@@ -5,7 +5,6 @@ export declare class SettingsController {
     private readonly settingsService;
     private readonly configService;
     private readonly logger;
-    private readonly centralizedAuthUrl;
     constructor(settingsService: SettingsService, configService: ConfigService);
     getUserSettings(req: ExpressRequest): Promise<{
         message: string;

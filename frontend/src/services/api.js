@@ -109,7 +109,7 @@ export const settingsAPI = {
       throw new Error('No authentication token found');
     }
 
-    const response = await api.get('/api/settings', {
+    const response = await api.get('/api/api/settings', {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -123,7 +123,7 @@ export const settingsAPI = {
       throw new Error('No authentication token found');
     }
 
-    const response = await api.post('/api/settings', {
+    const response = await api.post('/api/api/settings', {
       personalInfo: profileData
     }, {
       headers: {
