@@ -28,6 +28,7 @@
     "@tiptap/extension-task-list": "^2.10.4",
     "@tiptap/react": "^2.10.4",
     "@tiptap/starter-kit": "^2.10.4",
+    "@vitejs/plugin-react": "^4.3.4",
     "axios": "^1.4.0",
     "clsx": "^2.1.1",
     "date-fns": "^2.30.0",
@@ -53,7 +54,6 @@
   "devDependencies": {
     "@types/react": "^18.2.15",
     "@types/react-dom": "^18.2.7",
-    "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.14",
     "eslint": "^8.45.0",
     "eslint-plugin-react": "^7.32.2",
