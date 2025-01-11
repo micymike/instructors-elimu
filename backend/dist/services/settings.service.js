@@ -103,15 +103,60 @@ let SettingsService = SettingsService_1 = class SettingsService {
                 this.logger.error('No email provided');
                 throw new common_1.InternalServerErrorException('Email is required');
             }
-            const updateFields = {
-                firstName: settingsData.firstName || settingsData.personalInfo?.firstName,
-                lastName: settingsData.lastName || settingsData.personalInfo?.lastName,
-                phoneNumber: settingsData.phone || settingsData.personalInfo?.phone,
-                expertise: settingsData.expertise || settingsData.personalInfo?.expertise,
-                bio: settingsData.bio || settingsData.personalInfo?.bio
-            };
-            if (settingsData.profilePicture) {
-                updateFields.profilePicture = settingsData.profilePicture.data || settingsData.profilePicture;
+            const existingInstructor = await this.instructorModel.findOne({ email });
+            if (!existingInstructor) {
+                this.logger.error(`Instructor not found with email: ${email}`);
+                throw new common_1.InternalServerErrorException(`Instructor not found with email: ${email}`);
+            }
+            const updateFields = {};
+            const personalInfo = settingsData.personalInfo || settingsData;
+            if (personalInfo) {
+                if (personalInfo.firstName)
+                    updateFields.firstName = personalInfo.firstName;
+                if (personalInfo.lastName)
+                    updateFields.lastName = personalInfo.lastName;
+                if (personalInfo.phone)
+                    updateFields.phoneNumber = personalInfo.phone;
+                if (personalInfo.expertise)
+                    updateFields.expertise = personalInfo.expertise;
+                if (personalInfo.bio)
+                    updateFields.bio = personalInfo.bio;
+            }
+            if (personalInfo && personalInfo.profilePicture) {
+                updateFields.profilePicture = personalInfo.profilePicture.data
+                    || personalInfo.profilePicture
+                    || existingInstructor.profilePicture;
+            }
+            if (Object.keys(updateFields).length === 0) {
+                this.logger.warn('No valid update fields provided');
+                return {
+                    personalInfo: {
+                        firstName: existingInstructor.firstName,
+                        lastName: existingInstructor.lastName,
+                        email: existingInstructor.email,
+                        phone: existingInstructor.phoneNumber,
+                        expertise: existingInstructor.expertise,
+                        bio: existingInstructor.bio,
+                        profilePicture: existingInstructor.profilePicture ? {
+                            data: existingInstructor.profilePicture,
+                            contentType: 'image/jpeg',
+                            originalName: 'profile_picture'
+                        } : null
+                    },
+                    preferences: {
+                        notifications: true,
+                        language: 'en',
+                        theme: 'light'
+                    },
+                    teachingProfile: {
+                        phoneNumber: existingInstructor.phoneNumber,
+                        experience: existingInstructor.experience,
+                        education: existingInstructor.education,
+                        certification: existingInstructor.certification,
+                        teachingAreas: existingInstructor.teachingAreas,
+                        bio: existingInstructor.bio
+                    }
+                };
             }
             const updatedInstructor = await this.instructorModel.findOneAndUpdate({ email }, { $set: updateFields }, {
                 new: true,
@@ -156,7 +201,8 @@ let SettingsService = SettingsService_1 = class SettingsService {
                 errorName: error.name,
                 errorMessage: error.message,
                 errorStack: error.stack,
-                email: email
+                email: email,
+                settingsData: settingsData
             });
             throw new common_1.InternalServerErrorException({
                 message: 'Failed to update instructor settings',

@@ -112,18 +112,64 @@ export class SettingsService {
         throw new InternalServerErrorException('Email is required');
       }
 
-      // Prepare update fields
-      const updateFields: any = {
-        firstName: settingsData.firstName || settingsData.personalInfo?.firstName,
-        lastName: settingsData.lastName || settingsData.personalInfo?.lastName,
-        phoneNumber: settingsData.phone || settingsData.personalInfo?.phone,
-        expertise: settingsData.expertise || settingsData.personalInfo?.expertise,
-        bio: settingsData.bio || settingsData.personalInfo?.bio
-      };
+      // Find the instructor first to ensure they exist
+      const existingInstructor = await this.instructorModel.findOne({ email });
+      if (!existingInstructor) {
+        this.logger.error(`Instructor not found with email: ${email}`);
+        throw new InternalServerErrorException(`Instructor not found with email: ${email}`);
+      }
+
+      // Prepare update fields with null checks and fallbacks
+      const updateFields: any = {};
+
+      // Personal Info Fields
+      const personalInfo = settingsData.personalInfo || settingsData;
+      if (personalInfo) {
+        if (personalInfo.firstName) updateFields.firstName = personalInfo.firstName;
+        if (personalInfo.lastName) updateFields.lastName = personalInfo.lastName;
+        if (personalInfo.phone) updateFields.phoneNumber = personalInfo.phone;
+        if (personalInfo.expertise) updateFields.expertise = personalInfo.expertise;
+        if (personalInfo.bio) updateFields.bio = personalInfo.bio;
+      }
 
       // Handle profile picture update
-      if (settingsData.profilePicture) {
-        updateFields.profilePicture = settingsData.profilePicture.data || settingsData.profilePicture;
+      if (personalInfo && personalInfo.profilePicture) {
+        updateFields.profilePicture = personalInfo.profilePicture.data 
+          || personalInfo.profilePicture 
+          || existingInstructor.profilePicture;
+      }
+
+      // Validate that we have something to update
+      if (Object.keys(updateFields).length === 0) {
+        this.logger.warn('No valid update fields provided');
+        return {
+          personalInfo: {
+            firstName: existingInstructor.firstName,
+            lastName: existingInstructor.lastName,
+            email: existingInstructor.email,
+            phone: existingInstructor.phoneNumber,
+            expertise: existingInstructor.expertise,
+            bio: existingInstructor.bio,
+            profilePicture: existingInstructor.profilePicture ? {
+              data: existingInstructor.profilePicture,
+              contentType: 'image/jpeg',
+              originalName: 'profile_picture'
+            } : null
+          },
+          preferences: {
+            notifications: true,
+            language: 'en',
+            theme: 'light'
+          },
+          teachingProfile: {
+            phoneNumber: existingInstructor.phoneNumber,
+            experience: existingInstructor.experience,
+            education: existingInstructor.education,
+            certification: existingInstructor.certification,
+            teachingAreas: existingInstructor.teachingAreas,
+            bio: existingInstructor.bio
+          }
+        };
       }
 
       // Update instructor
@@ -177,7 +223,8 @@ export class SettingsService {
         errorName: error.name,
         errorMessage: error.message,
         errorStack: error.stack,
-        email: email
+        email: email,
+        settingsData: settingsData
       });
 
       // Rethrow with more context
