@@ -14,16 +14,19 @@ import {
 import { ExpressRequest } from '../common/interfaces/express-request.interface';
 import { SettingsService } from '../services/settings.service';
 import { ConfigService } from '@nestjs/config';
-import * as jwt from 'jsonwebtoken';
+import axios from 'axios';
 
 @Controller('api/settings')
 export class SettingsController {
   private readonly logger = new Logger(SettingsController.name);
+  private readonly centralizedAuthUrl: string;
 
   constructor(
     private readonly settingsService: SettingsService,
     private readonly configService: ConfigService
-  ) {}
+  ) {
+    this.centralizedAuthUrl = 'https://centralize-auth-elimu.onrender.com';
+  }
 
   @Get()
   async getUserSettings(@Req() req: ExpressRequest) {
@@ -101,28 +104,32 @@ export class SettingsController {
         throw new UnauthorizedException('Invalid authorization token format');
       }
 
-      // Verify token using JWT secret from config
-      const jwtSecret = this.configService.get<string>('JWT_SECRET');
-      if (!jwtSecret) {
-        throw new InternalServerErrorException('JWT secret not configured');
-      }
-
-      // Decode and verify the token
-      const decoded = jwt.verify(token, jwtSecret) as any;
+      // Validate token with centralized auth service
+      const response = await axios.post(`${this.centralizedAuthUrl}/auth/validate`, 
+        { token }, 
+        {
+          headers: { 'Content-Type': 'application/json' },
+          timeout: 5000
+        }
+      );
       
-      // Validate decoded token
-      if (!decoded || !decoded.email) {
-        throw new UnauthorizedException('Invalid token payload');
+      // Check if token is valid
+      if (!response.data.isValid) {
+        throw new UnauthorizedException('Invalid token');
       }
-
-      return decoded;
+      
+      // Return user information from the token validation
+      return response.data.user;
     } catch (error) {
       this.logger.error('Authentication error', error.stack);
       
-      if (error instanceof jwt.TokenExpiredError) {
-        throw new UnauthorizedException('Token has expired');
-      } else if (error instanceof jwt.JsonWebTokenError) {
-        throw new UnauthorizedException('Invalid token');
+      if (error.response) {
+        // Error response from the auth service
+        this.logger.error(`Auth service error: ${JSON.stringify(error.response.data)}`);
+      }
+
+      if (axios.isAxiosError(error)) {
+        throw new UnauthorizedException('Token validation failed with external auth service');
       }
 
       throw error;
