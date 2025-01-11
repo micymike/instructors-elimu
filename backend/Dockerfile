@@ -1,5 +1,5 @@
 # Use official Node.js LTS image
-FROM node:20-alpine
+FROM node:18-alpine
 
 # Set working directory
 WORKDIR /app
@@ -11,7 +11,7 @@ RUN apk add --no-cache python3 make g++
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci --only=production
+RUN npm ci
 
 # Copy source code
 COPY . .
@@ -19,11 +19,11 @@ COPY . .
 # Build the application
 RUN npm run build
 
-# Expose port
-EXPOSE 3000
+# Expose port (Render requires this)
+EXPOSE $PORT
 
 # Set environment to production
 ENV NODE_ENV=production
 
 # Start the server
-CMD ["npm", "run", "start:prod"]
+CMD ["sh", "-c", "npm run start:prod"]

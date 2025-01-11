@@ -141,7 +141,8 @@ async function bootstrap() {
   // Use custom socket.io adapter
   app.useWebSocketAdapter(new CustomIoAdapter(app));
 
-  const port = process.env.PORT || 3000;
+  // Use dynamic port for Render
+  const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
   await app.listen(port);
   console.log(`Application is running on: ${await app.getUrl()}`);
 }

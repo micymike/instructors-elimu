@@ -134,7 +134,7 @@ async function bootstrap() {
     app.use(passport_1.default.initialize());
     app.use(passport_1.default.session());
     app.useWebSocketAdapter(new CustomIoAdapter(app));
-    const port = process.env.PORT || 3000;
+    const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
     await app.listen(port);
     console.log(`Application is running on: ${await app.getUrl()}`);
 }
