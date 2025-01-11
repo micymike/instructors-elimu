@@ -2,10 +2,11 @@ services:
   - type: web
     name: elimu-global-frontend
     env: static
-    buildCommand: npm install -g vite && npm install && npm run build
+    buildCommand: npm install && npm run build
     staticPublishPath: dist
     envVars:
       - key: VITE_BACKEND_URL
         value: https://instructors-elimu.onrender.com
       - key: VITE_GOOGLE_CLIENT_ID
         value: 116398057296-fvei9hl0h0ap1onm4nrq1eudum44b82o.apps.googleusercontent.com
+    nodeVersion: 18.17.0
