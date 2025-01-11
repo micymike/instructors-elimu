@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Settings, Bell, Shield, UserCircle, Mail, Key, Globe, Book, Upload, Trash2 } from 'lucide-react';
+import { Settings, Bell, Shield, UserCircle, Mail, Key, Globe, Book, Upload, Trash2, Loader2 } from 'lucide-react';
 import axios from 'axios';
 import { settingsAPI } from '../../services/api';
 import toast from 'react-hot-toast';
@@ -30,6 +30,10 @@ const InstructorSettings = () => {
     confirmPassword: ''
   });
 
+  // Loading States
+  const [isProfileUpdating, setIsProfileUpdating] = useState(false);
+  const [isPasswordChanging, setIsPasswordChanging] = useState(false);
+
   // Fetch initial settings on component mount
   useEffect(() => {
     const fetchSettings = async () => {
@@ -55,6 +59,7 @@ const InstructorSettings = () => {
           });
         }
       } catch (error) {
+        toast.error('Failed to load profile settings');
         console.error('Settings fetch error:', error);
       }
     };
@@ -93,9 +98,9 @@ const InstructorSettings = () => {
           file: file
         });
 
-        alert('Profile picture uploaded successfully');
+        toast.success('Profile picture uploaded successfully');
       } catch (error) {
-        alert('Failed to upload profile picture');
+        toast.error('Failed to upload profile picture');
         console.error('Profile picture upload error:', error);
       }
     };
@@ -113,9 +118,9 @@ const InstructorSettings = () => {
         file: null
       });
       
-      alert('Profile picture removed');
+      toast.success('Profile picture removed');
     } catch (error) {
-      alert('Failed to remove profile picture');
+      toast.error('Failed to remove profile picture');
       console.error('Profile picture removal error:', error);
     }
   };
@@ -123,20 +128,30 @@ const InstructorSettings = () => {
   // Update profile details
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
+    setIsProfileUpdating(true);
     try {
-      await settingsAPI.updateProfile({
+      const updateData = {
         firstName: profileForm.firstName,
         lastName: profileForm.lastName,
         email: profileForm.email,
         phone: profileForm.phone,
         expertise: profileForm.expertise,
-        bio: profileForm.bio,
-        profilePicture: profilePicture.preview
-      });
+        bio: profileForm.bio
+      };
+
+      // If there's a new profile picture, include it
+      if (profilePicture.file) {
+        const uploadResponse = await settingsAPI.uploadProfilePicture(profilePicture.file);
+        updateData.profilePicture = uploadResponse.profilePictureUrl;
+      }
+
+      await settingsAPI.updateProfile(updateData);
       toast.success('Profile updated successfully');
     } catch (error) {
       toast.error('Failed to update profile');
       console.error('Profile update error:', error);
+    } finally {
+      setIsProfileUpdating(false);
     }
   };
 
@@ -146,17 +161,18 @@ const InstructorSettings = () => {
     
     // Validate password
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      alert('New passwords do not match');
+      toast.error('New passwords do not match');
       return;
     }
 
+    setIsPasswordChanging(true);
     try {
       await settingsAPI.changePassword({
         currentPassword: passwordForm.currentPassword,
         newPassword: passwordForm.newPassword
       });
       
-      alert('Password changed successfully');
+      toast.success('Password changed successfully');
       
       // Reset password form
       setPasswordForm({
@@ -165,8 +181,10 @@ const InstructorSettings = () => {
         confirmPassword: ''
       });
     } catch (error) {
-      alert('Failed to change password');
+      toast.error(error.response?.data?.message || 'Failed to change password');
       console.error('Password change error:', error);
+    } finally {
+      setIsPasswordChanging(false);
     }
   };
 
@@ -260,7 +278,7 @@ const InstructorSettings = () => {
         </div>
 
         {/* Profile Section */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <form onSubmit={handleProfileUpdate} className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex items-center mb-4">
             <UserCircle className="w-6 h-6 text-blue-600 mr-2" />
             <h2 className="text-xl font-semibold text-gray-800">Profile Settings</h2>
@@ -271,6 +289,8 @@ const InstructorSettings = () => {
               <label className="block text-sm font-medium text-gray-700">Display Name</label>
               <input
                 type="text"
+                value={profileForm.firstName + ' ' + profileForm.lastName}
+                onChange={(e) => setProfileForm(prev => ({ ...prev, firstName: e.target.value.split(' ')[0], lastName: e.target.value.split(' ')[1] }))}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 placeholder="Dr. John Doe"
               />
@@ -278,27 +298,43 @@ const InstructorSettings = () => {
             <div>
               <label className="block text-sm font-medium text-gray-700">Bio</label>
               <textarea
+                value={profileForm.bio}
+                onChange={(e) => setProfileForm(prev => ({ ...prev, bio: e.target.value }))}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 rows="3"
                 placeholder="Tell your students about yourself..."
               />
             </div>
-            <button
-              onClick={handleProfileUpdate}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            <button 
+              type="submit" 
+              disabled={isProfileUpdating}
+              className={`
+                w-full px-4 py-2 rounded-md text-white font-medium transition-colors duration-200
+                ${isProfileUpdating 
+                  ? 'bg-blue-400 cursor-not-allowed' 
+                  : 'bg-blue-600 hover:bg-blue-700'
+                }
+              `}
             >
-              Save Changes
+              {isProfileUpdating ? (
+                <div className="flex items-center justify-center">
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Updating Profile...
+                </div>
+              ) : (
+                'Update Profile'
+              )}
             </button>
           </div>
-        </div>
+        </form>
 
         {/* Password Change Section */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <form onSubmit={handlePasswordChange} className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex items-center mb-4">
             <Key className="w-6 h-6 text-blue-600 mr-2" />
             <h2 className="text-xl font-semibold text-gray-800">Change Password</h2>
           </div>
-          <form onSubmit={handlePasswordChange} className="space-y-4">
+          <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">Current Password</label>
               <input
@@ -329,14 +365,28 @@ const InstructorSettings = () => {
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
             </div>
-            <button
-              type="submit"
-              className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            <button 
+              type="submit" 
+              disabled={isPasswordChanging}
+              className={`
+                w-full px-4 py-2 rounded-md text-white font-medium transition-colors duration-200
+                ${isPasswordChanging 
+                  ? 'bg-blue-400 cursor-not-allowed' 
+                  : 'bg-blue-600 hover:bg-blue-700'
+                }
+              `}
             >
-              Update Password
+              {isPasswordChanging ? (
+                <div className="flex items-center justify-center">
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Changing Password...
+                </div>
+              ) : (
+                'Change Password'
+              )}
             </button>
-          </form>
-        </div>
+          </div>
+        </form>
 
         {/* Notifications Section */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">

@@ -51,9 +51,9 @@ let SettingsService = SettingsService_1 = class SettingsService {
                     firstName: instructor.firstName,
                     lastName: instructor.lastName,
                     email: instructor.email,
-                    role: instructor.status === 'active' ? 'instructor' : 'pending',
-                    isVerified: instructor.isVerified,
+                    phone: instructor.phoneNumber,
                     expertise: instructor.expertise,
+                    bio: instructor.bio,
                     profilePicture: instructor.profilePicture
                 },
                 preferences: {
@@ -80,6 +80,74 @@ let SettingsService = SettingsService_1 = class SettingsService {
             });
             throw new common_1.InternalServerErrorException({
                 message: 'Failed to retrieve instructor settings',
+                details: {
+                    email: email,
+                    errorMessage: error.message
+                }
+            });
+        }
+    }
+    async updateUserSettings(email, settingsData) {
+        try {
+            this.logger.log(`Attempting to update settings for email: ${email}`);
+            this.logger.log(`Update data: ${JSON.stringify(settingsData)}`);
+            if (!email) {
+                this.logger.error('No email provided');
+                throw new common_1.InternalServerErrorException('Email is required');
+            }
+            const updateFields = settingsData.personalInfo || settingsData;
+            const updatedInstructor = await this.instructorModel.findOneAndUpdate({ email }, {
+                $set: {
+                    firstName: updateFields.firstName,
+                    lastName: updateFields.lastName,
+                    phoneNumber: updateFields.phone,
+                    expertise: updateFields.expertise,
+                    bio: updateFields.bio,
+                    profilePicture: updateFields.profilePicture
+                }
+            }, {
+                new: true,
+                runValidators: true
+            });
+            if (!updatedInstructor) {
+                this.logger.error(`No instructor found with email: ${email}`);
+                throw new common_1.InternalServerErrorException(`Instructor not found with email: ${email}`);
+            }
+            this.logger.log(`Instructor updated successfully: ${JSON.stringify(updatedInstructor)}`);
+            return {
+                personalInfo: {
+                    firstName: updatedInstructor.firstName,
+                    lastName: updatedInstructor.lastName,
+                    email: updatedInstructor.email,
+                    phone: updatedInstructor.phoneNumber,
+                    expertise: updatedInstructor.expertise,
+                    bio: updatedInstructor.bio,
+                    profilePicture: updatedInstructor.profilePicture
+                },
+                preferences: {
+                    notifications: true,
+                    language: 'en',
+                    theme: 'light'
+                },
+                teachingProfile: {
+                    phoneNumber: updatedInstructor.phoneNumber,
+                    experience: updatedInstructor.experience,
+                    education: updatedInstructor.education,
+                    certification: updatedInstructor.certification,
+                    teachingAreas: updatedInstructor.teachingAreas,
+                    bio: updatedInstructor.bio
+                }
+            };
+        }
+        catch (error) {
+            this.logger.error(`Comprehensive error updating instructor settings for ${email}`, {
+                errorName: error.name,
+                errorMessage: error.message,
+                errorStack: error.stack,
+                email: email
+            });
+            throw new common_1.InternalServerErrorException({
+                message: 'Failed to update instructor settings',
                 details: {
                     email: email,
                     errorMessage: error.message

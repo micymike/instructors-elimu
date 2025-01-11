@@ -79,49 +79,57 @@ let SettingsController = SettingsController_1 = class SettingsController {
             }
         }
     }
-    async authenticateRequest(req) {
-        const authHeader = req.headers.authorization;
-        if (!authHeader) {
-            this.logger.error('Authorization header missing');
-            throw new common_2.UnauthorizedException('Authorization header missing');
-        }
-        const token = authHeader.split(' ')[1];
-        if (!token) {
-            this.logger.error('Token missing');
-            throw new common_2.UnauthorizedException('Token missing');
-        }
+    async updateUserSettings(req, settingsData) {
         try {
-            const decodedWithoutVerify = jwt.decode(token);
-            this.logger.log(`Decoded Token (without verification): ${JSON.stringify(decodedWithoutVerify)}`);
-            const authSecret = this.configService.get('AUTH_SECRET');
-            if (!authSecret) {
-                this.logger.error('AUTH_SECRET is not defined in environment');
-                throw new common_2.UnauthorizedException('JWT configuration error');
-            }
-            const decoded = jwt.verify(token, authSecret);
-            const currentTimestamp = Math.floor(Date.now() / 1000);
-            if (!decoded.email) {
-                this.logger.error('Token missing required fields');
-                throw new common_2.UnauthorizedException('Token missing required fields');
-            }
+            this.logger.log(`Incoming update settings request headers: ${JSON.stringify(req.headers)}`);
+            this.logger.log(`Incoming update settings data: ${JSON.stringify(settingsData)}`);
+            const user = await this.authenticateRequest(req);
+            this.logger.log(`Authenticated user: ${JSON.stringify(user)}`);
+            const updatedSettings = await this.settingsService.updateUserSettings(user.email, settingsData);
             return {
-                email: decoded.email,
-                role: decoded.role || 'instructor'
+                message: 'User settings updated successfully',
+                data: updatedSettings
             };
         }
         catch (error) {
-            this.logger.error('Token Verification Failed', {
-                error: error.message,
-                name: error.name,
-                stack: error.stack
-            });
-            if (error.name === 'JsonWebTokenError') {
-                throw new common_2.UnauthorizedException('Invalid token format');
+            this.logger.error('Error updating user settings', error.stack);
+            if (error instanceof common_2.UnauthorizedException) {
+                throw new common_2.UnauthorizedException('Unauthorized to update user settings');
             }
-            else if (error.name === 'TokenExpiredError') {
+            else {
+                throw new common_2.InternalServerErrorException('Failed to update user settings');
+            }
+        }
+    }
+    async authenticateRequest(req) {
+        try {
+            const authHeader = req.headers.authorization;
+            if (!authHeader) {
+                throw new common_2.UnauthorizedException('No authorization token provided');
+            }
+            const token = authHeader.split(' ')[1];
+            if (!token) {
+                throw new common_2.UnauthorizedException('Invalid authorization token format');
+            }
+            const jwtSecret = this.configService.get('JWT_SECRET');
+            if (!jwtSecret) {
+                throw new common_2.InternalServerErrorException('JWT secret not configured');
+            }
+            const decoded = jwt.verify(token, jwtSecret);
+            if (!decoded || !decoded.email) {
+                throw new common_2.UnauthorizedException('Invalid token payload');
+            }
+            return decoded;
+        }
+        catch (error) {
+            this.logger.error('Authentication error', error.stack);
+            if (error instanceof jwt.TokenExpiredError) {
                 throw new common_2.UnauthorizedException('Token has expired');
             }
-            throw new common_2.UnauthorizedException('Invalid token');
+            else if (error instanceof jwt.JsonWebTokenError) {
+                throw new common_2.UnauthorizedException('Invalid token');
+            }
+            throw error;
         }
     }
 };
@@ -133,8 +141,16 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], SettingsController.prototype, "getUserSettings", null);
+__decorate([
+    (0, common_1.Post)(),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], SettingsController.prototype, "updateUserSettings", null);
 exports.SettingsController = SettingsController = SettingsController_1 = __decorate([
-    (0, common_1.Controller)('settings'),
+    (0, common_1.Controller)('api/settings'),
     __metadata("design:paramtypes", [settings_service_1.SettingsService,
         config_1.ConfigService])
 ], SettingsController);

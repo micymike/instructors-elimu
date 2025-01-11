@@ -104,25 +104,46 @@ export const courseAPI = {
 
 export const settingsAPI = {
   async getSettings() {
-    const response = await api.get('/api/settings');
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const response = await api.get('/api/settings', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
     return response.data;
   },
 
   async updateProfile(profileData) {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
     const response = await api.post('/api/settings', {
       personalInfo: profileData
+    }, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
     });
     return response.data;
   },
 
   async changePassword(passwordData) {
-    const response = await api.post('/api/settings', {
-      passwordChange: passwordData
-    });
-    return response.data;
+    // Note: Backend doesn't currently support password change
+    throw new Error('Password change is not currently supported.');
   },
 
   async uploadProfilePicture(file) {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
     const formData = new FormData();
     formData.append('profilePicture', file);
     
@@ -131,6 +152,7 @@ export const settingsAPI = {
       {
         headers: {
           'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${token}`
         },
       }
     );

@@ -1,6 +1,8 @@
 import { 
   Controller, 
   Get, 
+  Post,
+  Body,
   Req, 
   UseGuards,
   Logger 
@@ -14,7 +16,7 @@ import { SettingsService } from '../services/settings.service';
 import { ConfigService } from '@nestjs/config';
 import * as jwt from 'jsonwebtoken';
 
-@Controller('settings')
+@Controller('api/settings')
 export class SettingsController {
   private readonly logger = new Logger(SettingsController.name);
 
@@ -52,61 +54,78 @@ export class SettingsController {
     }
   }
 
-  // Method to authenticate the request (similar to other controllers)
-  private async authenticateRequest(req: ExpressRequest) {
-    const authHeader = req.headers.authorization;
-    
-    if (!authHeader) {
-      this.logger.error('Authorization header missing');
-      throw new UnauthorizedException('Authorization header missing');
-    }
-
-    const token = authHeader.split(' ')[1];
-    
-    if (!token) {
-      this.logger.error('Token missing');
-      throw new UnauthorizedException('Token missing');
-    }
-
+  @Post()
+  async updateUserSettings(@Req() req: ExpressRequest, @Body() settingsData: any) {
     try {
-      // Decode the token first to log its contents
-      const decodedWithoutVerify = jwt.decode(token);
-      this.logger.log(`Decoded Token (without verification): ${JSON.stringify(decodedWithoutVerify)}`);
-
-      // Get the AUTH_SECRET from environment configuration
-      const authSecret = this.configService.get<string>('AUTH_SECRET');
-
-      if (!authSecret) {
-        this.logger.error('AUTH_SECRET is not defined in environment');
-        throw new UnauthorizedException('JWT configuration error');
-      }
-
-      const decoded = jwt.verify(token, authSecret) as any;
-      const currentTimestamp = Math.floor(Date.now() / 1000);
-
-      if (!decoded.email) {
-        this.logger.error('Token missing required fields');
-        throw new UnauthorizedException('Token missing required fields');
-      }
-
-      return {
-        email: decoded.email,
-        role: decoded.role || 'instructor'
+      // Log the incoming request details
+      this.logger.log(`Incoming update settings request headers: ${JSON.stringify(req.headers)}`);
+      this.logger.log(`Incoming update settings data: ${JSON.stringify(settingsData)}`);
+      
+      // Extract user information from the authenticated request
+      const user = await this.authenticateRequest(req);
+      
+      this.logger.log(`Authenticated user: ${JSON.stringify(user)}`);
+      
+      // Update user settings
+      const updatedSettings = await this.settingsService.updateUserSettings(
+        user.email, 
+        settingsData
+      );
+      
+      return { 
+        message: 'User settings updated successfully', 
+        data: updatedSettings 
       };
     } catch (error) {
-      this.logger.error('Token Verification Failed', {
-        error: error.message,
-        name: error.name,
-        stack: error.stack
-      });
+      this.logger.error('Error updating user settings', error.stack);
       
-      if (error.name === 'JsonWebTokenError') {
-        throw new UnauthorizedException('Invalid token format');
-      } else if (error.name === 'TokenExpiredError') {
-        throw new UnauthorizedException('Token has expired');
+      if (error instanceof UnauthorizedException) {
+        throw new UnauthorizedException('Unauthorized to update user settings');
+      } else {
+        throw new InternalServerErrorException('Failed to update user settings');
       }
+    }
+  }
+
+  private async authenticateRequest(req: ExpressRequest): Promise<any> {
+    try {
+      // Extract token from Authorization header
+      const authHeader = req.headers.authorization;
+      if (!authHeader) {
+        throw new UnauthorizedException('No authorization token provided');
+      }
+
+      // Remove 'Bearer ' prefix
+      const token = authHeader.split(' ')[1];
+      if (!token) {
+        throw new UnauthorizedException('Invalid authorization token format');
+      }
+
+      // Verify token using JWT secret from config
+      const jwtSecret = this.configService.get<string>('JWT_SECRET');
+      if (!jwtSecret) {
+        throw new InternalServerErrorException('JWT secret not configured');
+      }
+
+      // Decode and verify the token
+      const decoded = jwt.verify(token, jwtSecret) as any;
       
-      throw new UnauthorizedException('Invalid token');
+      // Validate decoded token
+      if (!decoded || !decoded.email) {
+        throw new UnauthorizedException('Invalid token payload');
+      }
+
+      return decoded;
+    } catch (error) {
+      this.logger.error('Authentication error', error.stack);
+      
+      if (error instanceof jwt.TokenExpiredError) {
+        throw new UnauthorizedException('Token has expired');
+      } else if (error instanceof jwt.JsonWebTokenError) {
+        throw new UnauthorizedException('Invalid token');
+      }
+
+      throw error;
     }
   }
 }
