@@ -11,9 +11,10 @@ export class SettingsService {
     @InjectModel(Instructor.name) private instructorModel: Model<Instructor>
   ) {}
 
-  async getUserSettings(email: string) {
+  async getUserSettings(email: string, includeProfilePicture: boolean = false) {
     try {
       this.logger.log(`Attempting to retrieve settings for email: ${email}`);
+      this.logger.log(`Include profile picture: ${includeProfilePicture}`);
 
       // Validate email
       if (!email) {
@@ -45,17 +46,28 @@ export class SettingsService {
         throw new InternalServerErrorException(`Instructor not found with email: ${email}`);
       }
 
-      // Return a sanitized settings object
+      // Prepare personal info
+      const personalInfo: any = {
+        firstName: instructor.firstName,
+        lastName: instructor.lastName,
+        email: instructor.email,
+        phone: instructor.phoneNumber,
+        expertise: instructor.expertise,
+        bio: instructor.bio
+      };
+
+      // Conditionally include profile picture
+      if (includeProfilePicture && instructor.profilePicture) {
+        personalInfo.profilePicture = {
+          data: instructor.profilePicture,
+          contentType: 'image/jpeg', // Default, as we can't determine from the schema
+          originalName: 'profile_picture'
+        };
+      }
+
+      // Return settings object
       return {
-        personalInfo: {
-          firstName: instructor.firstName,
-          lastName: instructor.lastName,
-          email: instructor.email,
-          phone: instructor.phoneNumber,
-          expertise: instructor.expertise,
-          bio: instructor.bio,
-          profilePicture: instructor.profilePicture
-        },
+        personalInfo,
         preferences: {
           notifications: true, // Default preferences since they're not in the schema
           language: 'en',
@@ -100,21 +112,24 @@ export class SettingsService {
         throw new InternalServerErrorException('Email is required');
       }
 
-      // Find and update instructor
-      const updateFields = settingsData.personalInfo || settingsData;
-      
+      // Prepare update fields
+      const updateFields: any = {
+        firstName: settingsData.firstName || settingsData.personalInfo?.firstName,
+        lastName: settingsData.lastName || settingsData.personalInfo?.lastName,
+        phoneNumber: settingsData.phone || settingsData.personalInfo?.phone,
+        expertise: settingsData.expertise || settingsData.personalInfo?.expertise,
+        bio: settingsData.bio || settingsData.personalInfo?.bio
+      };
+
+      // Handle profile picture update
+      if (settingsData.profilePicture) {
+        updateFields.profilePicture = settingsData.profilePicture.data || settingsData.profilePicture;
+      }
+
+      // Update instructor
       const updatedInstructor = await this.instructorModel.findOneAndUpdate(
         { email },
-        { 
-          $set: {
-            firstName: updateFields.firstName,
-            lastName: updateFields.lastName,
-            phoneNumber: updateFields.phone,
-            expertise: updateFields.expertise,
-            bio: updateFields.bio,
-            profilePicture: updateFields.profilePicture
-          }
-        },
+        { $set: updateFields },
         { 
           new: true,  // Return the updated document
           runValidators: true  // Run mongoose validation
@@ -122,7 +137,7 @@ export class SettingsService {
       );
 
       if (!updatedInstructor) {
-        this.logger.error(`No instructor found with email: ${email}`);
+        this.logger.error(`Failed to update instructor with email: ${email}`);
         throw new InternalServerErrorException(`Instructor not found with email: ${email}`);
       }
 
@@ -137,7 +152,11 @@ export class SettingsService {
           phone: updatedInstructor.phoneNumber,
           expertise: updatedInstructor.expertise,
           bio: updatedInstructor.bio,
-          profilePicture: updatedInstructor.profilePicture
+          profilePicture: updatedInstructor.profilePicture ? {
+            data: updatedInstructor.profilePicture,
+            contentType: 'image/jpeg', // Default, as we can't determine from the schema
+            originalName: 'profile_picture'
+          } : null
         },
         preferences: {
           notifications: true, // Default preferences since they're not in the schema

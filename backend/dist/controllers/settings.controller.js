@@ -49,6 +49,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SettingsController = void 0;
 const common_1 = require("@nestjs/common");
 const common_2 = require("@nestjs/common");
+const platform_express_1 = require("@nestjs/platform-express");
 const settings_service_1 = require("../services/settings.service");
 const config_1 = require("@nestjs/config");
 const jwt = __importStar(require("jsonwebtoken"));
@@ -58,12 +59,13 @@ let SettingsController = SettingsController_1 = class SettingsController {
         this.configService = configService;
         this.logger = new common_1.Logger(SettingsController_1.name);
     }
-    async getUserSettings(req) {
+    async getUserSettings(req, includeProfilePicture) {
         try {
             this.logger.log(`Incoming settings request headers: ${JSON.stringify(req.headers)}`);
+            this.logger.log(`Include profile picture: ${includeProfilePicture}`);
             const user = await this.authenticateRequest(req);
             this.logger.log(`Authenticated user: ${JSON.stringify(user)}`);
-            const settings = await this.settingsService.getUserSettings(user.email);
+            const settings = await this.settingsService.getUserSettings(user.email, includeProfilePicture);
             return {
                 message: 'User settings retrieved successfully',
                 data: settings
@@ -74,13 +76,21 @@ let SettingsController = SettingsController_1 = class SettingsController {
             throw error;
         }
     }
-    async updateUserSettings(req, settingsData) {
+    async updateUserSettings(req, settingsData, profilePicture) {
         try {
             this.logger.log(`Incoming update settings request headers: ${JSON.stringify(req.headers)}`);
             this.logger.log(`Incoming update settings data: ${JSON.stringify(settingsData)}`);
             const user = await this.authenticateRequest(req);
             this.logger.log(`Authenticated user: ${JSON.stringify(user)}`);
-            const updatedSettings = await this.settingsService.updateUserSettings(user.email, settingsData);
+            const updateData = {
+                ...settingsData,
+                profilePicture: profilePicture ? {
+                    originalName: profilePicture.originalname,
+                    mimetype: profilePicture.mimetype,
+                    buffer: profilePicture.buffer.toString('base64')
+                } : undefined
+            };
+            const updatedSettings = await this.settingsService.updateUserSettings(user.email, updateData);
             return {
                 message: 'User settings updated successfully',
                 data: updatedSettings
@@ -139,16 +149,26 @@ exports.SettingsController = SettingsController;
 __decorate([
     (0, common_1.Get)(),
     __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Query)('includeProfilePicture')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [Object, Boolean]),
     __metadata("design:returntype", Promise)
 ], SettingsController.prototype, "getUserSettings", null);
 __decorate([
     (0, common_1.Post)(),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('profilePicture', {
+        fileFilter: (req, file, cb) => {
+            if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
+                return cb(new Error('Only image files are allowed!'), false);
+            }
+            cb(null, true);
+        }
+    })),
     __param(0, (0, common_1.Req)()),
     __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.UploadedFile)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:paramtypes", [Object, Object, Object]),
     __metadata("design:returntype", Promise)
 ], SettingsController.prototype, "updateUserSettings", null);
 exports.SettingsController = SettingsController = SettingsController_1 = __decorate([

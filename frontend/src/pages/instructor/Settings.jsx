@@ -20,7 +20,8 @@ const InstructorSettings = () => {
     email: '',
     phone: '',
     expertise: '',
-    bio: ''
+    bio: '',
+    profilePicture: {}
   });
 
   // Password Form State
@@ -48,7 +49,8 @@ const InstructorSettings = () => {
           email: personalInfo.email || '',
           phone: personalInfo.phone || '',
           expertise: personalInfo.expertise || '',
-          bio: personalInfo.bio || ''
+          bio: personalInfo.bio || '',
+          profilePicture: personalInfo.profilePicture || {}
         });
 
         // Set existing profile picture
@@ -74,14 +76,14 @@ const InstructorSettings = () => {
 
     // Validate file size (5MB limit)
     if (file.size > 5 * 1024 * 1024) {
-      alert('File size must be less than 5MB');
+      toast.error('File size must be less than 5MB');
       return;
     }
 
     // Validate file type
     const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
     if (!validTypes.includes(file.type)) {
-      alert('Only JPEG, PNG, and GIF files are allowed');
+      toast.error('Only JPEG, PNG, and GIF files are allowed');
       return;
     }
 
@@ -90,17 +92,26 @@ const InstructorSettings = () => {
     reader.onloadend = async () => {
       try {
         // Upload to server
-        const uploadResponse = await settingsAPI.uploadProfilePicture(file);
+        const updatedSettings = await settingsAPI.uploadProfilePicture(file);
         
         // Update state with server response
         setProfilePicture({
-          preview: uploadResponse.profilePictureUrl,
+          preview: reader.result,
           file: file
         });
 
+        // Update profile form with new profile picture details
+        setProfileForm(prevForm => ({
+          ...prevForm,
+          profilePicture: {
+            originalName: file.name,
+            contentType: file.type
+          }
+        }));
+
         toast.success('Profile picture uploaded successfully');
       } catch (error) {
-        toast.error('Failed to upload profile picture');
+        toast.error(error.message || 'Failed to upload profile picture');
         console.error('Profile picture upload error:', error);
       }
     };
@@ -131,24 +142,49 @@ const InstructorSettings = () => {
     setIsProfileUpdating(true);
     try {
       const updateData = {
-        firstName: profileForm.firstName,
-        lastName: profileForm.lastName,
-        email: profileForm.email,
-        phone: profileForm.phone,
-        expertise: profileForm.expertise,
-        bio: profileForm.bio
+        personalInfo: {
+          firstName: profileForm.firstName,
+          lastName: profileForm.lastName,
+          email: profileForm.email,
+          phone: profileForm.phone,
+          expertise: profileForm.expertise,
+          bio: profileForm.bio
+        }
       };
 
       // If there's a new profile picture, include it
       if (profilePicture.file) {
-        const uploadResponse = await settingsAPI.uploadProfilePicture(profilePicture.file);
-        updateData.profilePicture = uploadResponse.profilePictureUrl;
+        const updatedSettings = await settingsAPI.uploadProfilePicture(profilePicture.file);
+        
+        // Optionally update preview if server provides a URL
+        if (updatedSettings.personalInfo.profilePicture) {
+          setProfilePicture(prev => ({
+            ...prev,
+            preview: updatedSettings.personalInfo.profilePicture
+          }));
+        }
       }
 
-      await settingsAPI.updateProfile(updateData);
+      // Perform profile update
+      const response = await settingsAPI.updateProfile(updateData);
+      
       toast.success('Profile updated successfully');
+      
+      // Update form with latest data from server
+      if (response.data) {
+        const { personalInfo } = response.data;
+        setProfileForm({
+          firstName: personalInfo.firstName || '',
+          lastName: personalInfo.lastName || '',
+          email: personalInfo.email || '',
+          phone: personalInfo.phone || '',
+          expertise: personalInfo.expertise || '',
+          bio: personalInfo.bio || '',
+          profilePicture: personalInfo.profilePicture || {}
+        });
+      }
     } catch (error) {
-      toast.error('Failed to update profile');
+      toast.error(error.message || 'Failed to update profile');
       console.error('Profile update error:', error);
     } finally {
       setIsProfileUpdating(false);
@@ -165,14 +201,22 @@ const InstructorSettings = () => {
       return;
     }
 
+    // Validate password strength
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordRegex.test(passwordForm.newPassword)) {
+      toast.error('Password must be at least 8 characters long and include uppercase, lowercase, number, and special character');
+      return;
+    }
+
     setIsPasswordChanging(true);
     try {
-      await settingsAPI.changePassword({
-        currentPassword: passwordForm.currentPassword,
+      // Request password reset magic link
+      await settingsAPI.requestPasswordReset({
+        email: profileForm.email,
         newPassword: passwordForm.newPassword
       });
       
-      toast.success('Password changed successfully');
+      toast.success('Password reset link sent to your email');
       
       // Reset password form
       setPasswordForm({
@@ -181,8 +225,8 @@ const InstructorSettings = () => {
         confirmPassword: ''
       });
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to change password');
-      console.error('Password change error:', error);
+      toast.error(error.message || 'Failed to initiate password reset');
+      console.error('Password reset request error:', error);
     } finally {
       setIsPasswordChanging(false);
     }
@@ -335,16 +379,6 @@ const InstructorSettings = () => {
             <h2 className="text-xl font-semibold text-gray-800">Change Password</h2>
           </div>
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Current Password</label>
-              <input
-                type="password"
-                name="currentPassword"
-                value={passwordForm.currentPassword}
-                onChange={(e) => setPasswordForm(prev => ({ ...prev, [e.target.name]: e.target.value }))}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
-            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">New Password</label>
               <input

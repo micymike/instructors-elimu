@@ -23,9 +23,10 @@ let SettingsService = SettingsService_1 = class SettingsService {
         this.instructorModel = instructorModel;
         this.logger = new common_1.Logger(SettingsService_1.name);
     }
-    async getUserSettings(email) {
+    async getUserSettings(email, includeProfilePicture = false) {
         try {
             this.logger.log(`Attempting to retrieve settings for email: ${email}`);
+            this.logger.log(`Include profile picture: ${includeProfilePicture}`);
             if (!email) {
                 this.logger.error('No email provided');
                 throw new common_1.InternalServerErrorException('Email is required');
@@ -46,16 +47,23 @@ let SettingsService = SettingsService_1 = class SettingsService {
                 this.logger.log(`Existing instructors: ${JSON.stringify(allInstructors.map(i => i.email))}`);
                 throw new common_1.InternalServerErrorException(`Instructor not found with email: ${email}`);
             }
+            const personalInfo = {
+                firstName: instructor.firstName,
+                lastName: instructor.lastName,
+                email: instructor.email,
+                phone: instructor.phoneNumber,
+                expertise: instructor.expertise,
+                bio: instructor.bio
+            };
+            if (includeProfilePicture && instructor.profilePicture) {
+                personalInfo.profilePicture = {
+                    data: instructor.profilePicture,
+                    contentType: 'image/jpeg',
+                    originalName: 'profile_picture'
+                };
+            }
             return {
-                personalInfo: {
-                    firstName: instructor.firstName,
-                    lastName: instructor.lastName,
-                    email: instructor.email,
-                    phone: instructor.phoneNumber,
-                    expertise: instructor.expertise,
-                    bio: instructor.bio,
-                    profilePicture: instructor.profilePicture
-                },
+                personalInfo,
                 preferences: {
                     notifications: true,
                     language: 'en',
@@ -95,22 +103,22 @@ let SettingsService = SettingsService_1 = class SettingsService {
                 this.logger.error('No email provided');
                 throw new common_1.InternalServerErrorException('Email is required');
             }
-            const updateFields = settingsData.personalInfo || settingsData;
-            const updatedInstructor = await this.instructorModel.findOneAndUpdate({ email }, {
-                $set: {
-                    firstName: updateFields.firstName,
-                    lastName: updateFields.lastName,
-                    phoneNumber: updateFields.phone,
-                    expertise: updateFields.expertise,
-                    bio: updateFields.bio,
-                    profilePicture: updateFields.profilePicture
-                }
-            }, {
+            const updateFields = {
+                firstName: settingsData.firstName || settingsData.personalInfo?.firstName,
+                lastName: settingsData.lastName || settingsData.personalInfo?.lastName,
+                phoneNumber: settingsData.phone || settingsData.personalInfo?.phone,
+                expertise: settingsData.expertise || settingsData.personalInfo?.expertise,
+                bio: settingsData.bio || settingsData.personalInfo?.bio
+            };
+            if (settingsData.profilePicture) {
+                updateFields.profilePicture = settingsData.profilePicture.data || settingsData.profilePicture;
+            }
+            const updatedInstructor = await this.instructorModel.findOneAndUpdate({ email }, { $set: updateFields }, {
                 new: true,
                 runValidators: true
             });
             if (!updatedInstructor) {
-                this.logger.error(`No instructor found with email: ${email}`);
+                this.logger.error(`Failed to update instructor with email: ${email}`);
                 throw new common_1.InternalServerErrorException(`Instructor not found with email: ${email}`);
             }
             this.logger.log(`Instructor updated successfully: ${JSON.stringify(updatedInstructor)}`);
@@ -122,7 +130,11 @@ let SettingsService = SettingsService_1 = class SettingsService {
                     phone: updatedInstructor.phoneNumber,
                     expertise: updatedInstructor.expertise,
                     bio: updatedInstructor.bio,
-                    profilePicture: updatedInstructor.profilePicture
+                    profilePicture: updatedInstructor.profilePicture ? {
+                        data: updatedInstructor.profilePicture,
+                        contentType: 'image/jpeg',
+                        originalName: 'profile_picture'
+                    } : null
                 },
                 preferences: {
                     notifications: true,

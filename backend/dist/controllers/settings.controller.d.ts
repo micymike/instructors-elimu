@@ -6,18 +6,10 @@ export declare class SettingsController {
     private readonly configService;
     private readonly logger;
     constructor(settingsService: SettingsService, configService: ConfigService);
-    getUserSettings(req: ExpressRequest): Promise<{
+    getUserSettings(req: ExpressRequest, includeProfilePicture?: boolean): Promise<{
         message: string;
         data: {
-            personalInfo: {
-                firstName: string;
-                lastName: string;
-                email: string;
-                phone: string;
-                expertise: string;
-                bio: string;
-                profilePicture: string;
-            };
+            personalInfo: any;
             preferences: {
                 notifications: boolean;
                 language: string;
@@ -33,7 +25,7 @@ export declare class SettingsController {
             };
         };
     }>;
-    updateUserSettings(req: ExpressRequest, settingsData: any): Promise<{
+    updateUserSettings(req: ExpressRequest, settingsData: any, profilePicture?: Express.Multer.File): Promise<{
         message: string;
         data: {
             personalInfo: {
@@ -43,7 +35,11 @@ export declare class SettingsController {
                 phone: string;
                 expertise: string;
                 bio: string;
-                profilePicture: string;
+                profilePicture: {
+                    data: string;
+                    contentType: string;
+                    originalName: string;
+                };
             };
             preferences: {
                 notifications: boolean;

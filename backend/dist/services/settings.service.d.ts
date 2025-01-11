@@ -4,16 +4,8 @@ export declare class SettingsService {
     private instructorModel;
     private readonly logger;
     constructor(instructorModel: Model<Instructor>);
-    getUserSettings(email: string): Promise<{
-        personalInfo: {
-            firstName: string;
-            lastName: string;
-            email: string;
-            phone: string;
-            expertise: string;
-            bio: string;
-            profilePicture: string;
-        };
+    getUserSettings(email: string, includeProfilePicture?: boolean): Promise<{
+        personalInfo: any;
         preferences: {
             notifications: boolean;
             language: string;
@@ -36,7 +28,11 @@ export declare class SettingsService {
             phone: string;
             expertise: string;
             bio: string;
-            profilePicture: string;
+            profilePicture: {
+                data: string;
+                contentType: string;
+                originalName: string;
+            };
         };
         preferences: {
             notifications: boolean;

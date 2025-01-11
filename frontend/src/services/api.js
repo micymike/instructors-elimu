@@ -133,9 +133,39 @@ export const settingsAPI = {
     return response.data;
   },
 
-  async changePassword(passwordData) {
-    // Note: Backend doesn't currently support password change
-    throw new Error('Password change is not currently supported.');
+  async getProfilePicture() {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    try {
+      const response = await api.get('/api/api/settings', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        params: {
+          includeProfilePicture: true
+        }
+      });
+
+      // Extract profile picture from response
+      const profilePicture = response.data.data.personalInfo.profilePicture;
+      
+      // If profile picture exists, convert base64 to data URL
+      if (profilePicture && profilePicture.data) {
+        return {
+          dataUrl: `data:${profilePicture.contentType || 'image/jpeg'};base64,${profilePicture.data}`,
+          originalName: profilePicture.originalName || 'profile_picture',
+          contentType: profilePicture.contentType || 'image/jpeg'
+        };
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error retrieving profile picture:', error);
+      throw new Error('Failed to retrieve profile picture');
+    }
   },
 
   async uploadProfilePicture(file) {
@@ -144,19 +174,86 @@ export const settingsAPI = {
       throw new Error('No authentication token found');
     }
 
+    // Create FormData to send file
     const formData = new FormData();
     formData.append('profilePicture', file);
     
-    const response = await api.post('/api/settings', 
-      formData, 
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          'Authorization': `Bearer ${token}`
-        },
+    try {
+      const response = await api.post('/api/api/settings', 
+        formData, 
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Authorization': `Bearer ${token}`
+          },
+        }
+      );
+
+      // Log successful upload
+      console.log('Profile picture upload successful', response.data);
+
+      // Convert base64 to data URL if profile picture exists
+      const profilePicture = response.data.data.personalInfo.profilePicture;
+      const dataUrl = profilePicture 
+        ? `data:${profilePicture.contentType || 'image/jpeg'};base64,${profilePicture.data}`
+        : null;
+
+      // Return the updated user settings with data URL
+      return {
+        ...response.data.data,
+        profilePictureUrl: dataUrl
+      };
+    } catch (error) {
+      // Enhanced error logging
+      console.error('Profile picture upload error:', error.response ? error.response.data : error.message);
+      
+      // Throw a more informative error
+      if (error.response) {
+        throw new Error(error.response.data.message || 'Failed to upload profile picture');
+      } else if (error.request) {
+        throw new Error('No response received from server');
+      } else {
+        throw new Error('Error setting up profile picture upload');
       }
-    );
-    return response.data;
+    }
+  },
+
+  async requestPasswordReset(passwordData) {
+    try {
+      const response = await api.post('/api/auth/request-password-reset', 
+        {
+          email: passwordData.email,
+          newPassword: passwordData.newPassword
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      // Log successful password reset request
+      console.log('Password reset request sent successfully', response.data);
+
+      return response.data;
+    } catch (error) {
+      // Enhanced error logging
+      console.error('Password reset request error:', error.response ? error.response.data : error.message);
+      
+      // Throw a more informative error
+      if (error.response) {
+        throw new Error(error.response.data.message || 'Failed to request password reset');
+      } else if (error.request) {
+        throw new Error('No response received from server');
+      } else {
+        throw new Error('Error setting up password reset request');
+      }
+    }
+  },
+
+  async changePassword(passwordData) {
+    // Note: Backend doesn't currently support password change
+    throw new Error('Password change is not currently supported.');
   }
 };
 

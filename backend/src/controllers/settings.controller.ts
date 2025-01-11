@@ -4,12 +4,16 @@ import {
   Post,
   Body,
   Req, 
-  Logger 
+  Logger,
+  UploadedFile,
+  UseInterceptors,
+  Query 
 } from '@nestjs/common';
 import { 
   UnauthorizedException, 
   InternalServerErrorException 
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ExpressRequest } from '../common/interfaces/express-request.interface';
 import { SettingsService } from '../services/settings.service';
 import { ConfigService } from '@nestjs/config';
@@ -25,10 +29,14 @@ export class SettingsController {
   ) {}
 
   @Get()
-  async getUserSettings(@Req() req: ExpressRequest) {
+  async getUserSettings(
+    @Req() req: ExpressRequest, 
+    @Query('includeProfilePicture') includeProfilePicture?: boolean
+  ) {
     try {
       // Log the incoming request details
       this.logger.log(`Incoming settings request headers: ${JSON.stringify(req.headers)}`);
+      this.logger.log(`Include profile picture: ${includeProfilePicture}`);
       
       // Extract user information from the authenticated request
       const user = await this.authenticateRequest(req);
@@ -36,7 +44,7 @@ export class SettingsController {
       this.logger.log(`Authenticated user: ${JSON.stringify(user)}`);
       
       // Fetch user settings
-      const settings = await this.settingsService.getUserSettings(user.email);
+      const settings = await this.settingsService.getUserSettings(user.email, includeProfilePicture);
       
       return { 
         message: 'User settings retrieved successfully', 
@@ -50,7 +58,19 @@ export class SettingsController {
   }
 
   @Post()
-  async updateUserSettings(@Req() req: ExpressRequest, @Body() settingsData: any) {
+  @UseInterceptors(FileInterceptor('profilePicture', {
+    fileFilter: (req, file, cb) => {
+      if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
+        return cb(new Error('Only image files are allowed!'), false);
+      }
+      cb(null, true);
+    }
+  }))
+  async updateUserSettings(
+    @Req() req: ExpressRequest, 
+    @Body() settingsData: any,
+    @UploadedFile() profilePicture?: Express.Multer.File
+  ) {
     try {
       // Log the incoming request details
       this.logger.log(`Incoming update settings request headers: ${JSON.stringify(req.headers)}`);
@@ -61,10 +81,20 @@ export class SettingsController {
       
       this.logger.log(`Authenticated user: ${JSON.stringify(user)}`);
       
+      // Prepare settings data
+      const updateData = {
+        ...settingsData,
+        profilePicture: profilePicture ? {
+          originalName: profilePicture.originalname,
+          mimetype: profilePicture.mimetype,
+          buffer: profilePicture.buffer.toString('base64')
+        } : undefined
+      };
+      
       // Update user settings
       const updatedSettings = await this.settingsService.updateUserSettings(
         user.email, 
-        settingsData
+        updateData
       );
       
       return { 
