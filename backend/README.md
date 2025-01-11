@@ -1,5 +1,8 @@
 # Elimu Global Backend
 
+## API Documentation
+- Swagger Docs: `https://instructors-elimu.onrender.com/api/docs`
+
 ## Prerequisites
 - Node.js 18.17.0
 - MongoDB
@@ -56,6 +59,7 @@ npm run start:prod
 - Check MongoDB connection
 - Verify environment variables
 - Review Render logs for specific errors
+- Check Swagger docs at `/api/docs`
 
 ## Contributing
 1. Fork the repository

@@ -95,7 +95,8 @@ async function bootstrap() {
     origin: [
       'http://localhost:3000', 
       'http://localhost:3001', 
-      'https://elimu-instructor-fr.onrender.com'
+      'https://elimu-instructor-fr.onrender.com',
+      'https://instructors-elimu.onrender.com'
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true,
@@ -125,6 +126,8 @@ async function bootstrap() {
     .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);
+  
+  // Setup Swagger at /api/docs endpoint
   SwaggerModule.setup('api/docs', app, document);
 
   // Session and Passport

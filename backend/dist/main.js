@@ -103,7 +103,8 @@ async function bootstrap() {
         origin: [
             'http://localhost:3000',
             'http://localhost:3001',
-            'https://elimu-instructor-fr.onrender.com'
+            'https://elimu-instructor-fr.onrender.com',
+            'https://instructors-elimu.onrender.com'
         ],
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         credentials: true,
