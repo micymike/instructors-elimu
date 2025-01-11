@@ -1,3 +1,10 @@
 #!/bin/bash
+
+# Install Vite globally
+npm install -g vite
+
+# Install project dependencies
 npm install
-npm run build 
+
+# Build the project
+npm run build
