@@ -140,11 +140,7 @@ const DashboardLayout = () => {
       <div className="group">
         <Link
           to={item.path}
-          className={`
-            flex items-center justify-between px-4 py-3 rounded-lg
-            transition-all duration-200 group-hover:bg-blue-50/80
-            ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}
-          `}
+          className={`flex items-center justify-between rounded-lg transition-all duration-200 group-hover:bg-blue-50/80 ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
           onClick={(e) => {
             if (hasSubItems) {
               e.preventDefault();
@@ -158,10 +154,7 @@ const DashboardLayout = () => {
               <div className="flex items-center gap-2">
                 <span className="font-medium">{item.label}</span>
                 {item.badge && (
-                  <span className={`
-                    px-2 py-0.5 text-xs rounded-full
-                    ${isActive ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'}
-                  `}>
+                  <span className={`px-2 py-0.5 text-xs rounded-full ${isActive ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'}`}>
                     {item.badge}
                   </span>
                 )}
@@ -170,10 +163,7 @@ const DashboardLayout = () => {
             </div>
           </div>
           {hasSubItems && (
-            <ChevronDown className={`
-              w-5 h-5 transition-transform duration-200
-              ${isExpanded ? 'rotate-180' : ''}
-            `} />
+            <ChevronDown className={`w-5 h-5 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
           )}
         </Link>
 
@@ -183,15 +173,7 @@ const DashboardLayout = () => {
               <Link
                 key={subItem.path}
                 to={subItem.path}
-                className={`
-                  flex items-center px-4 py-2.5 rounded-lg
-                  transition-colors duration-200 text-sm
-                  hover:bg-blue-50 hover:text-blue-600
-                  ${location.pathname === subItem.path
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'text-gray-600'
-                  }
-                `}
+                className={`flex items-center px-4 py-2.5 rounded-lg transition-colors duration-200 text-sm hover:bg-blue-50 hover:text-blue-600 ${location.pathname === subItem.path ? 'bg-blue-50 text-blue-600' : 'text-gray-600'}`}
               >
                 <subItem.icon className="h-4 w-4 mr-2" />
                 <span>{subItem.label}</span>
@@ -207,19 +189,11 @@ const DashboardLayout = () => {
     <div className="flex h-screen bg-gray-50">
       {/* Overlay for mobile */}
       {isSidebarOpen && isMobile && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40"
-          onClick={() => setIsSidebarOpen(false)}
-        />
+        <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setIsSidebarOpen(false)} />
       )}
 
       {/* Sidebar */}
-      <aside className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-white border-r transform 
-        transition-transform duration-300 ease-in-out
-        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-        lg:translate-x-0 lg:static
-      `}>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:static`}>
         <div className="flex flex-col h-full">
           {/* Logo/Header */}
           <div className="flex items-center justify-between p-4 border-b">
@@ -230,10 +204,7 @@ const DashboardLayout = () => {
               </span>
             </div>
             {isMobile && (
-              <button
-                onClick={() => setIsSidebarOpen(false)}
-                className="p-2 rounded-lg hover:bg-gray-100"
-              >
+              <button onClick={() => setIsSidebarOpen(false)} className="p-2 rounded-lg hover:bg-gray-100">
                 <X className="h-6 w-6 text-gray-600" />
               </button>
             )}
@@ -272,10 +243,7 @@ const DashboardLayout = () => {
               </div>
             </div>
 
-            <button
-              onClick={handleLogout}
-              className="flex items-center w-full px-4 py-2.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
-            >
+            <button onClick={handleLogout} className="flex items-center w-full px-4 py-2.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200">
               <LogOut className="h-5 w-5 mr-3" />
               <span className="font-medium">Logout</span>
             </button>
@@ -284,14 +252,11 @@ const DashboardLayout = () => {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden lg:pl-64">
+      <div className="flex-1 flex flex-col overflow-hidden ">
         {/* Header */}
         <header className="bg-white border-b py-4 px-6">
           <div className="flex items-center justify-between">
-            <button
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="lg:hidden p-2 rounded-md hover:bg-gray-100"
-            >
+            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="lg:hidden p-2 rounded-md hover:bg-gray-100">
               <Menu className="h-6 w-6" />
             </button>
 
@@ -299,11 +264,19 @@ const DashboardLayout = () => {
               <button className="p-2 hover:bg-gray-100 rounded-full">
                 <Bell className="h-6 w-6 text-gray-600" />
               </button>
-              <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                <span className="text-blue-600 font-medium">
-                  {user?.firstName?.[0]}
-                </span>
-              </div>
+              {user?.profilePicture ? (
+                <img
+                  src={user.profilePicture}
+                  alt="Profile"
+                  className="h-8 w-8 rounded-full object-cover"
+                />
+              ) : (
+                <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                  <span className="text-blue-600 font-medium">
+                    {user?.firstName?.[0]}{user?.lastName?.[0]}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </header>
