@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { toast } from 'react-hot-toast';
+import { authAPI } from '../services/api';
 import Testimonial from '../components/ui/Testimonial';
 import BlobButton from './ui/BlobButton';
 
@@ -22,59 +24,83 @@ const Login = () => {
     setError('');
   
     try {
-      const response = await fetch(`${API_URL}/auth/login/instructor`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(credentials),
-      });
-  
-      console.log('Full Response:', {
-        status: response.status,
-        headers: Object.fromEntries(response.headers.entries())
+      // Detailed logging of login attempt
+      console.group('Login Attempt');
+      console.log('Credentials:', {
+        email: credentials.email,
+        passwordLength: credentials.password.length
       });
 
-      const data = await response.json();
-      console.log('Server Response:', data); // Debugging response
+      // Log existing authentication state
+      const existingToken = localStorage.getItem('token');
+      const existingUser = localStorage.getItem('user');
+      console.log('Existing Authentication:', {
+        token: existingToken ? 'Present' : 'Not Found',
+        user: existingUser ? JSON.parse(existingUser) : 'Not Found'
+      });
+      console.groupEnd();
+
+      // Attempt login
+      const data = await authAPI.login(credentials);
   
-      if (response.ok && data.access_token) {
-        const { access_token: token, user } = data;
+      console.log('Login Response:', data);
   
-        // Prepare user data
-        const userData = {
-          firstName: user?.firstName || '',
-          lastName: user?.lastName || '',
-          email: user?.email || credentials.email,
-          status: user?.status || 'pending',
-          isVerified: user?.isVerified || false,
-          role: user?.role || 'instructor',
-          ...user,
-        };
+      // Prepare user data with fallback values
+      const userData = {
+        firstName: data?.user?.firstName || '',
+        lastName: data?.user?.lastName || '',
+        email: data?.user?.email || credentials.email,
+        status: data?.user?.status || 'pending',
+        isVerified: data?.user?.isVerified || false,
+        role: data?.user?.role || 'instructor',
+        ...data?.user,
+      };
   
-        // Save token and user data in localStorage
-        localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(userData));
+      // Save user data
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem('userToken', data.token);  // Additional storage for compatibility
   
-        // Redirect to the dashboard
+      // Show success toast
+      toast.success('Login successful!');
+  
+      // Redirect based on role
+      if (userData.role === 'instructor') {
         navigate('/instructor/dashboard');
       } else {
-        // Handle server errors or missing token
-        setError(data?.message || 'Login failed. Please try again.');
+        navigate('/dashboard');
       }
     } catch (err) {
-      console.error('Login Error:', err);
+      // Comprehensive error logging
+      console.group('Login Error');
+      console.error('Full Error Details:', {
+        name: err.name,
+        message: err.message,
+        stack: err.stack,
+        response: err.response?.data,
+        status: err.response?.status,
+        headers: err.response?.headers
+      });
+      console.groupEnd();
   
-      if (err instanceof TypeError && err.message.includes('Failed to fetch')) {
-        setError('Network error. Please check your connection and try again.');
-      } else {
-        setError('An unexpected error occurred. Please try again later.');
-      }
+      // Clear authentication state
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('userToken');
+  
+      // Determine error message
+      const errorMessage = 
+        err.response?.data?.message || 
+        err.message || 
+        'Login failed. Please check your credentials and try again.';
+      
+      // Update UI with error
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
-  
 
   const handleChange = (e) => {
     const { name, value } = e.target;

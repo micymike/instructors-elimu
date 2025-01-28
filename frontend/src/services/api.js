@@ -297,23 +297,144 @@ export const documentsAPI = {
 
 export const authAPI = {
   async login(credentials) {
-    const response = await api.post('/api/instructors/login', credentials);
-    return response.data;
+    try {
+      // Log base URL and credentials for debugging
+      console.log('Login Configuration:', {
+        baseURL: API_BASE_URL,
+        loginEndpoint: '/auth/login/instructor',
+        email: credentials.email,
+        passwordLength: credentials.password.length
+      });
+
+      // Validate input
+      if (!credentials.email || !credentials.password) {
+        throw new Error('Email and password are required');
+      }
+
+      // Attempt to log in with full configuration logging
+      const response = await api.post('/auth/login/instructor', credentials, {
+        // Explicitly remove Authorization header
+        headers: {
+          'Authorization': undefined,
+          // Ensure correct content type
+          'Content-Type': 'application/json'
+        },
+        // Add timeout to catch network issues
+        timeout: 10000
+      });
+      
+      // Log full response details
+      console.log('Login API Full Response:', {
+        status: response.status,
+        headers: response.headers,
+        data: response.data
+      });
+
+      // Validate response structure more comprehensively
+      if (!response.data) {
+        throw new Error('Empty response received from server');
+      }
+
+      // Check for token in multiple possible locations
+      const token = 
+        response.data.token || 
+        response.data.access_token || 
+        response.headers['authorization']?.replace('Bearer ', '');
+
+      if (!token) {
+        throw new Error('No authentication token found in response');
+      }
+
+      // Store token in local storage
+      localStorage.setItem('token', token);
+      
+      return response.data;
+    } catch (error) {
+      // Comprehensive error logging
+      console.error('Login API Detailed Error:', {
+        name: error.name,
+        message: error.message,
+        code: error.code,
+        response: error.response?.data,
+        status: error.response?.status,
+        headers: error.response?.headers,
+        config: {
+          url: error.config?.url,
+          method: error.config?.method,
+          baseURL: error.config?.baseURL
+        }
+      });
+
+      // Clear any existing tokens
+      localStorage.removeItem('token');
+
+      // Detailed error handling
+      if (error.response) {
+        // Server responded with an error
+        switch (error.response.status) {
+          case 401:
+            throw new Error('Invalid credentials. Please check your email and password.');
+          case 403:
+            throw new Error('Access denied. Your account may be locked or inactive.');
+          case 404:
+            throw new Error('Login service not found. Please contact support.');
+          case 500:
+            throw new Error('Server error. Please try again later.');
+          default:
+            throw new Error(error.response.data?.message || 'Login failed. Please try again.');
+        }
+      } else if (error.request) {
+        // Request made but no response received
+        throw new Error('No response from server. Please check your network connection.');
+      } else if (error.code === 'ECONNABORTED') {
+        // Request timed out
+        throw new Error('Login request timed out. Please check your internet connection.');
+      } else {
+        // Something else went wrong
+        throw new Error('An unexpected error occurred during login. Please try again.');
+      }
+    }
   },
 
   async register(userData) {
-    const response = await api.post('/api/instructors/register', userData);
+    const response = await api.post('/auth/register', userData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      }
+    });
+    // Store token in local storage after registration
+    if (response.data.token) {
+      localStorage.setItem('token', response.data.token);
+    }
+    return response.data;
+  },
+
+  async registerInstructor(instructorData) {
+    const response = await api.post('/auth/register/instructor', instructorData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      }
+    });
+    // Store token in local storage after instructor registration
+    if (response.data.token) {
+      localStorage.setItem('token', response.data.token);
+    }
     return response.data;
   },
 
   async verifyEmail(email) {
-    const response = await api.post('/api/auth/verify-email', { email });
+    const response = await api.post('/auth/verify-email', { email });
     return response.data;
   },
 
   async verifyEmailToken(token) {
-    const response = await api.get(`/api/auth/verify-email-token?token=${token}`);
+    const response = await api.post('/auth/verify-email-token', { token });
     return response.data;
+  },
+
+  // Add a logout method to clear the token
+  logout() {
+    localStorage.removeItem('token');
   }
 };
 

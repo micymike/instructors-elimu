@@ -78,17 +78,11 @@ const InputField = ({
 const InstructorForm = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
+    name: '',
     email: '',
     password: '',
     confirmPassword: '',
-    phoneNumber: '',
-    expertise: '',
-    bio: '',
-    education: '',
-    experience: '',
-    teachingAreas: [],
+    cv: null,
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -96,11 +90,10 @@ const InstructorForm = () => {
   const [error, setError] = useState('');
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, files } = e.target;
     setFormData(prev => ({
-
       ...prev,
-      [name]: value
+      [name]: name === 'cv' ? files[0] : value
     }));
   };
 
@@ -109,9 +102,27 @@ const InstructorForm = () => {
     setIsLoading(true);
     setError('');
 
+    // Validate password match
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      await authAPI.register(formData);
-      toast.success('Registration successful! Please check your email to verify your account.');
+      const formDataToSubmit = new FormData();
+      formDataToSubmit.append('name', formData.name);
+      formDataToSubmit.append('email', formData.email);
+      formDataToSubmit.append('password', formData.password);
+      formDataToSubmit.append('role', 'instructor');
+      formDataToSubmit.append('instructorStatus', 'pending');
+      
+      if (formData.cv) {
+        formDataToSubmit.append('cv', formData.cv);
+      }
+
+      await authAPI.registerInstructor(formDataToSubmit);
+      toast.success('Instructor registration submitted successfully!');
       navigate('/login');
     } catch (error) {
       console.error('Registration error:', error);
@@ -134,24 +145,15 @@ const InstructorForm = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6 backdrop-blur-lg bg-white/30 p-6 rounded-xl shadow-xl">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <InputField
-                label="First Name"
-                icon={User}
-                type="text"
-                name="firstName"
-                value={formData.firstName}
-                onChange={handleChange}
-              />
-              <InputField
-                label="Last Name"
-                icon={User}
-                type="text"
-                name="lastName"
-                value={formData.lastName}
-                onChange={handleChange}
-              />
-            </div>
+            <InputField
+              label="Full Name"
+              icon={User}
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              required
+            />
 
             <InputField
               label="Email"
@@ -160,6 +162,7 @@ const InstructorForm = () => {
               name="email"
               value={formData.email}
               onChange={handleChange}
+              required
             />
 
             <InputField
@@ -172,6 +175,7 @@ const InstructorForm = () => {
               showPasswordToggle={true}
               onTogglePassword={() => setShowPassword(!showPassword)}
               showPassword={showPassword}
+              required
             />
 
             <InputField
@@ -184,67 +188,40 @@ const InstructorForm = () => {
               showPasswordToggle={true}
               onTogglePassword={() => setShowConfirmPassword(!showConfirmPassword)}
               showPassword={showConfirmPassword}
-            />
-
-            <InputField
-              label="Phone Number"
-              icon={MessageCircle}
-              type="tel"
-              name="phoneNumber"
-              value={formData.phoneNumber}
-              onChange={handleChange}
-            />
-
-            <InputField
-              label="Area of Expertise"
-              icon={Briefcase}
-              type="text"
-              name="expertise"
-              value={formData.expertise}
-              onChange={handleChange}
-            />
-
-            <InputField
-              label="Bio"
-              icon={FileText}
-              type="textarea"
-              name="bio"
-              value={formData.bio}
-              onChange={handleChange}
               required
             />
 
-            <InputField
-              label="Education"
-              icon={Award}
-              type="text"
-              name="education"
-              value={formData.education}
-              onChange={handleChange}
-              required
-            />
-
-            <InputField
-              label="Experience"
-              icon={Briefcase}
-              type="text"
-              name="experience"
-              value={formData.experience}
-              onChange={handleChange}
-              required
-            />
-
-            <div className="pt-4">
-              <BlobButton 
-                type="submit" 
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg
-                          transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]
-                          flex items-center justify-center space-x-2 font-semibold"
-              >
-                <span>Register</span>
-                <ArrowRight className="h-5 w-5" />
-              </BlobButton>
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700">
+                Upload CV
+              </label>
+              <input
+                type="file"
+                name="cv"
+                accept=".pdf,.doc,.docx"
+                onChange={handleChange}
+                className="block w-full text-sm text-gray-500 
+                  file:mr-4 file:py-2 file:px-4
+                  file:rounded-full file:border-0
+                  file:text-sm file:font-semibold
+                  file:bg-blue-50 file:text-blue-700
+                  hover:file:bg-blue-100"
+              />
             </div>
+
+            {error && (
+              <div className="text-red-500 text-sm text-center">
+                {error}
+              </div>
+            )}
+
+            <BlobButton 
+              type="submit" 
+              disabled={isLoading}
+              className="w-full"
+            >
+              {isLoading ? 'Submitting...' : 'Register as Instructor'}
+            </BlobButton>
           </form>
         </div>
       </div>
