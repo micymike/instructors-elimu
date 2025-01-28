@@ -13,7 +13,7 @@ import CreateSession from './pages/instructor/CreateSession';
 import GroupManagement from './pages/instructor/GroupManagement';
 import InstructorsLanding from './components/InstructorsLanding';
 import CourseLearning from './pages/instructor/CourseLearning';
-import Assessments from './pages/instructor/Assessments';
+import AssessmentCreator from './pages/instructor/Assessments';
 import CourseAnalytics from './components/dashboard/CourseAnalytics';
 import CourseWizard from './components/CourseWizard/CourseWizard';
 import PrivacyPolicy from './components/PrivacyPolicy';
@@ -25,7 +25,7 @@ import {
   Courses,
   Dashboard,
   Settings,
-  Schedule,
+  WebinarSchedule,
   Students
 } from './pages/instructor';
 import Content from './pages/instructor/Content';
@@ -40,7 +40,7 @@ const router = createBrowserRouter([
     element: <Login />
   },
   {
-    path: '/instructor/register',
+    path: '/instructorsform',
     element: <InstructorForm />
   },
   {
@@ -104,7 +104,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'assessments',
-        element: <Assessments />,
+        element: <AssessmentCreator/>,
         errorElement: <div>Error loading Assessments page</div>
       },
       {
@@ -119,7 +119,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'schedule',
-        element: <Schedule />,
+        element: <WebinarSchedule />,
         errorElement: <div>Error loading Schedule page</div>
       },
       {

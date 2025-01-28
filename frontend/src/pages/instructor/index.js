@@ -12,4 +12,4 @@ export { default as CreateCourse } from './CreateCourse';
 export { default as Assessments } from './Assessments';
 export { default as VideoManagement } from './VideoManagement';
 export { default as CreateSession } from './CreateSession';
-export { default as Schedule } from './Schedule';
+export { default as WebinarSchedule } from './WebinarSchedule';
