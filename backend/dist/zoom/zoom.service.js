@@ -41,28 +41,32 @@ var __importStar = (this && this.__importStar) || (function () {
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var ZoomService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ZoomService = void 0;
 const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
 const axios_1 = __importStar(require("axios"));
-let ZoomService = class ZoomService {
+let ZoomService = ZoomService_1 = class ZoomService {
     constructor(configService) {
         this.configService = configService;
         this.baseUrl = 'https://api.zoom.us/v2';
         this.accessToken = null;
         this.tokenExpiry = 0;
+        this.logger = new common_1.Logger(ZoomService_1.name);
         const clientId = this.configService.get('ZOOM_CLIENT_ID');
         const clientSecret = this.configService.get('ZOOM_API_SECRET');
         const accountId = this.configService.get('ZOOM_ACCOUNT_ID');
         if (!clientId || !clientSecret || !accountId) {
-            throw new Error('Missing required Zoom configuration');
+            this.logger.error('Missing required Zoom configuration');
+            throw new Error('Missing required Zoom configuration: ZOOM_CLIENT_ID, ZOOM_API_SECRET, and ZOOM_ACCOUNT_ID must be provided');
         }
         this.clientId = clientId;
         this.clientSecret = clientSecret;
         this.accountId = accountId;
     }
     async getAccessToken() {
+        var _a, _b;
         if (this.accessToken && Date.now() < this.tokenExpiry) {
             return this.accessToken;
         }
@@ -85,12 +89,13 @@ let ZoomService = class ZoomService {
         }
         catch (error) {
             if (error instanceof axios_1.AxiosError) {
-                throw new Error(`Failed to get Zoom access token: ${error.response?.data?.message || error.message}`);
+                throw new Error(`Failed to get Zoom access token: ${((_b = (_a = error.response) === null || _a === void 0 ? void 0 : _a.data) === null || _b === void 0 ? void 0 : _b.message) || error.message}`);
             }
             throw error;
         }
     }
     async getAllMeetings(userId) {
+        var _a, _b;
         try {
             const accessToken = await this.getAccessToken();
             const response = await axios_1.default.get(`${this.baseUrl}/users/${userId || 'me'}/meetings`, {
@@ -107,12 +112,13 @@ let ZoomService = class ZoomService {
         }
         catch (error) {
             if (error instanceof axios_1.AxiosError) {
-                throw new Error(`Failed to get meetings: ${error.response?.data?.message || error.message}`);
+                throw new Error(`Failed to get meetings: ${((_b = (_a = error.response) === null || _a === void 0 ? void 0 : _a.data) === null || _b === void 0 ? void 0 : _b.message) || error.message}`);
             }
             throw error;
         }
     }
     async createMeeting(instructorId, courseData) {
+        var _a;
         const token = await this.getAccessToken();
         try {
             const response = await axios_1.default.post(`${this.baseUrl}/users/me/meetings`, {
@@ -145,7 +151,7 @@ let ZoomService = class ZoomService {
         }
         catch (error) {
             const axiosError = error;
-            console.error('Error details:', axiosError.response?.data);
+            console.error('Error details:', (_a = axiosError.response) === null || _a === void 0 ? void 0 : _a.data);
             throw new Error(`Failed to create Zoom meeting: ${axiosError.message}`);
         }
     }
@@ -181,6 +187,7 @@ let ZoomService = class ZoomService {
         }
     }
     async deleteMeeting(meetingId, userId) {
+        var _a, _b;
         try {
             const accessToken = await this.getAccessToken();
             await axios_1.default.delete(`${this.baseUrl}/meetings/${meetingId}`, {
@@ -195,12 +202,13 @@ let ZoomService = class ZoomService {
         }
         catch (error) {
             if (error instanceof axios_1.AxiosError) {
-                throw new Error(`Failed to delete meeting: ${error.response?.data?.message || error.message}`);
+                throw new Error(`Failed to delete meeting: ${((_b = (_a = error.response) === null || _a === void 0 ? void 0 : _a.data) === null || _b === void 0 ? void 0 : _b.message) || error.message}`);
             }
             throw error;
         }
     }
     async joinMeeting(meetingId, userId) {
+        var _a, _b;
         try {
             const accessToken = await this.getAccessToken();
             const meetingResponse = await axios_1.default.get(`${this.baseUrl}/meetings/${meetingId}`, {
@@ -223,14 +231,14 @@ let ZoomService = class ZoomService {
         }
         catch (error) {
             if (error instanceof axios_1.AxiosError) {
-                throw new Error(`Failed to get meeting join URL: ${error.response?.data?.message || error.message}`);
+                throw new Error(`Failed to get meeting join URL: ${((_b = (_a = error.response) === null || _a === void 0 ? void 0 : _a.data) === null || _b === void 0 ? void 0 : _b.message) || error.message}`);
             }
             throw error;
         }
     }
 };
 exports.ZoomService = ZoomService;
-exports.ZoomService = ZoomService = __decorate([
+exports.ZoomService = ZoomService = ZoomService_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [config_1.ConfigService])
 ], ZoomService);

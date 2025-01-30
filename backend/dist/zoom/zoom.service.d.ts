@@ -7,6 +7,7 @@ export declare class ZoomService {
     private readonly baseUrl;
     private accessToken;
     private tokenExpiry;
+    private readonly logger;
     constructor(configService: ConfigService);
     private getAccessToken;
     getAllMeetings(userId?: string): Promise<any>;

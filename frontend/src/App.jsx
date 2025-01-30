@@ -14,6 +14,7 @@ import GroupManagement from './pages/instructor/GroupManagement';
 import InstructorsLanding from './components/InstructorsLanding';
 import CourseLearning from './pages/instructor/CourseLearning';
 import AssessmentCreator from './pages/instructor/Assessments';
+import AssessmentsList from './pages/instructor/AssessmentList';
 import CourseAnalytics from './components/dashboard/CourseAnalytics';
 import CourseWizard from './components/CourseWizard/CourseWizard';
 import PrivacyPolicy from './components/PrivacyPolicy';
@@ -107,6 +108,10 @@ const router = createBrowserRouter([
         element: <AssessmentCreator/>,
         errorElement: <div>Error loading Assessments page</div>
       },
+      {path: 'assessmentslist',
+      element: <AssessmentsList/>,
+      errorElement: <div>Error loading Assessments page</div>
+    },
       {
         path: 'video-management',
         element: <VideoManagement />,

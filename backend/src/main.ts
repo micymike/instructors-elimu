@@ -62,30 +62,16 @@ interface CustomJwtPayload extends JwtPayload {
   role: string;
 }
 
-async function verifyToken(token: string) {
-  // Use your existing JWT verification logic
-  const User = require('./users/schemas/user.schema').User;
-
+const verifyToken = (token: string) => {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET) as CustomJwtPayload;
-    
-    // Find user in database to ensure token is valid
-    const user = await User.findOne({ email: decoded.email });
-    
-    if (!user) {
-      throw new Error('User not found');
-    }
-
-    return {
-      id: user._id,
-      email: user.email,
-      role: user.role
-    };
+    const secretKey = process.env.JWT_SECRET_KEY; // Ensure this matches the key used to sign the token
+    const decoded = jwt.verify(token, secretKey);
+    return decoded;
   } catch (error) {
     console.error('Token verification failed:', error);
-    throw error;
+    throw new Error('Invalid token');
   }
-}
+};
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

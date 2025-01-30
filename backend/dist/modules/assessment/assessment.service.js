@@ -29,11 +29,7 @@ let AssessmentService = class AssessmentService {
             createAssessmentDto.questions = aiQuestions;
         }
         const aiSuggestions = await this.aiService.suggestImprovements(createAssessmentDto.questions);
-        const assessment = new this.assessmentModel({
-            ...createAssessmentDto,
-            instructor: instructorId,
-            aiSuggestions
-        });
+        const assessment = new this.assessmentModel(Object.assign(Object.assign({}, createAssessmentDto), { instructor: instructorId, aiSuggestions }));
         return assessment.save();
     }
     async findAll(instructorId) {

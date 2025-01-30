@@ -30,12 +30,9 @@ let VideoService = class VideoService {
         });
     }
     async create(createVideoDto, instructorId) {
-        const video = new this.videoModel({
-            ...createVideoDto,
-            instructor: instructorId,
-        });
+        const video = new this.videoModel(Object.assign(Object.assign({}, createVideoDto), { instructor: instructorId }));
         const savedVideo = await video.save();
-        return { ...savedVideo.toObject(), id: savedVideo._id.toString() };
+        return Object.assign(Object.assign({}, savedVideo.toObject()), { id: savedVideo._id.toString() });
     }
     async findAll(instructorId, query) {
         const { visibility, tags, search, page = 1, limit = 10, sort = '-createdAt', } = query;
@@ -63,7 +60,7 @@ let VideoService = class VideoService {
                 .populate('courses', 'title'),
             this.videoModel.countDocuments(filter),
         ]);
-        const videosWithId = videos.map(video => ({ ...video.toObject(), id: video._id.toString() }));
+        const videosWithId = videos.map(video => (Object.assign(Object.assign({}, video.toObject()), { id: video._id.toString() })));
         return { videos: videosWithId, total };
     }
     async findOne(id, instructorId) {
@@ -74,14 +71,14 @@ let VideoService = class VideoService {
         if (!video) {
             throw new common_1.NotFoundException('Video not found');
         }
-        return { ...video.toObject(), id: video._id.toString() };
+        return Object.assign(Object.assign({}, video.toObject()), { id: video._id.toString() });
     }
     async update(id, updateVideoDto, instructorId) {
         const video = await this.videoModel.findOneAndUpdate({ _id: id, instructor: instructorId }, { $set: updateVideoDto }, { new: true });
         if (!video) {
             throw new common_1.NotFoundException('Video not found');
         }
-        return { ...video.toObject(), id: video._id.toString() };
+        return Object.assign(Object.assign({}, video.toObject()), { id: video._id.toString() });
     }
     async remove(id, instructorId) {
         const video = await this.videoModel.findOne({ _id: id, instructor: instructorId });
@@ -119,14 +116,14 @@ let VideoService = class VideoService {
         if (!video) {
             throw new common_1.NotFoundException('Video not found');
         }
-        return { ...video.toObject(), id: video._id.toString() };
+        return Object.assign(Object.assign({}, video.toObject()), { id: video._id.toString() });
     }
     async removeFromCourse(videoId, courseId, instructorId) {
         const video = await this.videoModel.findOneAndUpdate({ _id: videoId, instructor: instructorId }, { $pull: { courses: courseId } }, { new: true });
         if (!video) {
             throw new common_1.NotFoundException('Video not found');
         }
-        return { ...video.toObject(), id: video._id.toString() };
+        return Object.assign(Object.assign({}, video.toObject()), { id: video._id.toString() });
     }
     async validateVideo(file) {
         if (!file) {

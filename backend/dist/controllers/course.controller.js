@@ -153,11 +153,7 @@ let CourseController = class CourseController {
                 statusCode: 201,
                 message: 'Course created successfully',
                 data: {
-                    course: {
-                        ...newCourse,
-                        _id: newCourse._id,
-                        id: newCourse._id.toString()
-                    },
+                    course: Object.assign(Object.assign({}, newCourse), { _id: newCourse._id, id: newCourse._id.toString() }),
                     insights: courseInsights
                 }
             };
@@ -174,13 +170,14 @@ let CourseController = class CourseController {
         }
     }
     async generateCourseInsights(courseData) {
+        var _a, _b;
         try {
             const prompt = `Generate learning insights for a course with the following details:
         Title: ${courseData.title}
         Description: ${courseData.description}
         Category: ${courseData.category}
         Level: ${courseData.level}
-        Topics: ${courseData.topics?.map(topic => `  - ${topic}`).join('\n') || '  - No topics specified'}
+        Topics: ${((_a = courseData.topics) === null || _a === void 0 ? void 0 : _a.map(topic => `  - ${topic}`).join('\n')) || '  - No topics specified'}
 
         Learning Objectives
 
@@ -196,7 +193,7 @@ let CourseController = class CourseController {
           - Real-world case studies
 
         Recommended Resources
-        ${courseData.resources?.map(resource => `  - ${resource}`).join('\n') || '  - No resources specified'}
+        ${((_b = courseData.resources) === null || _b === void 0 ? void 0 : _b.map(resource => `  - ${resource}`).join('\n')) || '  - No resources specified'}
 `;
             const response = await this.geminiService.generateResponse(prompt, 'course_insights');
             return {
@@ -277,6 +274,7 @@ let CourseController = class CourseController {
         }
     }
     async generateCourse(createCourseDto, req) {
+        var _a, _b;
         const user = await this.authenticateRequest(req);
         const analysis = `
 Course Information Analysis
@@ -292,7 +290,7 @@ Level: ${createCourseDto.level}
 Content Structure
 
 Suggestion: Include specific topics that will be covered in the course, such as:
-${createCourseDto.topics?.map(topic => `  - ${topic}`).join('\n') || '  - No topics specified'}
+${((_a = createCourseDto.topics) === null || _a === void 0 ? void 0 : _a.map(topic => `  - ${topic}`).join('\n')) || '  - No topics specified'}
 
 Learning Objectives
 
@@ -308,7 +306,7 @@ Teaching Methods
   - Real-world case studies
 
 Recommended Resources
-${createCourseDto.resources?.map(resource => `  - ${resource}`).join('\n') || '  - No resources specified'}
+${((_b = createCourseDto.resources) === null || _b === void 0 ? void 0 : _b.map(resource => `  - ${resource}`).join('\n')) || '  - No resources specified'}
 `;
         const aiEnhancedAnalysis = await this.generateCourseInsights(createCourseDto);
         return {
@@ -458,11 +456,7 @@ ${createCourseDto.resources?.map(resource => `  - ${resource}`).join('\n') || ' 
                 statusCode: 200,
                 message: 'Course updated successfully',
                 data: {
-                    course: {
-                        ...updatedCourse,
-                        _id: updatedCourse._id,
-                        id: updatedCourse._id.toString()
-                    },
+                    course: Object.assign(Object.assign({}, updatedCourse), { _id: updatedCourse._id, id: updatedCourse._id.toString() }),
                     improvementSuggestions
                 }
             };
@@ -479,17 +473,18 @@ ${createCourseDto.resources?.map(resource => `  - ${resource}`).join('\n') || ' 
         }
     }
     async generateCourseImprovementSuggestions(course) {
+        var _a, _b, _c, _d, _e;
         try {
             const prompt = `Analyze and provide improvement suggestions for a course:
         Title: ${course.title || 'Untitled Course'}
         Description: ${course.description || 'No description provided'}
         Category: ${course.category || 'Uncategorized'}
         Current Level: ${course.level || 'Not specified'}
-        Existing Topics: ${course.topics?.join(', ') || 'No specific topics'}
-        Learning Outcomes: ${course.learningOutcomes?.join(', ') || 'No specific learning outcomes'}
-        Prerequisites: ${course.prerequisites?.join(', ') || 'No specific prerequisites'}
-        Resources: ${course.resources?.join(', ') || 'No specific resources'}
-        Sections: ${course.sections?.join(', ') || 'No specific sections'}`;
+        Existing Topics: ${((_a = course.topics) === null || _a === void 0 ? void 0 : _a.join(', ')) || 'No specific topics'}
+        Learning Outcomes: ${((_b = course.learningOutcomes) === null || _b === void 0 ? void 0 : _b.join(', ')) || 'No specific learning outcomes'}
+        Prerequisites: ${((_c = course.prerequisites) === null || _c === void 0 ? void 0 : _c.join(', ')) || 'No specific prerequisites'}
+        Resources: ${((_d = course.resources) === null || _d === void 0 ? void 0 : _d.join(', ')) || 'No specific resources'}
+        Sections: ${((_e = course.sections) === null || _e === void 0 ? void 0 : _e.join(', ')) || 'No specific sections'}`;
             const response = await this.geminiService.generateResponse(prompt, 'course_improvement');
             return {
                 aiGeneratedSuggestions: response,
@@ -586,7 +581,8 @@ ${createCourseDto.resources?.map(resource => `  - ${resource}`).join('\n') || ' 
         }
     }
     getFileType(filename) {
-        const extension = filename.split('.').pop()?.toLowerCase();
+        var _a;
+        const extension = (_a = filename.split('.').pop()) === null || _a === void 0 ? void 0 : _a.toLowerCase();
         switch (extension) {
             case 'pdf':
                 return 'pdf';

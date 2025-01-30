@@ -12,12 +12,10 @@ export declare class LiveSessionService {
         duration: number;
         instructorId: string;
     }): Promise<{
-        course: import("mongoose").Document<unknown, {}, CourseDocument> & Course & import("mongoose").Document<unknown, any, any> & {
+        course: import("mongoose").Document<unknown, {}, CourseDocument> & Course & import("mongoose").Document<any, any, any> & {
             _id: import("mongoose").Types.ObjectId;
-        } & Required<{
+        } & {
             _id: import("mongoose").Types.ObjectId;
-        }> & {
-            __v: number;
         };
         zoomMeeting: {
             meetingId: any;
@@ -43,12 +41,10 @@ export declare class LiveSessionService {
             type: string;
         }>;
     }>;
-    recordLiveSession(courseId: string, sessionId: string, recordingUrl: string): Promise<import("mongoose").Document<unknown, {}, CourseDocument> & Course & import("mongoose").Document<unknown, any, any> & {
+    recordLiveSession(courseId: string, sessionId: string, recordingUrl: string): Promise<import("mongoose").Document<unknown, {}, CourseDocument> & Course & import("mongoose").Document<any, any, any> & {
         _id: import("mongoose").Types.ObjectId;
-    } & Required<{
+    } & {
         _id: import("mongoose").Types.ObjectId;
-    }> & {
-        __v: number;
     }>;
     deleteLiveSession(courseId: string, sessionId: string): Promise<{
         message: string;

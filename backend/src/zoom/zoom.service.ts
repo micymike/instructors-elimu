@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { AxiosError } from 'axios';
 
@@ -10,6 +10,7 @@ export class ZoomService {
   private readonly baseUrl = 'https://api.zoom.us/v2';
   private accessToken: string | null = null;
   private tokenExpiry: number = 0;
+  private readonly logger = new Logger(ZoomService.name);
 
   constructor(private configService: ConfigService) {
     const clientId = this.configService.get<string>('ZOOM_CLIENT_ID');
@@ -17,7 +18,8 @@ export class ZoomService {
     const accountId = this.configService.get<string>('ZOOM_ACCOUNT_ID');
 
     if (!clientId || !clientSecret || !accountId) {
-      throw new Error('Missing required Zoom configuration');
+      this.logger.error('Missing required Zoom configuration');
+      throw new Error('Missing required Zoom configuration: ZOOM_CLIENT_ID, ZOOM_API_SECRET, and ZOOM_ACCOUNT_ID must be provided');
     }
 
     this.clientId = clientId;

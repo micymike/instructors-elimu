@@ -49,9 +49,7 @@ const jwt = __importStar(require("jsonwebtoken"));
 dotenv.config();
 class CustomIoAdapter extends platform_socket_io_1.IoAdapter {
     createIOServer(port, options) {
-        const server = super.createIOServer(port, {
-            ...options,
-            cors: {
+        const server = super.createIOServer(port, Object.assign(Object.assign({}, options), { cors: {
                 origin: [
                     'http://localhost:3000',
                     'http://localhost:3001',
@@ -59,8 +57,7 @@ class CustomIoAdapter extends platform_socket_io_1.IoAdapter {
                 ],
                 methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
                 credentials: true
-            }
-        });
+            } }));
         server.use(async (socket, next) => {
             const token = socket.handshake.auth.token;
             if (!token) {
@@ -78,25 +75,17 @@ class CustomIoAdapter extends platform_socket_io_1.IoAdapter {
         return server;
     }
 }
-async function verifyToken(token) {
-    const User = require('./users/schemas/user.schema').User;
+const verifyToken = (token) => {
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findOne({ email: decoded.email });
-        if (!user) {
-            throw new Error('User not found');
-        }
-        return {
-            id: user._id,
-            email: user.email,
-            role: user.role
-        };
+        const secretKey = process.env.JWT_SECRET_KEY;
+        const decoded = jwt.verify(token, secretKey);
+        return decoded;
     }
     catch (error) {
         console.error('Token verification failed:', error);
-        throw error;
+        throw new Error('Invalid token');
     }
-}
+};
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
     app.enableCors({

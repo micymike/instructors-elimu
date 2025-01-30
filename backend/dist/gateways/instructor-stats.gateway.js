@@ -37,14 +37,16 @@ let InstructorStatsGateway = InstructorStatsGateway_1 = class InstructorStatsGat
         }
     }
     handleDisconnect(client) {
-        this.logger.log(`Socket disconnected: ${client.user?.email || 'Unknown'}`);
+        var _a;
+        this.logger.log(`Socket disconnected: ${((_a = client.user) === null || _a === void 0 ? void 0 : _a.email) || 'Unknown'}`);
     }
     async broadcastInstructorStats(instructorEmail) {
         try {
             const stats = await this.courseService.getInstructorStats(instructorEmail);
             const sockets = await this.server.fetchSockets();
             const instructorSockets = Array.from(sockets).filter((socket) => {
-                const userEmail = socket.user?.email;
+                var _a;
+                const userEmail = (_a = socket.user) === null || _a === void 0 ? void 0 : _a.email;
                 return userEmail === instructorEmail;
             });
             instructorSockets.forEach(socket => {

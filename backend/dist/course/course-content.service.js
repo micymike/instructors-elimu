@@ -32,7 +32,7 @@ let CourseContentService = class CourseContentService {
         if (createContentDto.pdf) {
             pdfUrl = await this.cloudinaryService.uploadFile(createContentDto.pdf, 'course-pdfs');
         }
-        const newContent = new this.contentModel({ ...createContentDto, courseId, moduleId, videoUrl, pdfUrl });
+        const newContent = new this.contentModel(Object.assign(Object.assign({}, createContentDto), { courseId, moduleId, videoUrl, pdfUrl }));
         return newContent.save();
     }
     async updateContent(courseId, moduleId, contentId, updateContentDto) {

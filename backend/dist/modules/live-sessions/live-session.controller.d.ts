@@ -8,12 +8,10 @@ export declare class LiveSessionController {
         duration: number;
         instructorId: string;
     }): Promise<{
-        course: import("mongoose").Document<unknown, {}, import("../../schemas/course.schema").CourseDocument> & import("../../schemas/course.schema").Course & import("mongoose").Document<unknown, any, any> & {
+        course: import("mongoose").Document<unknown, {}, import("../../schemas/course.schema").CourseDocument> & import("../../schemas/course.schema").Course & import("mongoose").Document<any, any, any> & {
             _id: import("mongoose").Types.ObjectId;
-        } & Required<{
+        } & {
             _id: import("mongoose").Types.ObjectId;
-        }> & {
-            __v: number;
         };
         zoomMeeting: {
             meetingId: any;
@@ -42,12 +40,10 @@ export declare class LiveSessionController {
     deleteLiveSession(courseId: string, sessionId: string): Promise<{
         message: string;
     }>;
-    recordLiveSession(courseId: string, sessionId: string, recordingUrl: string): Promise<import("mongoose").Document<unknown, {}, import("../../schemas/course.schema").CourseDocument> & import("../../schemas/course.schema").Course & import("mongoose").Document<unknown, any, any> & {
+    recordLiveSession(courseId: string, sessionId: string, recordingUrl: string): Promise<import("mongoose").Document<unknown, {}, import("../../schemas/course.schema").CourseDocument> & import("../../schemas/course.schema").Course & import("mongoose").Document<any, any, any> & {
         _id: import("mongoose").Types.ObjectId;
-    } & Required<{
+    } & {
         _id: import("mongoose").Types.ObjectId;
-    }> & {
-        __v: number;
     }>;
     getAllLiveSessions(): Promise<{
         sessionDate: Date;

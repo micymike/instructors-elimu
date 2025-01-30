@@ -1,27 +1,76 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Upload, Plus, Eye, Save, Library, X } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AssessmentModal } from '../../components/content/AssessmentModal';
+import { io } from 'socket.io-client';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+
+const socket = io('https://centralize-auth-elimu.onrender.com')
 
 const AssessmentCreator = () => {
+  const history = useNavigate();
   const [assessment, setAssessment] = useState({
     title: '',
     description: '',
     questions: [],
     timeLimit: 60,
   });
+  
 
   const [questionBank, setQuestionBank] = useState([]);
   const [showPreview, setShowPreview] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(assessment.timeLimit * 60);
+  const [score, setScore] = useState(0);
+  const [assessments, setAssessments] = useState([]);
 
   const questionTypes = [
     { id: 'multiple-choice', label: 'Multiple Choice' },
     { id: 'true-false', label: 'True/False' },
     { id: 'short-answer', label: 'Short Answer' },
-    { id: 'essay', label: 'Essay' },
+    { id: 'fill-in-the-blanks', label: 'Fill in the Blanks' },
   ];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          handleSubmit();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    socket.on('update', (data) => {
+      // Handle real-time updates
+      console.log('Real-time update:', data);
+    });
+
+    return () => {
+      socket.off('update');
+    };
+  }, []);
+
+  useEffect(() => {
+    const fetchAssessments = async () => {
+      try {
+        const response = await axios.get('https://centralize-auth-elimu.onrender.com/instructor/assessments');
+        setAssessments(response.data);
+      } catch (error) {
+        console.error('Error fetching assessments:', error);
+      }
+    };
+
+    fetchAssessments();
+  }, []);
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -91,10 +140,73 @@ const AssessmentCreator = () => {
     setQuestionBank(prev => [...prev, { ...question, id: Date.now() }]);
   };
 
-  const handleSave = (questions) => {
-    // Save the assessment questions
-    console.log('Saved questions:', questions);
+  const handlePreview = () => {
+    if (assessment.questions.length === 0) {
+      alert("Please add at least one question before previewing."); // Replace toast with alert
+      return;
+    }
+    setShowPreview(true);
+    // Store current assessment in localStorage for preview
+    localStorage.setItem('previewAssessment', JSON.stringify(assessment));
+    history.push('/assessment-preview');
   };
+
+  const handleSave = async () => {
+    try {
+      if (!assessment.title) {
+        alert("Please add a title for your assessment."); // Replace toast with alert
+        return;
+      }
+
+      if (assessment.questions.length === 0) {
+        alert("Please add at least one question before saving."); // Replace toast with alert
+        return;
+      }
+
+      const response = await axios.post('https://centralize-auth-elimu.onrender.com/instructor/assessments', assessment);
+      alert("Assessment saved successfully!"); // Replace toast with alert
+      
+      // Emit socket event for real-time updates
+      socket.emit('assessment-created', response.data);
+      
+      // Redirect to the assessments list page
+      history.push('/assessments');
+    } catch (error) {
+      alert("Failed to save assessment. Please try again."); // Replace toast with alert
+      console.error('Error saving assessment:', error);
+    }
+  };
+
+  const handleEdit = (id) => {
+    const assessmentToEdit = assessments.find(a => a.id === id);
+    setAssessment(assessmentToEdit);
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await axios.delete(`/api/delete-assessment/${id}`);
+      setAssessments(prev => prev.filter(a => a.id !== id));
+      console.log('Deleted assessment:', id);
+    } catch (error) {
+      console.error('Error deleting assessment:', error);
+    }
+  };
+
+  const handleSubmit = () => {
+    // Submit the assessment
+    console.log('Assessment submitted');
+  };
+
+  const handleAutoSave = useCallback(() => {
+    // Auto-save logic
+    console.log('Auto-saving assessment');
+  }, [assessment]);
+
+  useEffect(() => {
+    const interval = setInterval(handleAutoSave, 30000); // Auto-save every 30 seconds
+    return () => clearInterval(interval);
+  }, [handleAutoSave]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -111,6 +223,7 @@ const AssessmentCreator = () => {
                 <Eye size={20} /> Preview
               </button>
               <button
+                onClick={() => handleSave(assessment.questions)}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
               >
                 <Save size={20} /> Save Assessment
@@ -285,6 +398,34 @@ const AssessmentCreator = () => {
                   </div>
                 )}
 
+                {question.type === 'short-answer' && (
+                  <textarea
+                    placeholder="Enter the correct answer"
+                    className="w-full p-3 border border-gray-300 rounded-md mb-4"
+                    value={question.correctAnswer}
+                    onChange={(e) => {
+                      const updatedQuestions = assessment.questions.map(q =>
+                        q.id === question.id ? { ...q, correctAnswer: e.target.value } : q
+                      );
+                      setAssessment(prev => ({ ...prev, questions: updatedQuestions }));
+                    }}
+                  />
+                )}
+
+                {question.type === 'fill-in-the-blanks' && (
+                  <textarea
+                    placeholder="Enter the correct answer"
+                    className="w-full p-3 border border-gray-300 rounded-md mb-4"
+                    value={question.correctAnswer}
+                    onChange={(e) => {
+                      const updatedQuestions = assessment.questions.map(q =>
+                        q.id === question.id ? { ...q, correctAnswer: e.target.value } : q
+                      );
+                      setAssessment(prev => ({ ...prev, questions: updatedQuestions }));
+                    }}
+                  />
+                )}
+
                 <input
                   type="number"
                   placeholder="Points"
@@ -330,6 +471,37 @@ const AssessmentCreator = () => {
                         Add to Assessment
                       </button>
                     </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Saved Assessments */}
+          {assessments.length > 0 && (
+            <div className="mt-8">
+              <h2 className="text-xl font-semibold mb-4">Saved Assessments</h2>
+              <div className="space-y-4">
+                {assessments.map((assessment) => (
+                  <div key={assessment.id} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex justify-between items-start">
+                      <h3 className="font-medium">{assessment.title}</h3>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEdit(assessment.id)}
+                          className="text-blue-600 hover:text-blue-800"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(assessment.id)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                    <p>{assessment.description}</p>
                   </div>
                 ))}
               </div>
