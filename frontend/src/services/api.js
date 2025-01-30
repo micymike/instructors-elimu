@@ -109,7 +109,7 @@ export const settingsAPI = {
       throw new Error('No authentication token found');
     }
 
-    const response = await api.get('/api/api/settings', {
+    const response = await api.get('/instructor/profile', {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -123,7 +123,7 @@ export const settingsAPI = {
       throw new Error('No authentication token found');
     }
 
-    const response = await api.post('/api/api/settings', {
+    const response = await api.post('/instructors/profile/update', {
       personalInfo: profileData
     }, {
       headers: {
@@ -140,7 +140,7 @@ export const settingsAPI = {
     }
 
     try {
-      const response = await api.get('/api/api/settings', {
+      const response = await api.get('/instrucors/profile/profile-picture', {
         headers: {
           'Authorization': `Bearer ${token}`
         },
@@ -179,7 +179,7 @@ export const settingsAPI = {
     formData.append('profilePicture', file);
     
     try {
-      const response = await api.post('/api/api/settings', 
+      const response = await api.post('/instructors/profile/profile-picture', 
         formData, 
         {
           headers: {
