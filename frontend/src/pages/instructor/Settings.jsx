@@ -21,12 +21,10 @@ const InstructorSettings = () => {
     phone: '',
     expertise: '',
     bio: '',
-    profilePicture: {}
   });
 
   // Password Form State
   const [passwordForm, setPasswordForm] = useState({
-    currentPassword: '',
     newPassword: '',
     confirmPassword: ''
   });
@@ -35,14 +33,13 @@ const InstructorSettings = () => {
   const [isProfileUpdating, setIsProfileUpdating] = useState(false);
   const [isPasswordChanging, setIsPasswordChanging] = useState(false);
 
-  // Fetch initial settings on component mount
+  // Fetch initial settings
   useEffect(() => {
     const fetchSettings = async () => {
       try {
         const response = await settingsAPI.getSettings();
         const { personalInfo } = response.data;
         
-        // Populate profile form
         setProfileForm({
           firstName: personalInfo.firstName || '',
           lastName: personalInfo.lastName || '',
@@ -50,10 +47,8 @@ const InstructorSettings = () => {
           phone: personalInfo.phone || '',
           expertise: personalInfo.expertise || '',
           bio: personalInfo.bio || '',
-          profilePicture: personalInfo.profilePicture || {}
         });
 
-        // Set existing profile picture
         if (personalInfo.profilePicture) {
           setProfilePicture({
             preview: personalInfo.profilePicture,
@@ -69,123 +64,84 @@ const InstructorSettings = () => {
     fetchSettings();
   }, []);
 
-  // Handle file upload
+  // Handle profile picture upload
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Validate file size (5MB limit)
     if (file.size > 5 * 1024 * 1024) {
       toast.error('File size must be less than 5MB');
       return;
     }
 
-    // Validate file type
     const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
     if (!validTypes.includes(file.type)) {
       toast.error('Only JPEG, PNG, and GIF files are allowed');
       return;
     }
 
-    // Create preview
     const reader = new FileReader();
-    reader.onloadend = async () => {
-      try {
-        // Upload to server
-        const updatedSettings = await settingsAPI.uploadProfilePicture(file);
-        
-        // Update state with server response
-        setProfilePicture({
-          preview: reader.result,
-          file: file
-        });
-
-        // Update profile form with new profile picture details
-        setProfileForm(prevForm => ({
-          ...prevForm,
-          profilePicture: {
-            originalName: file.name,
-            contentType: file.type
-          }
-        }));
-
-        toast.success('Profile picture uploaded successfully');
-      } catch (error) {
-        toast.error(error.message || 'Failed to upload profile picture');
-        console.error('Profile picture upload error:', error);
-      }
+    reader.onloadend = () => {
+      setProfilePicture({
+        preview: reader.result,
+        file: file
+      });
     };
     reader.readAsDataURL(file);
   };
 
   // Remove profile picture
   const handleRemoveProfilePicture = async () => {
+    if (!window.confirm('Are you sure you want to remove your profile picture?')) return;
+    
     try {
-      // Assuming there's an API method to remove profile picture
       await settingsAPI.updateProfile({ profilePicture: null });
-      
-      setProfilePicture({
-        preview: null,
-        file: null
-      });
-      
+      setProfilePicture({ preview: null, file: null });
       toast.success('Profile picture removed');
     } catch (error) {
       toast.error('Failed to remove profile picture');
-      console.error('Profile picture removal error:', error);
+      console.error('Removal error:', error);
     }
   };
 
-  // Update profile details
+  // Update profile
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
     setIsProfileUpdating(true);
+
     try {
-      const updateData = {
-        personalInfo: {
-          firstName: profileForm.firstName,
-          lastName: profileForm.lastName,
-          email: profileForm.email,
-          phone: profileForm.phone,
-          expertise: profileForm.expertise,
-          bio: profileForm.bio
-        }
-      };
+      const formData = new FormData();
+      
+      // Add profile data
+      formData.append('personalInfo', JSON.stringify({
+        firstName: profileForm.firstName,
+        lastName: profileForm.lastName,
+        email: profileForm.email,
+        phone: profileForm.phone,
+        expertise: profileForm.expertise,
+        bio: profileForm.bio
+      }));
 
-      // If there's a new profile picture, include it
+      // Add profile picture if exists
       if (profilePicture.file) {
-        const updatedSettings = await settingsAPI.uploadProfilePicture(profilePicture.file);
-        
-        // Optionally update preview if server provides a URL
-        if (updatedSettings.personalInfo.profilePicture) {
-          setProfilePicture(prev => ({
-            ...prev,
-            preview: updatedSettings.personalInfo.profilePicture
-          }));
-        }
+        formData.append('profilePicture', profilePicture.file);
       }
 
-      // Perform profile update
-      const response = await settingsAPI.updateProfile(updateData);
+      const response = await settingsAPI.updateProfile(formData);
       
-      toast.success('Profile updated successfully');
-      
-      // Update form with latest data from server
-      if (response.data) {
-        const { personalInfo } = response.data;
-        setProfileForm({
-          firstName: personalInfo.firstName || '',
-          lastName: personalInfo.lastName || '',
-          email: personalInfo.email || '',
-          phone: personalInfo.phone || '',
-          expertise: personalInfo.expertise || '',
-          bio: personalInfo.bio || '',
-          profilePicture: personalInfo.profilePicture || {}
-        });
+      // Update state with new data
+      if (response.data.personalInfo.profilePicture) {
+        setProfilePicture(prev => ({
+          ...prev,
+          preview: response.data.personalInfo.profilePicture,
+          file: null
+        }));
       }
+
+      toast.success('Profile updated successfully');
     } catch (error) {
       toast.error(error.message || 'Failed to update profile');
-      console.error('Profile update error:', error);
+      console.error('Update error:', error);
     } finally {
       setIsProfileUpdating(false);
     }
@@ -430,7 +386,7 @@ const InstructorSettings = () => {
           </div>
           <div className="space-y-4">
             {Object.entries(notifications).map(([key, value]) => (
-              <div key={key} className="flex items-center justify-between">
+              <div key={key} style={{ marginBottom: '24px' }} className="flex items-center justify-between">
                 <span className="text-gray-700">{key.replace(/([A-Z])/g, ' $1').charAt(0).toUpperCase() + key.slice(1)}</span>
                 <button
                   onClick={() => handleNotificationChange(key)}
