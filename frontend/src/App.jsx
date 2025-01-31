@@ -21,7 +21,10 @@ import {
   AssignmentsList,
   CreateCourse,
   Assessments,
-  VideoManagement
+  VideoManagement,
+  Content,
+  GroupManagement,
+  ZoomMeetings
 } from './pages/instructor';
 
 const router = createBrowserRouter([
@@ -80,6 +83,26 @@ const router = createBrowserRouter([
         path: 'settings',
         element: <Settings />,
         errorElement: <div>Error loading Settings page</div>
+      },
+      {
+        path: 'zoom-meetings',
+        element: <ZoomMeetings />,
+        errorElement: <div>Error loading Zoom Meetings page</div>
+      },
+      {
+        path: 'groups',
+        element: <GroupManagement />,
+        errorElement: <div>Error loading Group Management page</div>
+      },
+      {
+        path: 'content',
+        element: <Content />,
+        errorElement: <div>Error loading Content page</div>
+      },
+      {
+        path: 'assessments',
+        element: <Assessments />,
+        errorElement: <div>Error loading Assessments page</div>
       },
       {
         path: '',
