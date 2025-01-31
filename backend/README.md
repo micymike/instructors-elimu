@@ -3,10 +3,19 @@
 ## API Documentation
 - Swagger Docs: `https://instructors-elimu.onrender.com/api/docs`
 
+## Features
+- User Authentication & Authorization
+- Course Management
+- Assignment Handling
+- AI-Powered Grading Assistance
+- File Upload & Management
+- Student Progress Tracking
+
 ## Prerequisites
 - Node.js 18.17.0
 - MongoDB
 - Cloudinary Account (optional)
+- Google AI API Key (for Gemini integration)
 
 ## Local Development
 
@@ -26,6 +35,7 @@ SESSION_SECRET=your_session_secret
 CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
 CLOUDINARY_API_KEY=your_cloudinary_api_key
 CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+GOOGLE_AI_API_KEY=your_google_ai_api_key
 ```
 
 ### Running the Application
@@ -38,6 +48,33 @@ npm run build
 npm run start:prod
 ```
 
+## API Endpoints
+
+### Authentication
+- POST `/api/auth/register` - Register new user
+- POST `/api/auth/login` - User login
+- POST `/api/auth/logout` - User logout
+
+### Courses
+- GET `/api/courses` - List all courses
+- POST `/api/courses` - Create new course
+- GET `/api/courses/:id` - Get course details
+- PUT `/api/courses/:id` - Update course
+- DELETE `/api/courses/:id` - Delete course
+
+### Assignments
+- GET `/api/assignments` - List assignments
+- POST `/api/assignments` - Create assignment
+- GET `/api/assignments/:id` - Get assignment details
+- PUT `/api/assignments/:id` - Update assignment
+- POST `/api/assignments/:id/submit` - Submit assignment
+- POST `/api/assignments/:id/grade` - Grade assignment
+
+### AI Services
+- POST `/api/ai/grade` - AI-assisted grading
+- POST `/api/ai/feedback` - Generate feedback
+- POST `/api/ai/analyze` - Analyze student work
+
 ## Render Deployment
 
 ### Configuration
@@ -49,10 +86,11 @@ npm run start:prod
 ### Required Environment Variables
 - `NODE_ENV`: Set to `production`
 - `PORT`: Automatically set by Render
-- `MONGODB_URI`: MongoDB connection string
-- `JWT_SECRET`: Generate a secure random string
-- `SESSION_SECRET`: Generate another secure random string
-- `CLOUDINARY_*`: Optional cloud storage credentials
+- `MONGODB_URI`: Your MongoDB connection string
+- `JWT_SECRET`: Secret key for JWT
+- `SESSION_SECRET`: Secret for session management
+- `CLOUDINARY_*`: Cloudinary credentials
+- `GOOGLE_AI_API_KEY`: Google AI API key for Gemini integration
 
 ## Troubleshooting
 - Ensure all dependencies are installed
@@ -63,6 +101,7 @@ npm run start:prod
 
 ## Contributing
 1. Fork the repository
-2. Create a feature branch
-3. Commit changes
-4. Push and create a Pull Request
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
