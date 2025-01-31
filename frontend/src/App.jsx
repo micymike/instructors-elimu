@@ -1,7 +1,7 @@
 import './index.css';
 import { Toaster } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BrowserRouter as Router, Routes, Route, Navigate, createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { SnackbarProvider } from 'notistack';
@@ -25,6 +25,10 @@ import {
 } from './pages/instructor';
 
 const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <Navigate to="/instructor/dashboard" replace />
+  },
   {
     path: '/login',
     element: <Login />
@@ -83,6 +87,10 @@ const router = createBrowserRouter([
         errorElement: <div>Error loading Dashboard page</div>
       }
     ]
+  },
+  {
+    path: '*',
+    element: <Navigate to="/instructor/dashboard" replace />
   }
 ]);
 
