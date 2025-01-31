@@ -50,6 +50,7 @@ let ZoomService = class ZoomService {
         }
     }
     async createMeeting(params) {
+        var _a, _b, _c;
         try {
             console.log('Getting access token...');
             const token = await this.getAccessToken();
@@ -78,8 +79,8 @@ let ZoomService = class ZoomService {
         }
         catch (error) {
             const zoomError = error;
-            console.error('Error creating Zoom meeting:', zoomError.response?.data || zoomError);
-            throw new Error(zoomError.response?.data?.message || 'Failed to create Zoom meeting');
+            console.error('Error creating Zoom meeting:', ((_a = zoomError.response) === null || _a === void 0 ? void 0 : _a.data) || zoomError);
+            throw new Error(((_c = (_b = zoomError.response) === null || _b === void 0 ? void 0 : _b.data) === null || _c === void 0 ? void 0 : _c.message) || 'Failed to create Zoom meeting');
         }
     }
 };

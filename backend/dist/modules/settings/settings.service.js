@@ -72,16 +72,13 @@ let SettingsService = class SettingsService {
         catch (error) {
             console.warn('User data not available:', error.message);
         }
-        return {
-            ...settings?.toObject() || {},
-            ...userData
-        };
+        return Object.assign(Object.assign({}, (settings === null || settings === void 0 ? void 0 : settings.toObject()) || {}), userData);
     }
     async updateSettings(updateSettingsDto, token) {
         const user = await this.validateToken(token);
         const tokenPayload = this.decodeToken(token);
         const email = tokenPayload.email;
-        const updatedSettings = await this.userSettingsModel.findOneAndUpdate({ email }, { $set: { ...updateSettingsDto, email } }, { new: true, upsert: true });
+        const updatedSettings = await this.userSettingsModel.findOneAndUpdate({ email }, { $set: Object.assign(Object.assign({}, updateSettingsDto), { email }) }, { new: true, upsert: true });
         return {
             message: 'Settings updated successfully',
             settings: updatedSettings

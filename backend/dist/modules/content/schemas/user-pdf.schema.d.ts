@@ -14,12 +14,8 @@ export declare class UserPDF extends Document {
     isDeleted: boolean;
     isActive: boolean;
 }
-export declare const UserPDFSchema: import("mongoose").Schema<UserPDF, import("mongoose").Model<UserPDF, any, any, any, Document<unknown, any, UserPDF> & UserPDF & Required<{
-    _id: unknown;
-}> & {
-    __v: number;
-}, any>, {}, {}, {}, {}, import("mongoose").DefaultSchemaOptions, UserPDF, Document<unknown, {}, import("mongoose").FlatRecord<UserPDF>> & import("mongoose").FlatRecord<UserPDF> & Required<{
-    _id: unknown;
-}> & {
-    __v: number;
+export declare const UserPDFSchema: import("mongoose").Schema<UserPDF, import("mongoose").Model<UserPDF, any, any, any, Document<unknown, any, UserPDF> & UserPDF & {
+    _id: Types.ObjectId;
+}, any>, {}, {}, {}, {}, import("mongoose").DefaultSchemaOptions, UserPDF, Document<unknown, {}, import("mongoose").FlatRecord<UserPDF>> & import("mongoose").FlatRecord<UserPDF> & {
+    _id: Types.ObjectId;
 }>;

@@ -60,10 +60,7 @@ let UsersService = class UsersService {
     }
     async create(createUserDto) {
         const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
-        const createdUser = new this.userModel({
-            ...createUserDto,
-            password: hashedPassword
-        });
+        const createdUser = new this.userModel(Object.assign(Object.assign({}, createUserDto), { password: hashedPassword }));
         return createdUser.save();
     }
     async findOne(email) {

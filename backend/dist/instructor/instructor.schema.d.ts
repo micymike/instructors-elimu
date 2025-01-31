@@ -31,10 +31,6 @@ export declare class Instructor {
 }
 export declare const InstructorSchema: import("mongoose").Schema<Instructor, import("mongoose").Model<Instructor, any, any, any, Document<unknown, any, Instructor> & Instructor & {
     _id: import("mongoose").Types.ObjectId;
-} & {
-    __v: number;
 }, any>, {}, {}, {}, {}, import("mongoose").DefaultSchemaOptions, Instructor, Document<unknown, {}, import("mongoose").FlatRecord<Instructor>> & import("mongoose").FlatRecord<Instructor> & {
     _id: import("mongoose").Types.ObjectId;
-} & {
-    __v: number;
 }>;

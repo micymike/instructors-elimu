@@ -15,10 +15,6 @@ export declare class Document {
 }
 export declare const DocumentSchema: import("mongoose").Schema<Document, import("mongoose").Model<Document, any, any, any, import("mongoose").Document<unknown, any, Document> & Document & {
     _id: Types.ObjectId;
-} & {
-    __v: number;
 }, any>, {}, {}, {}, {}, import("mongoose").DefaultSchemaOptions, Document, import("mongoose").Document<unknown, {}, import("mongoose").FlatRecord<Document>> & import("mongoose").FlatRecord<Document> & {
     _id: Types.ObjectId;
-} & {
-    __v: number;
 }>;

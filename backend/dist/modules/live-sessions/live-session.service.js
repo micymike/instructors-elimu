@@ -74,10 +74,7 @@ let LiveSessionService = LiveSessionService_1 = class LiveSessionService {
                     duration: updateData.duration
                 });
             }
-            course.liveSessions[sessionIndex] = {
-                ...session,
-                ...updateData
-            };
+            course.liveSessions[sessionIndex] = Object.assign(Object.assign({}, session), updateData);
             await course.save();
             return course.liveSessions[sessionIndex];
         }
@@ -126,15 +123,15 @@ let LiveSessionService = LiveSessionService_1 = class LiveSessionService {
     }
     async getAllLiveSessions(filters) {
         const query = {};
-        if (filters?.courseId)
+        if (filters === null || filters === void 0 ? void 0 : filters.courseId)
             query._id = filters.courseId;
-        if (filters?.instructorId)
+        if (filters === null || filters === void 0 ? void 0 : filters.instructorId)
             query.instructor = filters.instructorId;
-        if (filters?.topic)
+        if (filters === null || filters === void 0 ? void 0 : filters.topic)
             query['liveSessions.topic'] = filters.topic;
-        if (filters?.startTime)
+        if (filters === null || filters === void 0 ? void 0 : filters.startTime)
             query['liveSessions.startTime'] = { $gte: filters.startTime };
-        if (filters?.endTime)
+        if (filters === null || filters === void 0 ? void 0 : filters.endTime)
             query['liveSessions.endTime'] = { $lte: filters.endTime };
         const courses = await this.courseModel.find(query).select('liveSessions');
         return courses.flatMap(course => course.liveSessions);

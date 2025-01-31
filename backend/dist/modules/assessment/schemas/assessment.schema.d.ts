@@ -17,11 +17,7 @@ export declare class Assessment {
 export type AssessmentDocument = Assessment & Document;
 export declare const AssessmentSchema: MongooseSchema<Assessment, import("mongoose").Model<Assessment, any, any, any, Document<unknown, any, Assessment> & Assessment & {
     _id: import("mongoose").Types.ObjectId;
-} & {
-    __v: number;
 }, any>, {}, {}, {}, {}, import("mongoose").DefaultSchemaOptions, Assessment, Document<unknown, {}, import("mongoose").FlatRecord<Assessment>> & import("mongoose").FlatRecord<Assessment> & {
     _id: import("mongoose").Types.ObjectId;
-} & {
-    __v: number;
 }>;
 export {};

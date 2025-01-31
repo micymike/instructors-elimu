@@ -11,10 +11,8 @@ export declare class SettingsService {
     getSettings(token: string): Promise<any>;
     updateSettings(updateSettingsDto: any, token: string): Promise<{
         message: string;
-        settings: import("mongoose").Document<unknown, {}, UserSettingsDocument> & UserSettings & import("mongoose").Document<unknown, any, any> & Required<{
-            _id: unknown;
-        }> & {
-            __v: number;
+        settings: import("mongoose").Document<unknown, {}, UserSettingsDocument> & UserSettings & import("mongoose").Document<any, any, any> & {
+            _id: import("mongoose").Types.ObjectId;
         };
     }>;
 }

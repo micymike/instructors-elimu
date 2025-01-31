@@ -51,11 +51,7 @@ let GeminiService = class GeminiService {
     `;
         try {
             const result = await this.model.generateContent(prompt);
-            return {
-                title: courseData.title,
-                description: result.response.text(),
-                ...courseData
-            };
+            return Object.assign({ title: courseData.title, description: result.response.text() }, courseData);
         }
         catch (error) {
             console.error('Error generating course:', error);

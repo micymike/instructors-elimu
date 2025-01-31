@@ -23,12 +23,8 @@ export declare class Instructor extends Document {
         [key: string]: string;
     }, isVerified?: boolean, createdAt?: Date, updatedAt?: Date, phoneNumber?: string, certification?: string, avatarUrl?: string);
 }
-export declare const InstructorSchema: import("mongoose").Schema<Instructor, import("mongoose").Model<Instructor, any, any, any, Document<unknown, any, Instructor> & Instructor & Required<{
-    _id: unknown;
-}> & {
-    __v: number;
-}, any>, {}, {}, {}, {}, import("mongoose").DefaultSchemaOptions, Instructor, Document<unknown, {}, import("mongoose").FlatRecord<Instructor>> & import("mongoose").FlatRecord<Instructor> & Required<{
-    _id: unknown;
-}> & {
-    __v: number;
+export declare const InstructorSchema: import("mongoose").Schema<Instructor, import("mongoose").Model<Instructor, any, any, any, Document<unknown, any, Instructor> & Instructor & {
+    _id: import("mongoose").Types.ObjectId;
+}, any>, {}, {}, {}, {}, import("mongoose").DefaultSchemaOptions, Instructor, Document<unknown, {}, import("mongoose").FlatRecord<Instructor>> & import("mongoose").FlatRecord<Instructor> & {
+    _id: import("mongoose").Types.ObjectId;
 }>;

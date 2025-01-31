@@ -4,7 +4,8 @@ import { settingsAPI } from '../../services/api';
 import {
   BarChart2, BookOpen, Video, Users, Calendar, Settings,
   LogOut, Menu, X, Layers, UserPlus, FileText,
-  GraduationCap, Bell, Plus, ChevronDown
+  GraduationCap, Bell, Plus, ChevronDown, ClipboardCheck,
+  Award, TrendingUp
 } from 'lucide-react';
 
 const DashboardLayout = () => {
@@ -78,6 +79,25 @@ const DashboardLayout = () => {
           label: 'Create Course',
           path: '/instructor/create-course',
           description: 'Add new course'
+        }
+      ]
+    },
+    {
+      icon: ClipboardCheck,
+      label: 'Grading',
+      description: 'Assignments and grading',
+      subItems: [
+        {
+          icon: Award,
+          label: 'Grade Assignments',
+          path: '/instructor/assignments/grade',
+          description: 'Grade student submissions'
+        },
+        {
+          icon: TrendingUp,
+          label: 'Student Progress',
+          path: '/instructor/students',
+          description: 'View student progress'
         }
       ]
     },

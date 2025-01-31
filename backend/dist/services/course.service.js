@@ -35,12 +35,7 @@ let CourseService = CourseService_1 = class CourseService {
             if (!user.email) {
                 throw new common_1.BadRequestException('No instructor email provided');
             }
-            const createdCourse = new this.courseModel({
-                ...createCourseDto,
-                instructor: { email: user.email },
-                createdAt: new Date(),
-                updatedAt: new Date()
-            });
+            const createdCourse = new this.courseModel(Object.assign(Object.assign({}, createCourseDto), { instructor: { email: user.email }, createdAt: new Date(), updatedAt: new Date() }));
             const savedCourse = await createdCourse.save();
             this.logger.log('✅ Course Created Successfully', {
                 courseId: savedCourse._id,
@@ -108,7 +103,7 @@ let CourseService = CourseService_1 = class CourseService {
                 this.logger.warn(`⚠️ No courses found for email: ${email}`);
                 const allCourses = await this.courseModel.find().exec();
                 this.logger.log('Total courses in database:', allCourses.length);
-                const courseInstructorEmails = allCourses.map(course => course.instructor?.email || 'No email');
+                const courseInstructorEmails = allCourses.map(course => { var _a; return ((_a = course.instructor) === null || _a === void 0 ? void 0 : _a.email) || 'No email'; });
                 this.logger.log('All course instructor emails:', courseInstructorEmails);
             }
             return courses;
@@ -156,10 +151,7 @@ let CourseService = CourseService_1 = class CourseService {
     }
     async findOne(id, instructorEmail) {
         try {
-            const course = await this.courseModel.findOne({
-                _id: id,
-                ...(instructorEmail && { 'instructor.email': instructorEmail })
-            });
+            const course = await this.courseModel.findOne(Object.assign({ _id: id }, (instructorEmail && { 'instructor.email': instructorEmail })));
             if (!course) {
                 throw new common_1.NotFoundException('Course not found or access denied');
             }
@@ -185,6 +177,7 @@ let CourseService = CourseService_1 = class CourseService {
         return 0;
     }
     async getCourseStats(instructorEmail) {
+        var _a;
         try {
             const totalCourses = await this.courseModel.countDocuments({
                 'instructor.email': instructorEmail
@@ -220,7 +213,7 @@ let CourseService = CourseService_1 = class CourseService {
             return {
                 totalCourses,
                 activeCourses,
-                totalStudents: totalStudents[0]?.totalStudents || 0,
+                totalStudents: ((_a = totalStudents[0]) === null || _a === void 0 ? void 0 : _a.totalStudents) || 0,
                 teachingHours: Number(totalHours.toFixed(2))
             };
         }
@@ -235,6 +228,7 @@ let CourseService = CourseService_1 = class CourseService {
         }
     }
     async getInstructorStats(instructorEmail) {
+        var _a, _b;
         try {
             this.logger.log('📊 Fetching Instructor Course Stats', {
                 instructorEmail
@@ -306,8 +300,8 @@ let CourseService = CourseService_1 = class CourseService {
             return {
                 totalCourses,
                 activeCourses,
-                totalStudents: studentAggregation[0]?.totalStudents || 0,
-                teachingHours: teachingHoursAggregation[0]?.totalTeachingHours || 0,
+                totalStudents: ((_a = studentAggregation[0]) === null || _a === void 0 ? void 0 : _a.totalStudents) || 0,
+                teachingHours: ((_b = teachingHoursAggregation[0]) === null || _b === void 0 ? void 0 : _b.totalTeachingHours) || 0,
                 recentActivity,
                 upcomingSchedule
             };
@@ -404,10 +398,7 @@ let CourseService = CourseService_1 = class CourseService {
         }
     }
     async addCourseMaterial(courseId, material) {
-        return this.addMaterial(courseId, {
-            ...material,
-            isDownloadable: true
-        });
+        return this.addMaterial(courseId, Object.assign(Object.assign({}, material), { isDownloadable: true }));
     }
     async updateCourse(courseId, updateCourseDto, user) {
         try {
@@ -423,10 +414,7 @@ let CourseService = CourseService_1 = class CourseService {
             if (user.role !== 'admin' && course.instructor.email !== user.email) {
                 throw new common_1.ForbiddenException('You do not have permission to update this course');
             }
-            const updatedCourse = await this.courseModel.findByIdAndUpdate(courseId, {
-                ...updateCourseDto,
-                updatedAt: new Date()
-            }, { new: true });
+            const updatedCourse = await this.courseModel.findByIdAndUpdate(courseId, Object.assign(Object.assign({}, updateCourseDto), { updatedAt: new Date() }), { new: true });
             if (!updatedCourse) {
                 throw new common_1.InternalServerErrorException('Failed to update course');
             }
@@ -462,10 +450,7 @@ let CourseService = CourseService_1 = class CourseService {
             if (user.role !== 'admin' && course.instructor.email !== user.email) {
                 throw new common_1.ForbiddenException('You do not have permission to update this course content');
             }
-            const updateObject = {
-                ...contentData,
-                updatedAt: new Date()
-            };
+            const updateObject = Object.assign(Object.assign({}, contentData), { updatedAt: new Date() });
             Object.keys(updateObject).forEach(key => updateObject[key] === undefined && delete updateObject[key]);
             const updatedCourse = await this.courseModel.findByIdAndUpdate(courseId, { $set: updateObject }, { new: true, runValidators: true });
             if (!updatedCourse) {

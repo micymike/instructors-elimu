@@ -41,11 +41,7 @@ let EmailVerificationController = class EmailVerificationController {
         }
         try {
             const result = await this.emailVerificationService.verifyEmail(email, firstName, lastName);
-            return {
-                statusCode: common_1.HttpStatus.OK,
-                message: 'Verification email sent',
-                ...result
-            };
+            return Object.assign({ statusCode: common_1.HttpStatus.OK, message: 'Verification email sent' }, result);
         }
         catch (error) {
             console.error('Email verification error:', error);
@@ -58,11 +54,7 @@ let EmailVerificationController = class EmailVerificationController {
     async verifyEmailToken(token) {
         try {
             const result = await this.emailVerificationService.confirmEmailVerification(token);
-            return {
-                statusCode: common_1.HttpStatus.OK,
-                message: 'Email verified successfully',
-                ...result
-            };
+            return Object.assign({ statusCode: common_1.HttpStatus.OK, message: 'Email verified successfully' }, result);
         }
         catch (error) {
             return {

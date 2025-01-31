@@ -82,14 +82,11 @@ let SettingsController = SettingsController_1 = class SettingsController {
             this.logger.log(`Incoming update settings data: ${JSON.stringify(settingsData)}`);
             const user = await this.authenticateRequest(req);
             this.logger.log(`Authenticated user: ${JSON.stringify(user)}`);
-            const updateData = {
-                ...settingsData,
-                profilePicture: profilePicture ? {
+            const updateData = Object.assign(Object.assign({}, settingsData), { profilePicture: profilePicture ? {
                     originalName: profilePicture.originalname,
                     mimetype: profilePicture.mimetype,
                     buffer: profilePicture.buffer.toString('base64')
-                } : undefined
-            };
+                } : undefined });
             const updatedSettings = await this.settingsService.updateUserSettings(user.email, updateData);
             return {
                 message: 'User settings updated successfully',

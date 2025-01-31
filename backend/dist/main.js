@@ -49,9 +49,7 @@ const jwt = __importStar(require("jsonwebtoken"));
 dotenv.config();
 class CustomIoAdapter extends platform_socket_io_1.IoAdapter {
     createIOServer(port, options) {
-        const server = super.createIOServer(port, {
-            ...options,
-            cors: {
+        const server = super.createIOServer(port, Object.assign(Object.assign({}, options), { cors: {
                 origin: [
                     'http://localhost:3000',
                     'http://localhost:3001',
@@ -59,8 +57,7 @@ class CustomIoAdapter extends platform_socket_io_1.IoAdapter {
                 ],
                 methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
                 credentials: true
-            }
-        });
+            } }));
         server.use(async (socket, next) => {
             const token = socket.handshake.auth.token;
             if (!token) {

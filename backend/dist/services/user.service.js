@@ -27,6 +27,7 @@ let UserService = UserService_1 = class UserService {
         return this.instructorModel.findOne();
     }
     async findByEmail(email) {
+        var _a, _b;
         try {
             if (!email) {
                 this.logger.warn('Attempted to find user with empty email');
@@ -38,8 +39,8 @@ let UserService = UserService_1 = class UserService {
                 return null;
             }
             return {
-                id: instructor._id?.toString() || '',
-                sub: instructor._id?.toString() || '',
+                id: ((_a = instructor._id) === null || _a === void 0 ? void 0 : _a.toString()) || '',
+                sub: ((_b = instructor._id) === null || _b === void 0 ? void 0 : _b.toString()) || '',
                 email: instructor.email,
                 role: instructor.status === 'active' ? 'instructor' : 'pending'
             };

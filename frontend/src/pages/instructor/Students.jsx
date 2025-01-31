@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Search, User, Mail, Phone, MapPin, School, Filter, Loader2, GraduationCap } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Search, User, Mail, Phone, MapPin, School, Filter, Loader2, GraduationCap, TrendingUp } from 'lucide-react';
 
 const Students = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
+  const navigate = useNavigate();
 
   // Dummy data generation function
   function generateDummyStudents() {
@@ -38,6 +40,10 @@ const Students = () => {
     if (selectedFilter === 'all') return matchesSearch;
     return matchesSearch && student.year.toLowerCase() === selectedFilter.toLowerCase();
   });
+
+  const handleViewProgress = (studentId, courseId) => {
+    navigate(`/instructor/students/${studentId}/progress/${courseId}`);
+  };
 
   if (loading) {
     return (
@@ -139,6 +145,12 @@ const Students = () => {
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-500">GPA</span>
                     <span className="text-sm font-semibold text-blue-600">{student.gpa}</span>
+                    <button
+                      onClick={() => handleViewProgress(student.id, student.course)}
+                      className="p-2 hover:bg-blue-50 rounded-full transition-colors"
+                    >
+                      <TrendingUp className="w-5 h-5 text-blue-600" />
+                    </button>
                   </div>
                 </div>
               </div>

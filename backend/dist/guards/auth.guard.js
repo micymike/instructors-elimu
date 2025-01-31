@@ -34,7 +34,8 @@ let AuthGuard = class AuthGuard {
         }
     }
     extractTokenFromHeader(request) {
-        const [type, token] = request.headers.authorization?.split(' ') ?? [];
+        var _a, _b;
+        const [type, token] = (_b = (_a = request.headers.authorization) === null || _a === void 0 ? void 0 : _a.split(' ')) !== null && _b !== void 0 ? _b : [];
         return type === 'Bearer' ? token : undefined;
     }
 };

@@ -14,12 +14,8 @@ export declare class Resource extends Document {
     tags?: string[];
     rating?: number;
 }
-export declare const ResourceSchema: import("mongoose").Schema<Resource, import("mongoose").Model<Resource, any, any, any, Document<unknown, any, Resource> & Resource & Required<{
-    _id: unknown;
-}> & {
-    __v: number;
-}, any>, {}, {}, {}, {}, import("mongoose").DefaultSchemaOptions, Resource, Document<unknown, {}, import("mongoose").FlatRecord<Resource>> & import("mongoose").FlatRecord<Resource> & Required<{
-    _id: unknown;
-}> & {
-    __v: number;
+export declare const ResourceSchema: import("mongoose").Schema<Resource, import("mongoose").Model<Resource, any, any, any, Document<unknown, any, Resource> & Resource & {
+    _id: Types.ObjectId;
+}, any>, {}, {}, {}, {}, import("mongoose").DefaultSchemaOptions, Resource, Document<unknown, {}, import("mongoose").FlatRecord<Resource>> & import("mongoose").FlatRecord<Resource> & {
+    _id: Types.ObjectId;
 }>;

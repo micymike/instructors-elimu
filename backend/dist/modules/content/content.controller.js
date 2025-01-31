@@ -28,7 +28,7 @@ let ContentController = class ContentController {
         this.jwtService = jwtService;
     }
     async getDocuments(authHeader, search, type, priceRange, sortBy) {
-        const token = authHeader?.split(' ')[1];
+        const token = authHeader === null || authHeader === void 0 ? void 0 : authHeader.split(' ')[1];
         if (!token) {
             throw new common_2.UnauthorizedException('No token provided');
         }
@@ -62,7 +62,7 @@ let ContentController = class ContentController {
     }
     async previewDocument(documentId, authHeader, res) {
         try {
-            const token = authHeader?.split(' ')[1];
+            const token = authHeader === null || authHeader === void 0 ? void 0 : authHeader.split(' ')[1];
             if (!token) {
                 throw new common_2.UnauthorizedException('No token provided');
             }
@@ -101,7 +101,7 @@ let ContentController = class ContentController {
     }
     async downloadDocument(documentId, authHeader, res) {
         try {
-            const token = authHeader?.split(' ')[1];
+            const token = authHeader === null || authHeader === void 0 ? void 0 : authHeader.split(' ')[1];
             if (!token) {
                 throw new common_2.UnauthorizedException('No token provided');
             }
