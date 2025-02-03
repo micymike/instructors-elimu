@@ -85,6 +85,49 @@ class StudentService {
       ApiService.handleError(error);
     }
   }
+
+  async getTimeSpentMetrics(studentId, courseId) {
+    try {
+      const response = await ApiService.axios.get(
+        `/students/${studentId}/courses/${courseId}/time-metrics`,
+        {
+          headers: ApiService.getHeaders()
+        }
+      );
+      return response.data;
+    } catch (error) {
+      ApiService.handleError(error);
+    }
+  }
+
+  async getGroupCollaborations(studentId) {
+    try {
+      const response = await ApiService.axios.get(
+        `/students/${studentId}/collaborations`,
+        {
+          headers: ApiService.getHeaders()
+        }
+      );
+      return response.data;
+    } catch (error) {
+      ApiService.handleError(error);
+    }
+  }
+
+  async joinGroupProject(studentId, projectId) {
+    try {
+      const response = await ApiService.axios.post(
+        `/students/${studentId}/collaborations/${projectId}`,
+        {},
+        {
+          headers: ApiService.getHeaders()
+        }
+      );
+      return response.data;
+    } catch (error) {
+      ApiService.handleError(error);
+    }
+  }
 }
 
 export default new StudentService();

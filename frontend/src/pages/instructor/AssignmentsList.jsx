@@ -67,7 +67,7 @@ const AssignmentsList = () => {
   }, []);
 
   const handleGradeAssignment = (courseId, assignmentId) => {
-    navigate(`/instructor/courses/${courseId}/assignments/${assignmentId}/grade`);
+    navigate(`/instructor/courses/${courseId}/assignments/${assignmentId}/grade`, { replace: true });
   };
 
   const filteredAssignments = assignments.filter(assignment =>
