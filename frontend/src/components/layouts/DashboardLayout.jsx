@@ -7,6 +7,7 @@ import {
   GraduationCap, Bell, Plus, ChevronDown, ClipboardCheck,
   Award, TrendingUp, Clock, DollarSign, CreditCard
 } from 'lucide-react';
+import AIAssistantChat from '../AIAssistantChat';
 
 const DashboardLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -208,13 +209,13 @@ const DashboardLayout = () => {
     navigate('/login');
   };
 
-  const MenuItem = ({ item }) => {
+  const MenuItem = ({ item, index }) => {
     const isActive = location.pathname === item.path;
-    const isExpanded = expandedItem === item.path;
+    const isExpanded = expandedItem === item.label;
     const hasSubItems = item.subItems && item.subItems.length > 0;
 
     return (
-      <div className="group">
+      <div key={item.path || `menu-item-${index}`}>
         <Link
           to={item.path}
           className={`
@@ -225,7 +226,7 @@ const DashboardLayout = () => {
           onClick={(e) => {
             if (hasSubItems) {
               e.preventDefault();
-              setExpandedItem(isExpanded ? null : item.path);
+              setExpandedItem(isExpanded ? null : item.label);
             }
           }}
         >
@@ -256,9 +257,9 @@ const DashboardLayout = () => {
 
         {hasSubItems && isExpanded && (
           <div className="ml-8 mt-1 space-y-1">
-            {item.subItems.map((subItem) => (
+            {item.subItems.map((subItem, subIndex) => (
               <Link
-                key={subItem.path}
+                key={subItem.path || `sub-item-${index}-${subIndex}`}
                 to={subItem.path}
                 className={`
                   flex items-center px-4 py-2.5 rounded-lg
@@ -318,8 +319,8 @@ const DashboardLayout = () => {
 
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-            {menuItems.map((item) => (
-              <MenuItem key={item.path} item={item} />
+            {menuItems.map((item, index) => (
+              <MenuItem key={item.path || `menu-item-${index}`} item={item} index={index} />
             ))}
           </nav>
 
@@ -389,6 +390,7 @@ const DashboardLayout = () => {
         <main className="flex-1 overflow-auto p-6">
           <Outlet />
         </main>
+        <AIAssistantChat />
       </div>
     </div>
   );

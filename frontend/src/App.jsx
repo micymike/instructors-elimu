@@ -38,22 +38,37 @@ const PaymentHistory = React.lazy(() => import('./pages/instructor/payments/Paym
 const GroupProjects = React.lazy(() => import('./pages/instructor/collaboration/GroupProjects.jsx'));
 const LiveSessions = React.lazy(() => import('./pages/instructor/collaboration/LiveSessions.jsx'));
 
+import { AuthProvider } from './contexts/AuthContext';
+
+const AppWrapper = ({ children }) => {
+  return (
+    <LocalizationProvider dateAdapter={AdapterDateFns}>
+      <SnackbarProvider maxSnack={3}>
+        <AuthProvider>
+          {children}
+          <Toaster position="bottom-right" />
+        </AuthProvider>
+      </SnackbarProvider>
+    </LocalizationProvider>
+  );
+};
+
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <Navigate to="/instructor/dashboard" replace />
+    element: <AppWrapper><Navigate to="/instructor/dashboard" replace /></AppWrapper>
   },
   {
     path: '/login',
-    element: <Login />
+    element: <AppWrapper><Login /></AppWrapper>
   },
   {
     path: '/instructor/register',
-    element: <InstructorForm />
+    element: <AppWrapper><InstructorForm /></AppWrapper>
   },
   {
     path: '/instructor',
-    element: <DashboardLayout />,
+    element: <AppWrapper><DashboardLayout /></AppWrapper>,
     children: [
       {
         path: 'dashboard',
@@ -196,19 +211,12 @@ const router = createBrowserRouter([
   },
   {
     path: '*',
-    element: <Navigate to="/instructor/dashboard" replace />
+    element: <AppWrapper><Navigate to="/instructor/dashboard" replace /></AppWrapper>
   }
 ]);
 
 function App() {
-  return (
-    <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <SnackbarProvider>
-        <RouterProvider router={router} />
-        <Toaster position="top-right" />
-      </SnackbarProvider>
-    </LocalizationProvider>
-  );
+  return <RouterProvider router={router} />;
 }
 
 export default App;
