@@ -4,8 +4,12 @@ import { courseAPI } from './api';
 import { documentsAPI } from './api';
 import { settingsAPI } from './api';
 
-const GROQ_API_KEY = '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';
-const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+// Get API key from environment variable
+const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
+
+if (!GROQ_API_KEY) {
+  throw new Error('VITE_GROQ_API_KEY environment variable is not set. Please add it to your .env file.');
+}
 
 class AIAssistantService {
   constructor() {
@@ -13,13 +17,30 @@ class AIAssistantService {
     this.chatHistory = [];
     this.contextCache = new Map();
     
+    // Initialize Groq API client
     this.groqApi = axios.create({
       baseURL: 'https://api.groq.com/openai/v1',
       headers: {
-        'Authorization': `Bearer ${GROQ_API_KEY}`,
+        'Authorization': `Bearer ${GROQ_API_KEY.trim()}`,
         'Content-Type': 'application/json'
       }
     });
+
+    // Test the API key on initialization
+    this.testApiKey().catch(error => {
+      console.error('Failed to initialize Groq API:', error);
+    });
+  }
+
+  async testApiKey() {
+    try {
+      const response = await this.groqApi.get('/models');
+      console.log('Groq API initialized successfully');
+      return response.data;
+    } catch (error) {
+      const errorMessage = error.response?.data?.error?.message || error.message;
+      throw new Error(`Failed to initialize Groq API: ${errorMessage}`);
+    }
   }
 
   async getContextualData(context) {
@@ -108,13 +129,21 @@ class AIAssistantService {
         { role: "user", content: input }
       ];
 
+      console.log('Sending request to Groq API with messages:', messages);
+
       const response = await this.groqApi.post('/chat/completions', {
         model: "mixtral-8x7b-32768",
         messages,
         temperature: 0.7,
-        max_tokens: 1024, // Reduced for shorter responses
+        max_tokens: 1024,
         top_p: 1,
         stream: false
+      });
+
+      console.log('Groq API Response:', {
+        status: response.status,
+        headers: response.headers,
+        data: response.data
       });
 
       if (!response.data?.choices?.[0]?.message?.content) {
@@ -129,14 +158,13 @@ class AIAssistantService {
         { role: "assistant", content: aiResponse }
       );
 
-      // Keep history limited to last 10 messages for more focused context
       if (this.chatHistory.length > 10) {
         this.chatHistory = this.chatHistory.slice(-10);
       }
 
       return aiResponse;
     } catch (error) {
-      console.error('Error getting AI response:', error);
+      console.error('Error in getResponse:', error);
       if (error.response?.data?.error) {
         throw new Error(error.response.data.error.message);
       }
