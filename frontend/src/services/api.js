@@ -102,121 +102,183 @@ export const courseAPI = {
   }
 };
 
+// Handle API requests for Instructor Profile-related functionalities
 export const settingsAPI = {
+  // Get the Instructor's Profile
   async getSettings() {
     const token = localStorage.getItem('token');
     if (!token) {
       throw new Error('No authentication token found');
     }
 
-    const response = await api.get('/instructor/profile', {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    return response.data;
-  },
-
-  async updateProfile(profileData) {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
-
-    const response = await api.post('/instructors/profile/update', {
-      personalInfo: profileData
-    }, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    return response.data;
-  },
-
-  async getProfilePicture() {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
-
     try {
-      const response = await api.get('/instrucors/profile/profile-picture', {
+      const response = await api.get('/api/instructors/profile', {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
         },
-        params: {
-          includeProfilePicture: true
-        }
       });
-
-      // Extract profile picture from response
-      const profilePicture = response.data.data.personalInfo.profilePicture;
-      
-      // If profile picture exists, convert base64 to data URL
-      if (profilePicture && profilePicture.data) {
-        return {
-          dataUrl: `data:${profilePicture.contentType || 'image/jpeg'};base64,${profilePicture.data}`,
-          originalName: profilePicture.originalName || 'profile_picture',
-          contentType: profilePicture.contentType || 'image/jpeg'
-        };
-      }
-
-      return null;
+      return response.data;
     } catch (error) {
-      console.error('Error retrieving profile picture:', error);
-      throw new Error('Failed to retrieve profile picture');
+      console.error('Error fetching profile data', error);
+      throw error;
     }
   },
 
-  async uploadProfilePicture(file) {
+  // Update Instructor Profile
+  async updateProfile(updateProfileDto, profilePhoto) {
     const token = localStorage.getItem('token');
     if (!token) {
       throw new Error('No authentication token found');
     }
 
-    // Create FormData to send file
     const formData = new FormData();
-    formData.append('profilePicture', file);
-    
+    formData.append('updateProfileDto', JSON.stringify(updateProfileDto));
+
+    if (profilePhoto) {
+      formData.append('profilePhoto', profilePhoto);
+    }
+
     try {
-      const response = await api.post('/instructors/profile/profile-picture', 
-        formData, 
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            'Authorization': `Bearer ${token}`
-          },
-        }
-      );
-
-      // Log successful upload
-      console.log('Profile picture upload successful', response.data);
-
-      // Convert base64 to data URL if profile picture exists
-      const profilePicture = response.data.data.personalInfo.profilePicture;
-      const dataUrl = profilePicture 
-        ? `data:${profilePicture.contentType || 'image/jpeg'};base64,${profilePicture.data}`
-        : null;
-
-      // Return the updated user settings with data URL
-      return {
-        ...response.data.data,
-        profilePictureUrl: dataUrl
-      };
+      const response = await api.put('/api/instructors/profile/update', formData, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
     } catch (error) {
-      // Enhanced error logging
-      console.error('Profile picture upload error:', error.response ? error.response.data : error.message);
-      
-      // Throw a more informative error
-      if (error.response) {
-        throw new Error(error.response.data.message || 'Failed to upload profile picture');
-      } else if (error.request) {
-        throw new Error('No response received from server');
-      } else {
-        throw new Error('Error setting up profile picture upload');
-      }
+      console.error('Error updating profile', error);
+      throw error;
     }
   },
+
+  // Get Instructor Dashboard Stats
+  async getDashboardStats() {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    try {
+      const response = await api.get('/api/instructors/profile/dashboard', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching dashboard stats', error);
+      throw error;
+    }
+  },
+
+  // Withdraw Funds
+  async withdrawFunds(amount, phoneNumber) {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    try {
+      const response = await api.post('/api/instructors/profile/withdraw', {
+        amount,
+        phoneNumber,
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error withdrawing funds', error);
+      throw error;
+    }
+  },
+
+  // Check Withdrawal Status
+  async checkWithdrawalStatus(checkoutRequestId) {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    try {
+      const response = await api.get(`/api/instructors/profile/withdraw/status/${checkoutRequestId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error checking withdrawal status', error);
+      throw error;
+    }
+  },
+
+  // Get All Withdrawal Transactions
+  async getWithdrawalStatus() {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    try {
+      const response = await api.get('/api/instructors/profile/withdraw/status', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error getting withdrawal transactions', error);
+      throw error;
+    }
+  },
+
+  // Delete Instructor Profile
+  async deleteProfile() {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    try {
+      const response = await api.delete('/api/instructors/profile/delete', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting profile', error);
+      throw error;
+    }
+  },
+
+  // Update Profile Picture
+  async updateProfilePicture(profilePhoto) {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const formData = new FormData();
+    formData.append('profilePhoto', profilePhoto);
+
+    try {
+      const response = await api.put('/api/instructors/profile/profile-picture', formData, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating profile picture', error);
+      throw error;
+    }
+  },
+
 
   async requestPasswordReset(passwordData) {
     try {
@@ -256,6 +318,9 @@ export const settingsAPI = {
     throw new Error('Password change is not currently supported.');
   }
 };
+// src/api/auth.js
+
+// src/api/index.js (main API configuration)
 
 export const documentsAPI = {
   async getAllDocuments() {
@@ -517,3 +582,6 @@ export const liveSessionAPI = {
     return response.data;
   }
 };
+
+
+

@@ -32,7 +32,11 @@ import Content from './pages/instructor/Content';
 import CreateCourse from './pages/instructor/CreateCourse';
 import CourseDetails from './pages/instructor/CourseDetails';
 import VideoManagement from './pages/instructor/VideoManagement';
+import InstructorSettings from './pages/instructor/Settings';
 import EditCourse from './pages/instructor/EditCourse'; // Added import statement
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const queryClient = new QueryClient();
 
 const router = createBrowserRouter([
   {
@@ -94,7 +98,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'settings',
-        element: <Settings />,
+        element: <InstructorSettings/>,
         errorElement: <div>Error loading Settings page</div>
       },
       {
@@ -138,6 +142,12 @@ const router = createBrowserRouter([
         errorElement: <div>Error loading Edit Course page</div>
       },
       {
+        path: 'courses/:courseId/analytics', // New analytics route
+        element: <CourseAnalytics />,
+        errorElement: <div>Error loading Course Analytics page</div>
+      },
+      
+      {
         path: '',
         element: <Navigate to="courses/new" replace />,
         errorElement: <div>Error loading Course Creation page</div>
@@ -170,6 +180,7 @@ const router = createBrowserRouter([
 
 function App() {
   return (
+    <QueryClientProvider client={queryClient}>
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <SnackbarProvider maxSnack={3}>
         <AnimatePresence mode="wait">
@@ -187,6 +198,7 @@ function App() {
         />
       </SnackbarProvider>
     </LocalizationProvider>
+    </QueryClientProvider>
   );
 }
 
