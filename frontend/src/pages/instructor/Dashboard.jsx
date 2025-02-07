@@ -117,7 +117,7 @@ const Dashboard = () => {
   const fetchCourseStats = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/courses/instructor/stats`, {
+      const response = await axios.get(`${API_URL}/courses/instructors/stats`, {
         headers: {
           Authorization: `Bearer ${token}`
         }

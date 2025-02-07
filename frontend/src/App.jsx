@@ -1,79 +1,60 @@
 import './index.css';
 import { Toaster } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { SnackbarProvider } from 'notistack';
-import React, { Suspense } from 'react';
 import InstructorForm from './components/InstructorForm';
 import Login from './components/Login';
 import DashboardLayout from './components/layouts/DashboardLayout';
+import ZoomMeetings from './pages/instructor/ZoomMeetings';
+import CreateSession from './pages/instructor/CreateSession';
+import GroupManagement from './pages/instructor/GroupManagement';
+import InstructorsLanding from './components/InstructorsLanding';
+import CourseLearning from './pages/instructor/CourseLearning';
+import AssessmentCreator from './pages/instructor/Assessments';
+import CourseAnalytics from './components/dashboard/CourseAnalytics';
+import CourseWizard from './components/CourseWizard/CourseWizard';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import TermsOfService from './components/TermsOfService';
+import StudentCourseView from './pages/student/StudentCourseView';
 import {
   CourseSettings,
   CourseContentManager,
   Courses,
   Dashboard,
   Settings,
-  Schedule,
-  Students,
-  StudentProgressPage,
-  AssignmentGrading,
-  AssignmentsList,
-  CreateCourse,
-  Assessments,
-  VideoManagement,
-  Content,
-  GroupManagement,
-  ZoomMeetings
+  WebinarSchedule,
+  Students
 } from './pages/instructor';
+import Content from './pages/instructor/Content';
+import CreateCourse from './pages/instructor/CreateCourse';
+import CourseDetails from './pages/instructor/CourseDetails';
+import VideoManagement from './pages/instructor/VideoManagement';
+import InstructorSettings from './pages/instructor/Settings';
+import EditCourse from './pages/instructor/EditCourse'; // Added import statement
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-// Lazy load new components
-const CourseAnalytics = React.lazy(() => import('./pages/instructor/analytics/CourseAnalytics.jsx'));
-const StudentAnalytics = React.lazy(() => import('./pages/instructor/analytics/StudentAnalytics.jsx'));
-const TimeAnalytics = React.lazy(() => import('./pages/instructor/analytics/TimeAnalytics.jsx'));
-const PaymentsDashboard = React.lazy(() => import('./pages/instructor/payments/PaymentsDashboard.jsx'));
-const Withdrawals = React.lazy(() => import('./pages/instructor/payments/Withdrawals.jsx'));
-const PaymentHistory = React.lazy(() => import('./pages/instructor/payments/PaymentHistory.jsx'));
-const GroupProjects = React.lazy(() => import('./pages/instructor/collaboration/GroupProjects.jsx'));
-const LiveSessions = React.lazy(() => import('./pages/instructor/collaboration/LiveSessions.jsx'));
-
-import { AuthProvider } from './contexts/AuthContext';
-
-const AppWrapper = ({ children }) => {
-  return (
-    <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <SnackbarProvider maxSnack={3}>
-        <AuthProvider>
-          {children}
-          <Toaster position="bottom-right" />
-        </AuthProvider>
-      </SnackbarProvider>
-    </LocalizationProvider>
-  );
-};
+const queryClient = new QueryClient();
 
 const router = createBrowserRouter([
   {
-    path: '/',
-    element: <AppWrapper><Navigate to="/instructor/dashboard" replace /></AppWrapper>
-  },
-  {
     path: '/login',
-    element: <AppWrapper><Login /></AppWrapper>
+    element: <Login />
   },
   {
-    path: '/instructor/register',
-    element: <AppWrapper><InstructorForm /></AppWrapper>
+    path: '/instructorsform',
+    element: <InstructorForm />
   },
   {
     path: '/instructor',
-    element: <AppWrapper><DashboardLayout /></AppWrapper>,
+    element: <DashboardLayout />,
     children: [
       {
         path: 'dashboard',
         element: <Dashboard />,
-        errorElement: <div>Error loading Dashboard</div>
+        errorElement: <div>Error loading Dashboard page</div>
       },
       {
         path: 'courses',
@@ -81,121 +62,24 @@ const router = createBrowserRouter([
         errorElement: <div>Error loading Courses page</div>
       },
       {
-        path: 'create-course',
-        element: <CreateCourse />,
-        errorElement: <div>Error loading Create Course page</div>
+        path: 'content',
+        element: <Content />,
+        errorElement: <div>Error loading Content page</div>
       },
       {
-        path: 'courses/content',
+        path: 'course-content',
         element: <CourseContentManager />,
         errorElement: <div>Error loading Course Content page</div>
       },
       {
-        path: 'students',
-        element: <Students />,
-        errorElement: <div>Error loading Students page</div>
+        path: 'course-settings',
+        element: <CourseSettings />,
+        errorElement: <div>Error loading Course Settings page</div>
       },
       {
-        path: 'students/progress',
-        element: <StudentProgressPage />,
-        errorElement: <div>Error loading Student Progress page</div>
-      },
-      {
-        path: 'students/progress/:studentId',
-        element: <StudentProgressPage />,
-        errorElement: <div>Error loading Student Progress page</div>
-      },
-      {
-        path: 'students/assignments',
-        element: <AssignmentsList />,
-        errorElement: <div>Error loading Assignments page</div>
-      },
-      {
-        path: 'courses/:courseId/assignments/:assignmentId/grade',
-        element: <AssignmentGrading />,
-        errorElement: <div>Error loading Assignment Grading page</div>
-      },
-      {
-        path: 'collaboration/projects',
-        element: (
-          <Suspense fallback={<div>Loading...</div>}>
-            <GroupProjects />
-          </Suspense>
-        ),
-        errorElement: <div>Error loading Group Projects page</div>
-      },
-      {
-        path: 'collaboration/sessions',
-        element: (
-          <Suspense fallback={<div>Loading...</div>}>
-            <LiveSessions />
-          </Suspense>
-        ),
-        errorElement: <div>Error loading Live Sessions page</div>
-      },
-      {
-        path: 'analytics/courses',
-        element: (
-          <Suspense fallback={<div>Loading...</div>}>
-            <CourseAnalytics />
-          </Suspense>
-        ),
-        errorElement: <div>Error loading Course Analytics page</div>
-      },
-      {
-        path: 'analytics/students',
-        element: (
-          <Suspense fallback={<div>Loading...</div>}>
-            <StudentAnalytics />
-          </Suspense>
-        ),
-        errorElement: <div>Error loading Student Analytics page</div>
-      },
-      {
-        path: 'analytics/time',
-        element: (
-          <Suspense fallback={<div>Loading...</div>}>
-            <TimeAnalytics />
-          </Suspense>
-        ),
-        errorElement: <div>Error loading Time Analytics page</div>
-      },
-      {
-        path: 'payments/dashboard',
-        element: (
-          <Suspense fallback={<div>Loading...</div>}>
-            <PaymentsDashboard />
-          </Suspense>
-        ),
-        errorElement: <div>Error loading Payments Dashboard page</div>
-      },
-      {
-        path: 'payments/withdrawals',
-        element: (
-          <Suspense fallback={<div>Loading...</div>}>
-            <Withdrawals />
-          </Suspense>
-        ),
-        errorElement: <div>Error loading Withdrawals page</div>
-      },
-      {
-        path: 'payments/history',
-        element: (
-          <Suspense fallback={<div>Loading...</div>}>
-            <PaymentHistory />
-          </Suspense>
-        ),
-        errorElement: <div>Error loading Payment History page</div>
-      },
-      {
-        path: 'schedule',
-        element: <Schedule />,
-        errorElement: <div>Error loading Schedule page</div>
-      },
-      {
-        path: 'settings',
-        element: <Settings />,
-        errorElement: <div>Error loading Settings page</div>
+        path: 'groups',
+        element: <GroupManagement />,
+        errorElement: <div>Error loading Groups page</div>
       },
       {
         path: 'zoom-meetings',
@@ -203,20 +87,119 @@ const router = createBrowserRouter([
         errorElement: <div>Error loading Zoom Meetings page</div>
       },
       {
+        path: 'course-learning',
+        element: <CourseLearning />,
+        errorElement: <div>Error loading Course Learning page</div>
+      },
+      {
+        path: 'students',
+        element: <Students />,
+        errorElement: <div>Error loading Students page</div>
+      },
+      {
+        path: 'settings',
+        element: <InstructorSettings/>,
+        errorElement: <div>Error loading Settings page</div>
+      },
+      {
+        path: 'create-course',
+        element: <CourseWizard />,
+        errorElement: <div>Error loading Create Course page</div>
+      },
+      {
+        path: 'assessments',
+        element: <AssessmentCreator/>,
+        errorElement: <div>Error loading Assessments page</div>
+      },
+      {
+        path: 'video-management',
+        element: <VideoManagement />,
+        errorElement: <div>Error loading Video Management page</div>
+      },
+      {
+        path: 'create-session',
+        element: <CreateSession />,
+        errorElement: <div>Error loading Create Session page</div>
+      },
+      {
+        path: 'schedule',
+        element: <WebinarSchedule />,
+        errorElement: <div>Error loading Schedule page</div>
+      },
+      {
+        path: 'courses/new',
+        element: <CreateCourse />,
+        errorElement: <div>Error loading Create Course page</div>
+      },
+      {
+        path: 'courses/:courseId',
+        element: <CourseDetails />,
+        errorElement: <div>Error loading Course Details page</div>
+      },
+      {
+        path: 'courses/:courseId/edit',
+        element: <EditCourse />,
+        errorElement: <div>Error loading Edit Course page</div>
+      },
+      {
+        path: 'courses/:courseId/analytics', // New analytics route
+        element: <CourseAnalytics />,
+        errorElement: <div>Error loading Course Analytics page</div>
+      },
+      
+      {
         path: '',
-        element: <Navigate to="dashboard" replace />,
-        errorElement: <div>Error loading Dashboard page</div>
+        element: <Navigate to="courses/new" replace />,
+        errorElement: <div>Error loading Course Creation page</div>
       }
     ]
   },
   {
+    path: '/',
+    element: <InstructorsLanding />,
+    errorElement: <div>Error loading Instructors Landing page</div>
+  },
+  {
+    path: '/privacy-policy',
+    element: <PrivacyPolicy />,
+    errorElement: <div>Error loading Privacy Policy page</div>
+  },
+  {
+    path: '/terms-of-service',
+    element: <TermsOfService />,
+    errorElement: <div>Error loading Terms of Service page</div>
+  },
+  {
     path: '*',
-    element: <AppWrapper><Navigate to="/instructor/dashboard" replace /></AppWrapper>
+    element: <Navigate to="/instructor/dashboard" replace />,
+    errorElement: <div>Error loading page</div>
   }
-]);
+], {
+  basename: '/'
+});
 
 function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <QueryClientProvider client={queryClient}>
+    <LocalizationProvider dateAdapter={AdapterDateFns}>
+      <SnackbarProvider maxSnack={3}>
+        <AnimatePresence mode="wait">
+          <RouterProvider 
+            router={router} 
+            fallbackElement={<div>Loading...</div>}
+          />
+        </AnimatePresence>
+        <Toaster 
+          position="top-right" 
+          toastOptions={{
+            success: { duration: 3000 },
+            error: { duration: 5000 }
+          }} 
+        />
+      </SnackbarProvider>
+    </LocalizationProvider>
+    </QueryClientProvider>
+  );
 }
 
 export default App;
