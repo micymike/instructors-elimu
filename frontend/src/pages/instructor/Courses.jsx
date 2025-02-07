@@ -196,7 +196,7 @@ const Courses = () => {
             </p>
           </div>
           <Link
-            to="/instructor/courses/new"
+            to="/instructor/create-course"
             className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
           >
             Create New Course

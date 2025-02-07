@@ -4,8 +4,10 @@ import { settingsAPI } from '../../services/api';
 import {
   BarChart2, BookOpen, Video, Users, Calendar, Settings,
   LogOut, Menu, X, Layers, UserPlus, FileText,
-  GraduationCap, Bell, Plus, ChevronDown
+  GraduationCap, Bell, Plus, ChevronDown, ClipboardCheck,
+  Award, TrendingUp, Clock, DollarSign, CreditCard
 } from 'lucide-react';
+import AIAssistantChat from '../AIAssistantChat';
 
 const DashboardLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -78,44 +80,120 @@ const DashboardLayout = () => {
           label: 'Create Course',
           path: '/instructor/create-course',
           description: 'Add new course'
+        },
+        {
+          icon: FileText,
+          label: 'Course Content',
+          path: '/instructor/courses/content',
+          description: 'Manage course materials'
         }
       ]
     },
     {
-      icon: Video,
-      label: 'Zoom Meetings',
-      path: '/instructor/zoom-meetings',
-      description: 'Manage live sessions'
-    },
-    {
       icon: Users,
       label: 'Students',
-      path: '/instructor/students',
-      description: 'Student management'
+      description: 'Student management',
+      subItems: [
+        {
+          icon: Users,
+          label: 'All Students',
+          path: '/instructor/students',
+          description: 'View all students'
+        },
+        {
+          icon: TrendingUp,
+          label: 'Progress Tracking',
+          path: '/instructor/students/progress',
+          description: 'Track student progress'
+        },
+        {
+          icon: ClipboardCheck,
+          label: 'Assignments',
+          path: '/instructor/students/assignments',
+          description: 'View and grade assignments'
+        }
+      ]
+    },
+    {
+      icon: UserPlus,
+      label: 'Collaboration',
+      description: 'Group projects & collaboration',
+      subItems: [
+        {
+          icon: Users,
+          label: 'Group Projects',
+          path: '/instructor/collaboration/projects',
+          description: 'Manage group projects'
+        },
+        {
+          icon: Video,
+          label: 'Live Sessions',
+          path: '/instructor/collaboration/sessions',
+          description: 'Virtual classroom sessions'
+        },
+        {
+          icon: Video,
+          label: 'Zoom Classes',
+          path: '/instructor/zoom-meetings',
+          description: 'Manage Zoom classes'
+        }
+      ]
+    },
+    {
+      icon: BarChart2,
+      label: 'Analytics',
+      description: 'Course and student analytics',
+      subItems: [
+        {
+          icon: TrendingUp,
+          label: 'Course Analytics',
+          path: '/instructor/analytics/courses',
+          description: 'Course performance metrics'
+        },
+        {
+          icon: Users,
+          label: 'Student Analytics',
+          path: '/instructor/analytics/students',
+          description: 'Student engagement metrics'
+        },
+        {
+          icon: Clock,
+          label: 'Time Analytics',
+          path: '/instructor/analytics/time',
+          description: 'Time spent metrics'
+        }
+      ]
+    },
+    {
+      icon: DollarSign,
+      label: 'Payments',
+      description: 'Revenue and payments',
+      subItems: [
+        {
+          icon: TrendingUp,
+          label: 'Revenue Dashboard',
+          path: '/instructor/payments/dashboard',
+          description: 'Revenue overview'
+        },
+        {
+          icon: CreditCard,
+          label: 'Withdrawals',
+          path: '/instructor/payments/withdrawals',
+          description: 'Manage withdrawals'
+        },
+        {
+          icon: FileText,
+          label: 'Payment History',
+          path: '/instructor/payments/history',
+          description: 'Transaction history'
+        }
+      ]
     },
     {
       icon: Calendar,
       label: 'Schedule',
       path: '/instructor/schedule',
       description: 'Class timetable'
-    },
-    {
-      icon: UserPlus,
-      label: 'Group Management',
-      path: '/instructor/groups',
-      description: 'Manage student groups'
-    },
-    {
-      icon: FileText,
-      label: 'Content',
-      path: '/instructor/content',
-      description: 'Course materials'
-    },
-    {
-      icon: GraduationCap,
-      label: 'Assessments',
-      path: '/instructor/assessments',
-      description: 'Tests and assignments'
     },
     {
       icon: Settings,
@@ -131,20 +209,20 @@ const DashboardLayout = () => {
     navigate('/login');
   };
 
-  const MenuItem = ({ item }) => {
+  const MenuItem = ({ item, index }) => {
     const isActive = location.pathname === item.path;
-    const isExpanded = expandedItem === item.path;
+    const isExpanded = expandedItem === item.label;
     const hasSubItems = item.subItems && item.subItems.length > 0;
 
     return (
-      <div className="group">
+      <div key={item.path || `menu-item-${index}`}>
         <Link
           to={item.path}
           className={`flex items-center justify-between rounded-lg transition-all duration-200 group-hover:bg-blue-50/80 ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
           onClick={(e) => {
             if (hasSubItems) {
               e.preventDefault();
-              setExpandedItem(isExpanded ? null : item.path);
+              setExpandedItem(isExpanded ? null : item.label);
             }
           }}
         >
@@ -169,9 +247,9 @@ const DashboardLayout = () => {
 
         {hasSubItems && isExpanded && (
           <div className="ml-8 mt-1 space-y-1">
-            {item.subItems.map((subItem) => (
+            {item.subItems.map((subItem, subIndex) => (
               <Link
-                key={subItem.path}
+                key={subItem.path || `sub-item-${index}-${subIndex}`}
                 to={subItem.path}
                 className={`flex items-center px-4 py-2.5 rounded-lg transition-colors duration-200 text-sm hover:bg-blue-50 hover:text-blue-600 ${location.pathname === subItem.path ? 'bg-blue-50 text-blue-600' : 'text-gray-600'}`}
               >
@@ -212,8 +290,8 @@ const DashboardLayout = () => {
 
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-            {menuItems.map((item) => (
-              <MenuItem key={item.path} item={item} />
+            {menuItems.map((item, index) => (
+              <MenuItem key={item.path || `menu-item-${index}`} item={item} index={index} />
             ))}
           </nav>
 
@@ -285,6 +363,7 @@ const DashboardLayout = () => {
         <main className="flex-1 overflow-auto p-6">
           <Outlet />
         </main>
+        <AIAssistantChat />
       </div>
     </div>
   );
