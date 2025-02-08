@@ -38,10 +38,7 @@ const router = createBrowserRouter([
         path: 'create-course',
         element: <CreateCourse />
       },
-      {
-        path: 'courses/content',
-        element: <CourseContent />
-      },
+      // Removed the problematic courses/content route
       {
         path: 'students',
         element: <StudentsList />

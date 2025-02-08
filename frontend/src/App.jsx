@@ -15,7 +15,6 @@ import InstructorsLanding from './components/InstructorsLanding';
 import CourseLearning from './pages/instructor/CourseLearning';
 import AssessmentCreator from './pages/instructor/Assessments';
 import CourseAnalytics from './components/dashboard/CourseAnalytics';
-import CourseWizard from './components/CourseWizard/CourseWizard';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
 import StudentCourseView from './pages/student/StudentCourseView';
@@ -29,11 +28,11 @@ import {
   Students
 } from './pages/instructor';
 import Content from './pages/instructor/Content';
-import CreateCourse from './pages/instructor/CreateCourse';
+import CourseForm from './components/instructor/CourseForm';
 import CourseDetails from './pages/instructor/CourseDetails';
 import VideoManagement from './pages/instructor/VideoManagement';
 import InstructorSettings from './pages/instructor/Settings';
-import EditCourse from './pages/instructor/EditCourse'; // Added import statement
+import EditCourse from './pages/instructor/EditCourse'; 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
 
@@ -103,11 +102,6 @@ const router = createBrowserRouter([
         errorElement: <div>Error loading Settings page</div>
       },
       {
-        path: 'create-course',
-        element: <CourseWizard />,
-        errorElement: <div>Error loading Create Course page</div>
-      },
-      {
         path: 'assessments',
         element: <AssessmentCreator/>,
         errorElement: <div>Error loading Assessments page</div>
@@ -129,8 +123,8 @@ const router = createBrowserRouter([
       },
       {
         path: 'courses/new',
-        element: <CreateCourse />,
-        errorElement: <div>Error loading Create Course page</div>
+        element: <CourseForm mode="create" />,
+        errorElement: <div>Error loading Course Creation page</div>
       },
       {
         path: 'courses/:courseId',
@@ -143,7 +137,7 @@ const router = createBrowserRouter([
         errorElement: <div>Error loading Edit Course page</div>
       },
       {
-        path: 'courses/:courseId/analytics', // New analytics route
+        path: 'courses/:courseId/analytics', 
         element: <CourseAnalytics />,
         errorElement: <div>Error loading Course Analytics page</div>
       },

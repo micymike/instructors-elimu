@@ -100,7 +100,7 @@ const DashboardLayout = () => {
         {
           icon: Plus,
           label: 'Create Course',
-          path: '/instructor/create-course',
+          path: '/instructor/courses/new',
           description: 'Add new course'
         },
         {
