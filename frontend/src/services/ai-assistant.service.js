@@ -1,8 +1,5 @@
 import axios from 'axios';
-import api from './api';
-import { courseAPI } from './api';
-import { documentsAPI } from './api';
-import { settingsAPI } from './api';
+import { courseAPI, documentsAPI, settingsAPI } from './api';
 
 // Get API key from environment variable
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
@@ -95,9 +92,9 @@ class AIAssistantService {
         case 'courses':
           return await courseAPI.getCourseStats();
         case 'students':
-          return await api.get('/students/stats');
+          return await courseAPI.getInstructorStats(); // Using courseAPI instead of direct api access
         case 'assignments':
-          return await api.get('/assignments/stats');
+          return null; // Remove since we don't have a direct assignments API
         case 'documents':
           return await documentsAPI.getAllDocuments();
         default:
@@ -203,7 +200,7 @@ Current context: `;
       const formData = new FormData();
       formData.append('file', file);
       
-      const response = await api.post('/ai/upload', formData, {
+      const response = await axios.post('/ai/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
@@ -218,7 +215,7 @@ Current context: `;
 
   async analyzeDocument(fileUrl) {
     try {
-      const response = await api.post('/ai/analyze-document', { fileUrl });
+      const response = await axios.post('/ai/analyze-document', { fileUrl });
       return response.data;
     } catch (error) {
       console.error('Error analyzing document:', error);

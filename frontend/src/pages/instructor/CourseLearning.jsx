@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Play, Book, FileText, CheckCircle, Loader } from 'lucide-react';
-import axios from 'axios';
 import { useToast } from '../../hooks/useToast';
 import { courseAPI, courseProgressAPI } from '../../services/api';
 
@@ -24,11 +23,11 @@ const CourseLearning = () => {
         }
         const fetchCourseData = async () => {
             try {
-                const courseResponse = await courseAPI.getCourse(courseId);
-                setCourse(courseResponse);
+            const courseResponse = await courseAPI.getCourse(courseId);
+            setCourse(courseResponse);
 
-                const progressResponse = await courseProgressAPI.getCourseProgress(courseId);
-                setProgress(progressResponse.progress);
+            const progressResponse = await courseProgressAPI.getCourseProgress(courseId);
+            setProgress(progressResponse.progress || {});
             } catch (error) {
                 console.error('Error fetching course data:', error);
                 toast.error('Failed to fetch course data');
@@ -38,7 +37,7 @@ const CourseLearning = () => {
         };
 
         fetchCourseData();
-    }, [courseId, navigate]);
+    }, [courseId, navigate, toast]);
 
     const handleProgressUpdate = async (itemId) => {
         if (!itemId) return;
@@ -52,7 +51,7 @@ const CourseLearning = () => {
             
             // Refresh progress
             const progressResponse = await courseProgressAPI.getCourseProgress(courseId);
-            setProgress(progressResponse.progress);
+            setProgress(progressResponse.progress || {});
         } catch (error) {
             console.error('Error updating progress:', error);
             toast.error('Failed to update progress');

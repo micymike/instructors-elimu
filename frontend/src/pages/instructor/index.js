@@ -9,7 +9,7 @@ export { default as CourseLearning } from './CourseLearning';
 export { default as Students } from './Students';
 export { default as StudentProgressPage } from './StudentProgressPage';
 export { default as Settings } from './Settings';
-export { default as Schedule } from './Schedule';
+export { default as WebinarSchedule } from './WebinarSchedule';
 export { default as CreateCourse } from './CreateCourse';
 export { default as Assessments } from './Assessments';
 export { default as VideoManagement } from './VideoManagement';

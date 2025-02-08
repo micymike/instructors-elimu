@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
 import { settingsAPI } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 import {
   BarChart2, BookOpen, Video, Users, Calendar, Settings,
   LogOut, Menu, X, Layers, UserPlus, FileText,
@@ -12,7 +13,8 @@ import AIAssistantChat from '../AIAssistantChat';
 const DashboardLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
-  const [user, setUser] = useState(null);
+  const { user: authUser, loading, logout } = useAuth();
+  const [instructorData, setInstructorData] = useState(null);
   const [expandedItem, setExpandedItem] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -20,15 +22,14 @@ const DashboardLayout = () => {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) {
+        if (!authUser) {
           navigate('/login');
           return;
         }
 
         const response = await settingsAPI.getSettings();
         if (response && response.data) {
-          setUser(response.data.personalInfo || response.data);
+          setInstructorData(response.data.personalInfo || response.data);
         }
       } catch (error) {
         console.error('Error fetching settings:', error);
@@ -54,7 +55,7 @@ const DashboardLayout = () => {
     return () => {
       window.removeEventListener('resize', handleResize);
     };
-  }, [navigate]);
+  }, [navigate, authUser]);
 
   const menuItems = [
     {
@@ -204,9 +205,7 @@ const DashboardLayout = () => {
   ];
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    navigate('/login');
+    logout();
   };
 
   const MenuItem = ({ item, index }) => {
@@ -263,6 +262,19 @@ const DashboardLayout = () => {
     );
   };
 
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!authUser) {
+    navigate('/login');
+    return null;
+  }
+
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Overlay for mobile */}
@@ -298,25 +310,25 @@ const DashboardLayout = () => {
           {/* User Profile and Logout */}
           <div className="p-4 border-t border-gray-200">
             <div className="flex items-center gap-3 mb-4">
-              {user?.profilePicture ? (
+              {instructorData?.profilePicture ? (
                 <img
-                  src={user.profilePicture}
+                  src={instructorData.profilePicture}
                   alt="Profile"
                   className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
                 />
               ) : (
                 <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
                   <span className="text-blue-600 font-medium text-lg">
-                    {user?.firstName?.[0]}{user?.lastName?.[0]}
+                    {instructorData?.firstName?.[0]}{instructorData?.lastName?.[0]}
                   </span>
                 </div>
               )}
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 truncate">
-                  {user?.firstName} {user?.lastName}
+                  {instructorData?.firstName} {instructorData?.lastName}
                 </p>
                 <p className="text-xs text-gray-500 truncate">
-                  {user?.expertise || 'Instructor'}
+                  {instructorData?.expertise || 'Instructor'}
                 </p>
               </div>
             </div>
@@ -342,16 +354,16 @@ const DashboardLayout = () => {
               <button className="p-2 hover:bg-gray-100 rounded-full">
                 <Bell className="h-6 w-6 text-gray-600" />
               </button>
-              {user?.profilePicture ? (
+              {instructorData?.profilePicture ? (
                 <img
-                  src={user.profilePicture}
+                  src={instructorData.profilePicture}
                   alt="Profile"
                   className="h-8 w-8 rounded-full object-cover"
                 />
               ) : (
                 <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
                   <span className="text-blue-600 font-medium">
-                    {user?.firstName?.[0]}{user?.lastName?.[0]}
+                    {instructorData?.firstName?.[0]}{instructorData?.lastName?.[0]}
                   </span>
                 </div>
               )}
