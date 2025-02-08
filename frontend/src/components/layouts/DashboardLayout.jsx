@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
-import { settingsAPI } from '../../services/api';
+import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   BarChart2, BookOpen, Video, Users, Calendar, Settings,
@@ -9,6 +9,8 @@ import {
   Award, TrendingUp, Clock, DollarSign, CreditCard
 } from 'lucide-react';
 import AIAssistantChat from '../AIAssistantChat';
+
+import { API_URL } from '../../config';
 
 const DashboardLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -20,29 +22,48 @@ const DashboardLayout = () => {
   const location = useLocation();
 
   useEffect(() => {
-    const fetchSettings = async () => {
+    const fetchInstructorData = async () => {
       try {
         if (!authUser) {
           navigate('/login');
           return;
         }
 
-        const response = await settingsAPI.getSettings();
-        if (response && response.data) {
-          setInstructorData(response.data.personalInfo || response.data);
+        const token = localStorage.getItem('token');
+        if (!token) {
+          logout();
+          return;
         }
+
+        const config = {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        };
+
+        // Fetch dashboard and statistics directly
+        const [dashboardResponse, statisticsResponse] = await Promise.all([
+          axios.get(`${API_URL}/api/instructors/profile/dashboard`, config),
+          axios.get(`${API_URL}/api/instructors/profile/dashboard-statistics`, config)
+        ]);
+
+        const instructorDetails = {
+          ...dashboardResponse.data,
+          statistics: statisticsResponse.data
+        };
+
+        setInstructorData(instructorDetails);
       } catch (error) {
-        console.error('Error fetching settings:', error);
+        console.error('Error fetching instructor data:', error);
         if (error.response?.status === 401) {
-          // Clear token and redirect to login
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          navigate('/login');
+          logout();
         }
       }
     };
 
-    fetchSettings();
+    fetchInstructorData();
+    
     const handleResize = () => {
       const isMobileView = window.innerWidth < 1024;
       setIsMobile(isMobileView);
@@ -55,7 +76,7 @@ const DashboardLayout = () => {
     return () => {
       window.removeEventListener('resize', handleResize);
     };
-  }, [navigate, authUser]);
+  }, [navigate, authUser, logout]);
 
   const menuItems = [
     {
@@ -262,17 +283,18 @@ const DashboardLayout = () => {
     );
   };
 
-  if (loading) {
+  useEffect(() => {
+    if (!loading && !authUser) {
+      navigate('/login');
+    }
+  }, [authUser, loading, navigate]);
+
+  if (loading || !authUser) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
-  }
-
-  if (!authUser) {
-    navigate('/login');
-    return null;
   }
 
   return (
@@ -342,7 +364,7 @@ const DashboardLayout = () => {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden ">
+      <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <header className="bg-white border-b py-4 px-6">
           <div className="flex items-center justify-between">

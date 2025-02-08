@@ -19,9 +19,8 @@ api.interceptors.request.use((config) => {
 });
 
 export const instructorAPI = {
-  // Profile management
-  async updateProfile(profileData) {
-    const response = await api.put('/api/instructors/profile/update', profileData);
+  async getDashboard() {
+    const response = await api.get('/api/instructors/profile/dashboard');
     return response.data;
   },
 
@@ -30,28 +29,11 @@ export const instructorAPI = {
     return response.data;
   },
 
-  async getDashboard() {
-    const response = await api.get('/api/instructors/profile/dashboard');
+  async updateProfile(profileData) {
+    const response = await api.put('/api/instructors/profile/update', profileData);
     return response.data;
   },
 
-  // Withdrawals
-  async withdrawFunds(withdrawalData) {
-    const response = await api.post('/api/instructors/profile/withdraw', withdrawalData);
-    return response.data;
-  },
-
-  async getWithdrawalStatus(checkoutRequestId) {
-    if (checkoutRequestId) {
-      const response = await api.get(`/api/instructors/profile/withdraw/status/${checkoutRequestId}`);
-      return response.data;
-    } else {
-      const response = await api.get('/api/instructors/profile/withdraw/status');
-      return response.data;
-    }
-  },
-
-  // Profile picture
   async updateProfilePicture(pictureData) {
     const formData = new FormData();
     formData.append('profilePhoto', pictureData);
@@ -61,45 +43,10 @@ export const instructorAPI = {
       },
     });
     return response.data;
-  },
-
-  // Likes
-  async likeInstructor(instructorId) {
-    const response = await api.post(`/api/instructors/profile/${instructorId}/like`);
-    return response.data;
-  },
-
-  async getInstructorLikes(instructorId) {
-    const response = await api.get(`/api/instructors/profile/${instructorId}/likes`);
-    return response.data;
-  },
-
-  // Profile deletion
-  async deleteProfile() {
-    const response = await api.delete('/api/instructors/profile/delete');
-    return response.data;
-  }
-};
-
-export const instructorCourseProgressAPI = {
-  async getCourseProgress(courseId) {
-    const response = await api.get(`/instructor/courses/${courseId}/progress`);
-    return response.data;
-  },
-
-  async updateCourseProgress(courseId, progressData) {
-    const response = await api.post(`/instructor/courses/${courseId}/progress`, progressData);
-    return response.data;
   }
 };
 
 export const instructorCourseAPI = {
-  // Course Management
-  async getCourseToLearn(id) {
-    const response = await api.get(`/instructor/courses/${id}/learn`);
-    return response.data;
-  },
-
   async createCourse(courseData) {
     const response = await api.post('/instructor/courses', courseData);
     return response.data;
@@ -107,16 +54,6 @@ export const instructorCourseAPI = {
 
   async getAllCourses() {
     const response = await api.get('/instructor/courses');
-    return response.data;
-  },
-
-  async getCoursesList() {
-    const response = await api.get('/instructor/courses');
-    return response.data;
-  },
-
-  async generateCourse(params) {
-    const response = await api.post('/instructor/ai-assistant/generate', params);
     return response.data;
   },
 
@@ -135,6 +72,14 @@ export const instructorCourseAPI = {
     return response.data;
   },
 
+  async getCourseAnalytics(courseId) {
+    const response = await api.get(`/instructor/courses/${courseId}/analytics`);
+    return response.data;
+  }
+};
+
+// Course management methods
+export const instructorCourseManagementAPI = {
   async getInstructorStats() {
     const response = await api.get('/api/instructors/profile/dashboard-statistics');
     return response.data;
@@ -509,38 +454,8 @@ export const instructorDocumentsAPI = {
 
 export const instructorAuthAPI = {
   async login(credentials) {
-    try {
-      if (!credentials.email || !credentials.password) {
-        throw new Error('Email and password are required');
-      }
-
-      const response = await api.post('/auth/login/instructor', credentials, {
-        headers: {
-          'Authorization': undefined,
-          'Content-Type': 'application/json'
-        },
-        timeout: 10000
-      });
-
-      if (!response.data) {
-        throw new Error('Empty response received from server');
-      }
-
-      const token = 
-        response.data.token || 
-        response.data.access_token || 
-        response.headers['authorization']?.replace('Bearer ', '');
-
-      if (!token) {
-        throw new Error('No authentication token found in response');
-      }
-
-      localStorage.setItem('token', token);
-      return response.data;
-    } catch (error) {
-      localStorage.removeItem('token');
-      throw error;
-    }
+    const authService = await import('./auth.service');
+    return authService.default.login(credentials);
   },
 
   async register(instructorData) {
@@ -841,6 +756,19 @@ export const instructorAccessibilityAPI = {
 
   async synthesizeSpeech(data) {
     const response = await api.post('/accessibility/synthesize', data);
+    return response.data;
+  }
+};
+
+// Course progress API implementation
+export const instructorCourseProgressAPI = {
+  async getCourseProgress(courseId) {
+    const response = await api.get(`/instructor/courses/${courseId}/progress`);
+    return response.data;
+  },
+
+  async updateCourseProgress(courseId, progressData) {
+    const response = await api.put(`/instructor/courses/${courseId}/progress`, progressData);
     return response.data;
   }
 };

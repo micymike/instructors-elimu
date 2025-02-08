@@ -1,7 +1,6 @@
 import axios from 'axios';
-import { courseAPI, documentsAPI, settingsAPI } from './api';
 
-// Get API key from environment variable
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
 
 if (!GROQ_API_KEY) {
@@ -13,6 +12,23 @@ class AIAssistantService {
     this.subscribers = new Set();
     this.chatHistory = [];
     this.contextCache = new Map();
+    
+    // Initialize API client with auth token
+    this.api = axios.create({
+      baseURL: API_BASE_URL,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    // Add request interceptor to include token
+    this.api.interceptors.request.use((config) => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+    });
     
     // Initialize Groq API client
     this.groqApi = axios.create({
@@ -54,9 +70,9 @@ class AIAssistantService {
       // Get course information if available
       if (context.courseId) {
         const [courseInfo, courseContent, courseMaterials] = await Promise.all([
-          courseAPI.getCourse(context.courseId),
-          courseAPI.getCourseContent(context.courseId),
-          courseAPI.getCourseMaterials(context.courseId)
+          this.api.get(`/instructor/courses/${context.courseId}`).then(res => res.data),
+          this.api.get(`/instructor/courses/${context.courseId}/content`).then(res => res.data),
+          this.api.get(`/instructor/courses/${context.courseId}/materials`).then(res => res.data)
         ]);
         
         contextData.courseInfo = courseInfo;
@@ -66,7 +82,7 @@ class AIAssistantService {
 
       // Get user information
       if (context.userRole) {
-        const userInfo = await settingsAPI.getSettings();
+        const userInfo = await this.api.get('/api/instructors/profile').then(res => res.data);
         contextData.userInfo = userInfo;
       }
 
@@ -90,13 +106,11 @@ class AIAssistantService {
     try {
       switch (pageType) {
         case 'courses':
-          return await courseAPI.getCourseStats();
+          return await this.api.get('/api/instructors/profile/dashboard-statistics').then(res => res.data);
         case 'students':
-          return await courseAPI.getInstructorStats(); // Using courseAPI instead of direct api access
-        case 'assignments':
-          return null; // Remove since we don't have a direct assignments API
+          return await this.api.get('/api/instructors/students/stats').then(res => res.data);
         case 'documents':
-          return await documentsAPI.getAllDocuments();
+          return await this.api.get('/api/instructors/documents').then(res => res.data);
         default:
           return null;
       }
@@ -200,7 +214,7 @@ Current context: `;
       const formData = new FormData();
       formData.append('file', file);
       
-      const response = await axios.post('/ai/upload', formData, {
+      const response = await this.api.post('/ai/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
@@ -215,7 +229,7 @@ Current context: `;
 
   async analyzeDocument(fileUrl) {
     try {
-      const response = await axios.post('/ai/analyze-document', { fileUrl });
+      const response = await this.api.post('/ai/analyze-document', { fileUrl });
       return response.data;
     } catch (error) {
       console.error('Error analyzing document:', error);
