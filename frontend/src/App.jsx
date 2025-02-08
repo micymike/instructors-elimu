@@ -35,7 +35,6 @@ import VideoManagement from './pages/instructor/VideoManagement';
 import InstructorSettings from './pages/instructor/Settings';
 import EditCourse from './pages/instructor/EditCourse'; // Added import statement
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AuthProvider } from './contexts/AuthContext';
 
 const queryClient = new QueryClient();
 
@@ -182,7 +181,6 @@ const router = createBrowserRouter([
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-    <AuthProvider>
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <SnackbarProvider maxSnack={3}>
         <AnimatePresence mode="wait">
@@ -200,7 +198,6 @@ function App() {
         />
       </SnackbarProvider>
     </LocalizationProvider>
-    </AuthProvider>
     </QueryClientProvider>
   );
 }
