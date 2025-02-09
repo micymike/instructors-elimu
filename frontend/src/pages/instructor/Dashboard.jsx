@@ -239,12 +239,6 @@ const Dashboard = () => {
           {user?.email ? `Your email: ${user.email}` : 'Instructor Dashboard'}
         </p>
       </div>
-      {/* Error Display */}
-      {error && (
-        <div className="mb-8 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg">
-          {error}
-        </div>
-      )}
 
       {/* Loading State */}
       {isLoading ? (
