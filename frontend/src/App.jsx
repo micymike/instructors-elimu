@@ -35,6 +35,7 @@ import VideoManagement from './pages/instructor/VideoManagement';
 import InstructorSettings from './pages/instructor/Settings';
 import EditCourse from './pages/instructor/EditCourse'; // Added import statement
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import DashboardStatistics from './components/dashboard/CourseAnalytics';
 
 const queryClient = new QueryClient();
 
@@ -147,8 +148,8 @@ const router = createBrowserRouter([
       },
       {
         path: 'courses/:courseId/analytics', // New analytics route
-        element: <CourseAnalytics />,
-        errorElement: <div>Error loading Course Analytics page</div>
+        element: <DashboardStatistics />,
+        errorElement: <div>Error loading  page</div>
       },
       
       {
