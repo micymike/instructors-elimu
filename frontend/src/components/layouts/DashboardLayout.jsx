@@ -78,6 +78,15 @@ const DashboardLayout = () => {
     };
   }, [navigate, authUser, logout]);
 
+  useEffect(() => {
+    console.error('CURRENT LOCATION CHANGED', {
+      pathname: location.pathname,
+      search: location.search,
+      hash: location.hash,
+      state: location.state
+    });
+  }, [location]);
+
   const menuItems = [
     {
       icon: BarChart2,
@@ -102,43 +111,39 @@ const DashboardLayout = () => {
           label: 'Create Course',
           path: '/instructor/courses/new',
           description: 'Add new course'
-        },
-        {
-          icon: FileText,
-          label: 'Course Content',
-          path: '/instructor/courses/content',
-          description: 'Manage course materials'
         }
       ]
     },
     {
       icon: Users,
       label: 'Students',
-      description: 'Student management',
+      path: '/instructor/students',
+      description: 'Student management'
+    },
+    {
+      icon: ClipboardCheck,
+      label: 'Assessments',
+      path: '/instructor/assessments',
+      description: 'View and grade assessments',
       subItems: [
         {
-          icon: Users,
-          label: 'All Students',
-          path: '/instructor/students',
-          description: 'View all students'
+          icon: Plus,
+          label: 'Create Assessment',
+          path: '/instructor/assessments',
+          description: 'Create new assessment'
         },
         {
-          icon: TrendingUp,
-          label: 'Progress Tracking',
-          path: '/instructor/students/progress',
-          description: 'Track student progress'
-        },
-        {
-          icon: ClipboardCheck,
-          label: 'Assignments',
-          path: '/instructor/students/assignments',
-          description: 'View and grade assignments'
+          icon: FileText,
+          label: 'All Assessments',
+          path: '/instructor/assessments/list',
+          description: 'View all assessments'
         }
       ]
     },
     {
       icon: UserPlus,
       label: 'Collaboration',
+      path: '/instructor/collaboration',
       description: 'Group projects & collaboration',
       subItems: [
         {
@@ -164,6 +169,7 @@ const DashboardLayout = () => {
     {
       icon: BarChart2,
       label: 'Analytics',
+      path: '/instructor/analytics',
       description: 'Course and student analytics',
       subItems: [
         {
@@ -189,6 +195,7 @@ const DashboardLayout = () => {
     {
       icon: DollarSign,
       label: 'Payments',
+      path: '/instructor/payments',
       description: 'Revenue and payments',
       subItems: [
         {
@@ -239,9 +246,8 @@ const DashboardLayout = () => {
         <Link
           to={item.path}
           className={`flex items-center justify-between rounded-lg transition-all duration-200 group-hover:bg-blue-50/80 ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
-          onClick={(e) => {
+          onClick={() => {
             if (hasSubItems) {
-              e.preventDefault();
               setExpandedItem(isExpanded ? null : item.label);
             }
           }}
@@ -251,11 +257,6 @@ const DashboardLayout = () => {
             <div className="truncate">
               <div className="flex items-center gap-2">
                 <span className="font-medium">{item.label}</span>
-                {item.badge && (
-                  <span className={`px-2 py-0.5 text-xs rounded-full ${isActive ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'}`}>
-                    {item.badge}
-                  </span>
-                )}
               </div>
               <p className="text-xs text-gray-500 truncate">{item.description}</p>
             </div>
@@ -267,15 +268,21 @@ const DashboardLayout = () => {
 
         {hasSubItems && isExpanded && (
           <div className="ml-8 mt-1 space-y-1">
-            {item.subItems.map((subItem, subIndex) => (
-              <Link
-                key={subItem.path || `sub-item-${index}-${subIndex}`}
-                to={subItem.path}
-                className={`flex items-center px-4 py-2.5 rounded-lg transition-colors duration-200 text-sm hover:bg-blue-50 hover:text-blue-600 ${location.pathname === subItem.path ? 'bg-blue-50 text-blue-600' : 'text-gray-600'}`}
+            {item.subItems.map((subItem) => (
+              <div 
+                key={subItem.path} 
+                className="cursor-pointer hover:bg-gray-100 p-2"
               >
-                <subItem.icon className="h-4 w-4 mr-2" />
-                <span>{subItem.label}</span>
-              </Link>
+                <div className="flex items-center">
+                  <subItem.icon className="mr-2 w-4 h-4" />
+                  <Link 
+                    to={subItem.path}
+                    className="flex-1"
+                  >
+                    {subItem.label}
+                  </Link>
+                </div>
+              </div>
             ))}
           </div>
         )}
@@ -395,7 +402,10 @@ const DashboardLayout = () => {
 
         {/* Main Content Area */}
         <main className="flex-1 overflow-auto p-6">
-          <Outlet />
+          {/* Debug logging */}
+          {console.log('Current Location:', location.pathname)}
+          {console.log('Current Location State:', location.state)}
+          <Outlet context={{ location }} />
         </main>
         <AIAssistantChat />
       </div>

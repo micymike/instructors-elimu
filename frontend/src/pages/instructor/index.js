@@ -14,5 +14,5 @@ export { default as CreateCourse } from './CreateCourse';
 export { default as Assessments } from './Assessments';
 export { default as VideoManagement } from './VideoManagement';
 export { default as CreateSession } from './CreateSession';
-export { default as AssignmentGrading } from './AssignmentGrading';
-export { default as AssignmentsList } from './AssignmentsList';
+export { default as AssignmentGrading } from './AssessmentGrading';
+export { default as AssignmentsList } from './AssessmentList';

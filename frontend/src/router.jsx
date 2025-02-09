@@ -1,4 +1,4 @@
-import React from 'react';
+import { useLocation } from 'react-router-dom';
 import { createBrowserRouter } from 'react-router-dom';
 import DashboardLayout from './components/layouts/DashboardLayout';
 
@@ -9,7 +9,8 @@ const CreateCourse = React.lazy(() => import('./pages/instructor/CreateCourse'))
 const CourseContent = React.lazy(() => import('./pages/instructor/CourseContent'));
 const StudentsList = React.lazy(() => import('./pages/instructor/Students'));
 const StudentProgress = React.lazy(() => import('./pages/instructor/StudentProgressPage'));
-const StudentAssignments = React.lazy(() => import('./pages/instructor/StudentAssignments'));
+const AssessmentList = React.lazy(() => import('./pages/instructor/AssessmentList'));
+const Assessments = React.lazy(() => import('./pages/instructor/Assessments'));
 const GroupProjects = React.lazy(() => import('./pages/instructor/collaboration/GroupProjects'));
 const LiveSessions = React.lazy(() => import('./pages/instructor/collaboration/LiveSessions'));
 const CourseAnalytics = React.lazy(() => import('./pages/instructor/analytics/CourseAnalytics'));
@@ -48,8 +49,12 @@ const router = createBrowserRouter([
         element: <StudentProgress />
       },
       {
-        path: 'students/assignments',
-        element: <StudentAssignments />
+        path: 'assessments',
+        element: <Assessments />,
+      },
+      {
+        path: 'assessments/list',
+        element: <AssessmentList />
       },
       {
         path: 'collaboration/projects',

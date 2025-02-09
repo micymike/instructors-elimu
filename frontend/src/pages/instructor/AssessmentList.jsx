@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import {
   Card,
   Typography,
@@ -17,62 +18,70 @@ import {
   Users,
   AlertCircle
 } from 'lucide-react';
+import { API_URL } from '../../config';
 
-const AssignmentsList = () => {
+const AssessmentList = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [assignments, setAssignments] = useState([]);
+  const [assessments, setAssessments] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    // Simulate API call with mock data
-    setTimeout(() => {
-      setAssignments([
-        {
-          id: 1,
-          courseId: 'course101',
-          title: 'Final Project',
-          courseName: 'Advanced Web Development',
-          dueDate: '2024-02-15',
-          submissionCount: 25,
-          pendingGrading: 15,
-          averageGrade: 88,
-          status: 'Active'
-        },
-        {
-          id: 2,
-          courseId: 'course102',
-          title: 'Midterm Assignment',
-          courseName: 'Database Design',
-          dueDate: '2024-02-10',
-          submissionCount: 30,
-          pendingGrading: 8,
-          averageGrade: 92,
-          status: 'Active'
-        },
-        {
-          id: 3,
-          courseId: 'course103',
-          title: 'UI/UX Project',
-          courseName: 'User Interface Design',
-          dueDate: '2024-02-01',
-          submissionCount: 28,
-          pendingGrading: 0,
-          averageGrade: 85,
-          status: 'Completed'
+    const fetchAssessments = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          navigate('/login');
+          return;
         }
-      ]);
-      setLoading(false);
-    }, 1000);
-  }, []);
 
-  const handleGradeAssignment = (courseId, assignmentId) => {
-    navigate(`/instructor/courses/${courseId}/assignments/${assignmentId}/grade`, { replace: true });
+        const config = {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        };
+
+        const [assessmentsResponse, assignmentsResponse] = await Promise.all([
+          axios.get(`${API_URL}/instructor/assessments`, config),
+          axios.get(`${API_URL}/assignments`, config)
+        ]);
+
+        const combinedAssessments = [
+          ...assessmentsResponse.data.map(assessment => ({
+            ...assessment,
+            type: 'assessment'
+          })),
+          ...assignmentsResponse.data.map(assignment => ({
+            ...assignment,
+            type: 'assignment'
+          }))
+        ];
+
+        setAssessments(combinedAssessments);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching assessments:', error);
+        if (error.response?.status === 401) {
+          navigate('/login');
+        }
+        setLoading(false);
+      }
+    };
+
+    fetchAssessments();
+  }, [navigate]);
+
+  const handleGradeItem = (item) => {
+    const path = item.type === 'assessment' 
+      ? `/instructor/courses/${item.courseId}/assessments/${item.id}/grade`
+      : `/instructor/courses/${item.courseId}/assignments/${item.id}/grade`;
+    navigate(path, { replace: true });
   };
 
-  const filteredAssignments = assignments.filter(assignment =>
-    assignment.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    assignment.courseName.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredAssessments = assessments.filter(item =>
+    item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.courseName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   if (loading) {
@@ -86,13 +95,13 @@ const AssignmentsList = () => {
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <Typography variant="h4">Assignments</Typography>
+        <Typography variant="h4">Assessments</Typography>
       </div>
 
       <TextField
         fullWidth
         variant="outlined"
-        placeholder="Search assignments..."
+        placeholder="Search assessments..."
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
         className="mb-6"
@@ -106,21 +115,21 @@ const AssignmentsList = () => {
       />
 
       <Grid container spacing={4}>
-        {filteredAssignments.map((assignment) => (
-          <Grid item xs={12} md={6} lg={4} key={assignment.id}>
+        {filteredAssessments.map((assessment) => (
+          <Grid item xs={12} md={6} lg={4} key={assessment.id}>
             <Card className="p-4">
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <Typography variant="h6" className="mb-1">
-                    {assignment.title}
+                    {assessment.title}
                   </Typography>
                   <Typography variant="body2" color="textSecondary">
-                    {assignment.courseName}
+                    {assessment.courseName}
                   </Typography>
                 </div>
                 <Chip
-                  label={assignment.status}
-                  color={assignment.status === 'Active' ? 'primary' : 'default'}
+                  label={assessment.status}
+                  color={assessment.status === 'Active' ? 'primary' : 'default'}
                   size="small"
                 />
               </div>
@@ -129,25 +138,25 @@ const AssignmentsList = () => {
                 <div className="flex items-center space-x-2">
                   <Clock className="w-4 h-4 text-gray-400" />
                   <Typography variant="body2">
-                    Due: {new Date(assignment.dueDate).toLocaleDateString()}
+                    Due: {new Date(assessment.dueDate).toLocaleDateString()}
                   </Typography>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Users className="w-4 h-4 text-gray-400" />
                   <Typography variant="body2">
-                    {assignment.submissionCount} submissions
+                    {assessment.submissionCount} submissions
                   </Typography>
                 </div>
                 <div className="flex items-center space-x-2">
                   <AlertCircle className="w-4 h-4 text-gray-400" />
                   <Typography variant="body2">
-                    {assignment.pendingGrading} pending
+                    {assessment.pendingGrading} pending
                   </Typography>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Award className="w-4 h-4 text-gray-400" />
                   <Typography variant="body2">
-                    Avg: {assignment.averageGrade}%
+                    Avg: {assessment.averageGrade}%
                   </Typography>
                 </div>
               </div>
@@ -156,10 +165,10 @@ const AssignmentsList = () => {
                 fullWidth
                 variant="contained"
                 color="primary"
-                onClick={() => handleGradeAssignment(assignment.courseId, assignment.id)}
-                disabled={assignment.pendingGrading === 0}
+                onClick={() => handleGradeItem(assessment)}
+                disabled={assessment.pendingGrading === 0}
               >
-                {assignment.pendingGrading > 0 ? 'Grade Submissions' : 'All Graded'}
+                {assessment.pendingGrading > 0 ? 'Grade Submissions' : 'All Graded'}
               </Button>
             </Card>
           </Grid>
@@ -169,4 +178,4 @@ const AssignmentsList = () => {
   );
 };
 
-export default AssignmentsList;
+export default AssessmentList;

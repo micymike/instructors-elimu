@@ -14,6 +14,7 @@ import GroupManagement from './pages/instructor/GroupManagement';
 import InstructorsLanding from './components/InstructorsLanding';
 import CourseLearning from './pages/instructor/CourseLearning';
 import AssessmentCreator from './pages/instructor/Assessments';
+import Assessments from './pages/instructor/Assessments';
 import CourseAnalytics from './components/dashboard/CourseAnalytics';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
@@ -127,6 +128,11 @@ const router = createBrowserRouter([
         errorElement: <div>Error loading Course Creation page</div>
       },
       {
+        path: 'instructor/student-assessments',
+        element: <Assessments />,
+        errorElement: <div>Error loading Assessments page</div>
+      },
+      {
         path: 'courses/:courseId',
         element: <CourseDetails />,
         errorElement: <div>Error loading Course Details page</div>
@@ -144,8 +150,8 @@ const router = createBrowserRouter([
       
       {
         path: '',
-        element: <Navigate to="courses/new" replace />,
-        errorElement: <div>Error loading Course Creation page</div>
+        element: <Dashboard />,
+        errorElement: <div>Error loading Dashboard page</div>
       }
     ]
   },
