@@ -14,7 +14,7 @@ import GroupManagement from './pages/instructor/GroupManagement';
 import InstructorsLanding from './components/InstructorsLanding';
 import CourseLearning from './pages/instructor/CourseLearning';
 import AssessmentCreator from './pages/instructor/Assessments';
-import CourseAnalytics from './components/dashboard/CourseAnalytics';
+import DashboardStatistics from './components/dashboard/DashboardStatistics';
 import CourseWizard from './components/CourseWizard/CourseWizard';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
@@ -28,6 +28,7 @@ import {
   WebinarSchedule,
   Students
 } from './pages/instructor';
+import CourseAnalytics from './pages/instructor/CourseAnalytics';
 import Content from './pages/instructor/Content';
 import CreateCourse from './pages/instructor/CreateCourse';
 import CourseDetails from './pages/instructor/CourseDetails';
@@ -35,7 +36,7 @@ import VideoManagement from './pages/instructor/VideoManagement';
 import InstructorSettings from './pages/instructor/Settings';
 import EditCourse from './pages/instructor/EditCourse'; // Added import statement
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import DashboardStatistics from './components/dashboard/CourseAnalytics';
+
 
 const queryClient = new QueryClient();
 
@@ -146,12 +147,6 @@ const router = createBrowserRouter([
         element: <EditCourse />,
         errorElement: <div>Error loading Edit Course page</div>
       },
-      {
-        path: 'courses/:courseId/analytics', // New analytics route
-        element: <DashboardStatistics />,
-        errorElement: <div>Error loading  page</div>
-      },
-      
       {
         path: '',
         element: <Navigate to="courses/new" replace />,

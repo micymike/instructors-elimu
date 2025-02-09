@@ -17,11 +17,10 @@ import {
   RadialBar
 } from 'recharts';
 import { Loader2, Users, Trophy, BookCheck, Globe, CalendarDays } from 'lucide-react';
-import CourseAnalytics from '../../components/dashboard/CourseAnalytics';
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 
-const courseanalytics = () => {
+const CourseAnalytics = () => {
   const { id: courseId } = useParams();
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);

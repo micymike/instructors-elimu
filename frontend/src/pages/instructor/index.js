@@ -13,4 +13,4 @@ export { default as Assessments } from './Assessments';
 export { default as VideoManagement } from './VideoManagement';
 export { default as CreateSession } from './CreateSession';
 export { default as WebinarSchedule } from './WebinarSchedule';
-export { default as courseanalytics } from './courseanalytics';
+export { default as CourseAnalytics } from './CourseAnalytics';

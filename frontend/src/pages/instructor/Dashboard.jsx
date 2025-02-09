@@ -11,11 +11,12 @@ import {
   DollarSign,
   BarChart,
 } from 'lucide-react'; // Added DollarSign and BarChart
-import CourseAnalytics from '../../components/dashboard/CourseAnalytics.jsx';
 import UpcomingSchedule from '../../components/dashboard/UpcomingSchedule';
 import RecentActivity from '../../components/dashboard/RecentActivity';
 import StatCard from '../../components/dashboard/StatCard';
+import DashboardStatistics from '../../components/dashboard/DashboardStatistics.jsx';
 import io from 'socket.io-client';
+
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 const SOCKET_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
@@ -287,7 +288,7 @@ const Dashboard = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Column */}
             <div className="lg:col-span-2 space-y-6">
-              <CourseAnalytics 
+              <DashboardStatistics
                 coursePerformance={stats.coursePerformance}
                 monthlyRevenue={stats.monthlyRevenue}
                 courseRevenue={stats.courseRevenue}
