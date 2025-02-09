@@ -73,6 +73,12 @@ const DashboardLayout = () => {
           label: 'Create Course',
           path: '/instructor/create-course',
           description: 'Add new course'
+        },
+        {
+          icon: BarChart2,
+          label: 'Course Analytics',
+          path: '/instructor/courses/:id/analytics',
+          description: 'Detailed course metrics'
         }
       ]
     },

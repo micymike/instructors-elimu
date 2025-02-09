@@ -62,6 +62,10 @@ const router = createBrowserRouter([
         errorElement: <div>Error loading Courses page</div>
       },
       {
+        path: 'courses/:id/analytics',
+        element: <CourseAnalytics />
+      },
+      {
         path: 'content',
         element: <Content />,
         errorElement: <div>Error loading Content page</div>
