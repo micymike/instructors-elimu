@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { API_URL } from '../../config';
 import { Calendar, Clock, Users, Video, AlertCircle, Loader } from 'lucide-react';
+
+const API_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 
 const ZoomMeetings = () => {
   const navigate = useNavigate();

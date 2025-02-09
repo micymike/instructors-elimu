@@ -30,12 +30,7 @@ const DashboardLayout = () => {
         }
       } catch (error) {
         console.error('Error fetching settings:', error);
-        if (error.response?.status === 401) {
-          // Clear token and redirect to login
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          navigate('/login');
-        }
+
       }
     };
 
