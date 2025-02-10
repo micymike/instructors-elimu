@@ -7,7 +7,7 @@ import "react-big-calendar/lib/css/react-big-calendar.css";
 
 const localizer = momentLocalizer(moment);
 
-const WebinarSchedule = () => {
+const WebinarScheduler = () => {
   const [events, setEvents] = useState([]);
   const [newEvent, setNewEvent] = useState({
     title: "",
@@ -227,4 +227,4 @@ const WebinarSchedule = () => {
   );
 };
 
-export default WebinarSchedule;
+export default WebinarScheduler;
