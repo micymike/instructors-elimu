@@ -5,6 +5,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, createBrowserRouter, 
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { SnackbarProvider } from 'notistack';
+import { UserProvider } from './services/UserContext';
 import InstructorForm from './components/InstructorForm';
 import Login from './components/Login';
 import DashboardLayout from './components/layouts/DashboardLayout';
@@ -14,8 +15,6 @@ import GroupManagement from './pages/instructor/GroupManagement';
 import InstructorsLanding from './components/InstructorsLanding';
 import CourseLearning from './pages/instructor/CourseLearning';
 import AssessmentCreator from './pages/instructor/Assessments';
-import AssessmentsList from './pages/instructor/AssessmentList';
-import CourseAnalytics from './components/dashboard/CourseAnalytics';
 import CourseWizard from './components/CourseWizard/CourseWizard';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
@@ -29,11 +28,17 @@ import {
   WebinarSchedule,
   Students
 } from './pages/instructor';
+import CourseAnalytics from './pages/instructor/CourseAnalytics';
 import Content from './pages/instructor/Content';
 import CreateCourse from './pages/instructor/CreateCourse';
 import CourseDetails from './pages/instructor/CourseDetails';
 import VideoManagement from './pages/instructor/VideoManagement';
+import InstructorSettings from './pages/instructor/Settings';
 import EditCourse from './pages/instructor/EditCourse'; // Added import statement
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+
+const queryClient = new QueryClient();
 
 const router = createBrowserRouter([
   {
@@ -57,6 +62,10 @@ const router = createBrowserRouter([
         path: 'courses',
         element: <Courses />,
         errorElement: <div>Error loading Courses page</div>
+      },
+      {
+        path: 'courses/:id/analytics',
+        element: <CourseAnalytics />
       },
       {
         path: 'content',
@@ -95,7 +104,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'settings',
-        element: <Settings />,
+        element: <InstructorSettings/>,
         errorElement: <div>Error loading Settings page</div>
       },
       {
@@ -108,10 +117,6 @@ const router = createBrowserRouter([
         element: <AssessmentCreator/>,
         errorElement: <div>Error loading Assessments page</div>
       },
-      {path: 'assessmentslist',
-      element: <AssessmentsList/>,
-      errorElement: <div>Error loading Assessments page</div>
-    },
       {
         path: 'video-management',
         element: <VideoManagement />,
@@ -175,6 +180,8 @@ const router = createBrowserRouter([
 
 function App() {
   return (
+    <UserProvider>
+    <QueryClientProvider client={queryClient}>
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <SnackbarProvider maxSnack={3}>
         <AnimatePresence mode="wait">
@@ -192,6 +199,8 @@ function App() {
         />
       </SnackbarProvider>
     </LocalizationProvider>
+    </QueryClientProvider>
+    </UserProvider>
   );
 }
 

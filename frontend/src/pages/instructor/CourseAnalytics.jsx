@@ -16,7 +16,19 @@ import {
   RadialBarChart,
   RadialBar
 } from 'recharts';
-import { Loader2, Users, Trophy, BookCheck, Globe, CalendarDays } from 'lucide-react';
+import { 
+  Loader2, 
+  Users, 
+  Trophy, 
+  BookCheck, 
+  Globe, 
+  CalendarDays,
+  Download,
+  FileCheck,
+  FileX2,
+  ChevronLeft
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 
@@ -25,24 +37,26 @@ const CourseAnalytics = () => {
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [certificateStatus, setCertificateStatus] = useState({});
 
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
         const token = localStorage.getItem('token');
         const response = await axios.get(`${API_BASE_URL}/api/courses/${courseId}/analytics`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
+          headers: { Authorization: `Bearer ${token}` }
         });
         
-        // Transform demographic data for charts
         const transformed = {
           ...response.data,
           ageGroups: Object.entries(response.data.studentDemographics.ageGroups)
             .map(([name, value]) => ({ name, value })),
           countries: Object.entries(response.data.studentDemographics.countries)
-            .map(([name, value]) => ({ name, value }))
+            .map(([name, value]) => ({ name, value })),
+          completedStudents: response.data.completedStudents.map(student => ({
+            ...student,
+            hasCertificate: student.certificateGenerated
+          }))
         };
         
         setAnalytics(transformed);
@@ -55,6 +69,41 @@ const CourseAnalytics = () => {
 
     fetchAnalytics();
   }, [courseId]);
+
+  const generateCertificate = async (studentId) => {
+    try {
+      setCertificateStatus(prev => ({ ...prev, [studentId]: 'generating' }));
+      const token = localStorage.getItem('token');
+      
+      const response = await axios.post(
+        `${API_BASE_URL}/api/student/certificates/generate/${courseId}`,
+        { studentId },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          responseType: 'blob'
+        }
+      );
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `certificate-${studentId}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      setAnalytics(prev => ({
+        ...prev,
+        completedStudents: prev.completedStudents.map(student => 
+          student.id === studentId ? { ...student, hasCertificate: true } : student
+        )
+      }));
+      setCertificateStatus(prev => ({ ...prev, [studentId]: 'generated' }));
+    } catch (err) {
+      setCertificateStatus(prev => ({ ...prev, [studentId]: 'error' }));
+      console.error('Certificate generation failed:', err);
+    }
+  };
 
   const StatCard = ({ icon: Icon, title, value, description }) => (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
@@ -90,8 +139,16 @@ const CourseAnalytics = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+      <Link 
+        to="/instructor/courses" 
+        className="flex items-center gap-2 text-blue-600 hover:text-blue-800"
+      >
+        <ChevronLeft className="h-5 w-5" />
+        Back to Courses
+      </Link>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           icon={Users}
           title="Total Enrollments"
@@ -116,8 +173,7 @@ const CourseAnalytics = () => {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Age Demographics */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <h3 className="text-lg font-semibold mb-4">Age Distribution</h3>
           <div className="h-64">
@@ -133,7 +189,6 @@ const CourseAnalytics = () => {
           </div>
         </div>
 
-        {/* Country Distribution */}
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <h3 className="text-lg font-semibold mb-4">Country Distribution</h3>
           <div className="h-64">
@@ -146,7 +201,7 @@ const CourseAnalytics = () => {
                   outerRadius={80}
                   dataKey="value"
                 >
-                  {analytics.countries.map((entry, index) => (
+                  {analytics.countries.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
                   ))}
                 </Pie>
@@ -158,7 +213,6 @@ const CourseAnalytics = () => {
         </div>
       </div>
 
-      {/* Performance Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <h3 className="text-lg font-semibold mb-4">Quiz Performance</h3>
@@ -219,6 +273,73 @@ const CourseAnalytics = () => {
               </svg>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="bg-white p-6 rounded-lg shadow-sm">
+        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
+          <FileCheck className="w-6 h-6 text-green-600" />
+          Certificate Management
+        </h2>
+        
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">Student</th>
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">Progress</th>
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">Status</th>
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {analytics.completedStudents.map(student => (
+                <tr key={student.id}>
+                  <td className="px-6 py-4">{student.name}</td>
+                  <td className="px-6 py-4">{student.progress}%</td>
+                  <td className="px-6 py-4">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      student.hasCertificate 
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {student.hasCertificate ? 'Issued' : 'Pending'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <button
+                      onClick={() => generateCertificate(student.id)}
+                      disabled={certificateStatus[student.id] === 'generating'}
+                      className={`inline-flex items-center px-4 py-2 rounded-md transition-colors ${
+                        certificateStatus[student.id] === 'generating'
+                          ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                          : student.hasCertificate
+                            ? 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+                            : 'bg-green-100 text-green-600 hover:bg-green-200'
+                      }`}
+                    >
+                      {certificateStatus[student.id] === 'generating' ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Generating...
+                        </>
+                      ) : student.hasCertificate ? (
+                        <>
+                          <Download className="w-4 h-4 mr-2" />
+                          Download
+                        </>
+                      ) : (
+                        <>
+                          <FileCheck className="w-4 h-4 mr-2" />
+                          Generate
+                        </>
+                      )}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

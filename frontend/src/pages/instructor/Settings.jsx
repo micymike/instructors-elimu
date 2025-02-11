@@ -1,25 +1,27 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Settings, Bell, Shield, UserCircle, Key, Loader2, DollarSign, CheckCircle } from 'lucide-react';
+import { Settings, Bell, Shield, UserCircle, Key, Loader2, DollarSign } from 'lucide-react';
 import { settingsAPI } from '../../services/api';
 import toast from 'react-hot-toast';
+import { useUser } from '../../services/UserContext';
 
 const InstructorSettings = () => {
   const fileInputRef = useRef(null);
+  const { user: contextUser, setUser } = useUser();
 
   // Profile Picture State
   const [profilePicture, setProfilePicture] = useState({
-    preview: '',
+    preview: contextUser?.profilePicture || '',
     file: null
   });
 
   // Profile Form State
   const [profileForm, setProfileForm] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    expertise: '',
-    bio: ''
+    firstName: contextUser?.firstName || '',
+    lastName: contextUser?.lastName || '',
+    email: contextUser?.email || '',
+    phone: contextUser?.phone || '',
+    expertise: contextUser?.expertise || '',
+    bio: contextUser?.bio || ''
   });
 
   // Dashboard Stats State
@@ -98,7 +100,21 @@ const InstructorSettings = () => {
     }
 
     try {
-      await settingsAPI.updateProfile(formData);  // Ensure this handles 'multipart/form-data'
+      const response = await settingsAPI.updateProfile(formData);
+      const updatedUser = {
+        ...contextUser,
+        ...response.data,
+        profilePicture: response.data.profilePicture // Use the URL returned from API
+      };
+      setUser(updatedUser);
+
+      // Update local state
+      setProfilePicture(prev => ({
+        ...prev,
+        preview: response.data.profilePicture,
+        file: null
+      }));
+
       toast.success('Profile updated successfully');
     } catch (error) {
       toast.error('Failed to update profile');
@@ -117,7 +133,7 @@ const InstructorSettings = () => {
 
     try {
       const phoneNumber = profileForm.phone; // Assuming the instructor's phone number is used for withdrawals.
-      const response = await settingsAPI.withdrawFunds(withdrawAmount, phoneNumber);
+      await settingsAPI.withdrawFunds(withdrawAmount, phoneNumber);
       toast.success('Withdrawal successful');
       setWithdrawAmount('');
     } catch (error) {
@@ -146,7 +162,7 @@ const InstructorSettings = () => {
           <h1 className="text-3xl font-bold text-gray-900">Instructor Settings</h1>
         </div>
 
-        {/* Profile Picture Section  */}
+        {/* Profile Picture Section */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex items-center mb-4">
             <UserCircle className="w-6 h-6 text-blue-600 mr-2" />
