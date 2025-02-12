@@ -71,7 +71,6 @@ const InstructorSettings = () => {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const response = await settingsAPI.getSettings();
         const { personalInfo } = response.data;
 
         setProfileForm({
@@ -105,8 +104,6 @@ const InstructorSettings = () => {
         console.error('Dashboard stats fetch error:', error);
       }
     };
-
-    fetchSettings();
     fetchDashboardStats();
   }, []);
 

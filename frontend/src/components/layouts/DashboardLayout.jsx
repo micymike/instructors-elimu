@@ -93,20 +93,6 @@ const DashboardLayout = () => {
   ], []);
 
   useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) navigate('/login');
-        
-        const response = await settingsAPI.getSettings();
-        setUser(response.data.personalInfo || response.data);
-      } catch (error) {
-        console.error('Error fetching settings:', error);
-        if (error.response?.status === 401) handleLogout();
-      }
-    };
-
-    fetchSettings();
     const handleResize = () => {
       const isMobileView = window.innerWidth < 1024;
       setIsMobile(isMobileView);
