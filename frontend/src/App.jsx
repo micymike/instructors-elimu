@@ -124,7 +124,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'create-session',
-        element: <CreateSession />,
+        element: <ZoomMeetings />,
         errorElement: <div>Error loading Create Session page</div>
       },
       {
