@@ -18,8 +18,8 @@ import DashboardStatistics from '../../components/dashboard/DashboardStatistics.
 import io from 'socket.io-client';
 
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
-const SOCKET_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+const API_BASE_URL = 'https://centralize-auth-elimu.onrender.com';
+
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -61,7 +61,7 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    const newSocket = io(SOCKET_URL, {
+    const newSocket = io('https://centralize-auth-elimu.onrender.com', {
       auth: {
         token: localStorage.getItem('token')
       }
