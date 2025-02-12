@@ -14,7 +14,7 @@ import CreateSession from './pages/instructor/CreateSession';
 import GroupManagement from './pages/instructor/GroupManagement';
 import InstructorsLanding from './components/InstructorsLanding';
 import CourseLearning from './pages/instructor/CourseLearning';
-import AssessmentCreator from './pages/instructor/Assessments';
+import QuizzManager from './pages/instructor/Quizzes';
 import CourseWizard from './components/CourseWizard/CourseWizard';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
@@ -114,7 +114,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'assessments',
-        element: <AssessmentCreator/>,
+        element: <QuizzManager/>,
         errorElement: <div>Error loading Assessments page</div>
       },
       {

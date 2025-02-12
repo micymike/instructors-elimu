@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
 const CourseAnalytics = () => {
   const { id: courseId } = useParams();
@@ -43,7 +43,7 @@ const CourseAnalytics = () => {
     const fetchAnalytics = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get(`${API_BASE_URL}/api/courses/${courseId}/analytics`, {
+        const response = await axios.get(`https://centralize-auth-elimu.onrender.com/api/courses/${courseId}/analytics`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
