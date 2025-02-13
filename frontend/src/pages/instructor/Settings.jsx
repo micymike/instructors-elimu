@@ -45,11 +45,10 @@ const InstructorSettings = () => {
 
   // Profile Form State
   const [profileForm, setProfileForm] = useState({
-    firstName: contextUser?.firstName || '',
-    lastName: contextUser?.lastName || '',
+    name: contextUser?.name || '',
     email: contextUser?.email || '',
-    phone: contextUser?.phone || '',
-    expertise: contextUser?.expertise || '',
+    phoneNumber: contextUser?.phoneNumber || '',
+    paymentRate: contextUser?.paymentRate || 0,
     bio: contextUser?.bio || ''
   });
 
@@ -74,12 +73,11 @@ const InstructorSettings = () => {
         const { personalInfo } = response.data;
 
         setProfileForm({
-          firstName: personalInfo.firstName || '',
-          lastName: personalInfo.lastName || '',
-          email: personalInfo.email || '',
-          phone: personalInfo.phone || '',
-          expertise: personalInfo.expertise || '',
-          bio: personalInfo.bio || ''
+          name: contextUser?.name || '',
+          email: contextUser?.email || '',
+          phoneNumber: contextUser?.phoneNumber || '',
+          paymentRate: contextUser?.paymentRate || 0,
+          bio: contextUser?.bio || ''
         });
 
         // Set profile picture preview if it exists
@@ -98,7 +96,12 @@ const InstructorSettings = () => {
     const fetchDashboardStats = async () => {
       try {
         const stats = await settingsAPI.getDashboardStats();
-        setDashboardStats(stats);
+        setDashboardStats({
+          totalCourses: response.data.totalCourses,
+          totalStudents: response.data.totalStudents,
+          totalRevenue: response.data.totalRevenue,
+          currentBalance: response.data.currentBalance
+        });
       } catch (error) {
         toast.error('Failed to load dashboard stats');
         console.error('Dashboard stats fetch error:', error);
@@ -113,24 +116,17 @@ const InstructorSettings = () => {
     setIsProfileUpdating(true);
 
     const formData = new FormData();
-    formData.append('firstName', profileForm.firstName);
-    formData.append('lastName', profileForm.lastName);
+    formData.append('name', profileForm.name);
     formData.append('email', profileForm.email);
-    formData.append('phone', profileForm.phone);
-    formData.append('expertise', profileForm.expertise);
-    formData.append('bio', profileForm.bio);
-
-    // If a profile picture is selected, append it to form data
-    if (profilePicture.file) {
-      formData.append('profilePhoto', profilePicture.file);
-    }
+    formData.append('phoneNumber', profileForm.phoneNumber);
+    formData.append('paymentRate', profileForm.paymentRate.toString());
+    formData.append('bio', profileForm.bio);  
 
     try {
       const response = await settingsAPI.updateProfile(formData);
       const updatedUser = {
         ...contextUser,
         ...response.data,
-        profilePicture: response.data.profilePicture // Use the URL returned from API
       };
       setUser(updatedUser);
 
@@ -153,15 +149,20 @@ const InstructorSettings = () => {
   // Handle withdrawal
   const handleWithdrawal = async (e) => {
     e.preventDefault();
-    if (isProcessingWithdrawal) return;
-
-    setIsProcessingWithdrawal(true);
-
     try {
-      const phoneNumber = profileForm.phone; // Assuming the instructor's phone number is used for withdrawals.
-      await settingsAPI.withdrawFunds(withdrawAmount, phoneNumber);
-      toast.success('Withdrawal successful');
-      setWithdrawAmount('');
+      const response = await settingsAPI.withdrawFunds({
+        amount: parseFloat(withdrawAmount),
+        phoneNumber: contextUser.phoneNumber
+      });
+      
+      if (response.mpesaResponse.ResponseCode === '0') {
+        toast.success('Withdrawal initiated successfully');
+        // Update balance in dashboard stats
+        setDashboardStats(prev => ({
+          ...prev,
+          currentBalance: prev.currentBalance - parseFloat(withdrawAmount)
+        }));
+      } 
     } catch (error) {
       toast.error('Failed to withdraw funds');
       console.error('Withdrawal error:', error);

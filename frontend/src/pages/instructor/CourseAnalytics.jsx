@@ -43,7 +43,7 @@ const CourseAnalytics = () => {
     const fetchAnalytics = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get(`https://centralize-auth-elimu.onrender.com/api/courses/${courseId}/analytics`, {
+        const response = await axios.get(`https://centralize-auth-elimu.onrender.com/instructor/courses/${courseId}/analytics`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         

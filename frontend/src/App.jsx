@@ -10,7 +10,7 @@ import InstructorForm from './components/InstructorForm';
 import Login from './components/Login';
 import DashboardLayout from './components/layouts/DashboardLayout';
 import ZoomMeetings from './pages/instructor/ZoomMeetings';
-import CreateSession from './pages/instructor/CreateSession';
+import CreateAssessment from './pages/instructor/CreateAssessment';
 import GroupManagement from './pages/instructor/GroupManagement';
 import InstructorsLanding from './components/InstructorsLanding';
 import CourseLearning from './pages/instructor/CourseLearning';
@@ -113,10 +113,15 @@ const router = createBrowserRouter([
         errorElement: <div>Error loading Create Course page</div>
       },
       {
-        path: 'assessments',
+        path: 'Quizzes',
         element: <QuizzManager/>,
         errorElement: <div>Error loading Assessments page</div>
       },
+      {
+        path: 'Assessment',
+        element: <CreateAssessment/>,
+        errorElement: <div>Error loading Assessments  Creator page</div>
+        },
       {
         path: 'video-management',
         element: <VideoManagement />,

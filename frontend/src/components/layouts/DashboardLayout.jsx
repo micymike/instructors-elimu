@@ -81,8 +81,14 @@ const DashboardLayout = () => {
     {
       icon: GraduationCap,
       label: 'Quizzes',
-      path: '/instructor/assessments',
+      path: '/instructor/Quizzes',
       description: 'Quizzes'
+    },
+    {
+      icon: GraduationCap,
+      label: 'Assessments',
+      path: '/instructor/Assessment',
+      description: 'Create Assessments'
     },
     {
       icon: Settings,
