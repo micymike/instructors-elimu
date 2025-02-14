@@ -201,7 +201,7 @@ export const instructorInteractiveAPI = {
 
 export const instructorSettingsAPI = {
   // Get the Instructor's Profile
-  async getSettings() {
+  async getProfile() {
     const token = localStorage.getItem('token');
     if (!token) {
       throw new Error('No authentication token found');
