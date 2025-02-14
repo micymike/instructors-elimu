@@ -35,7 +35,6 @@ import { motion } from 'framer-motion';
 import StatCard from './StatCard';
 import RecentActivity from './RecentActivity';
 import UpcomingSchedule from './UpcomingSchedule';
-import CourseWizard from '../CourseWizard/CourseWizard';
 
 const drawerWidth = 240;
 
@@ -44,7 +43,6 @@ export default function InstructorDashboard() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const [notificationAnchorEl, setNotificationAnchorEl] = useState(null);
-  const [showCourseWizard, setShowCourseWizard] = useState(false);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -205,91 +203,79 @@ export default function InstructorDashboard() {
           mt: 8,
         }}
       >
-        {showCourseWizard && <CourseWizard onClose={() => setShowCourseWizard(false)} />}
-        {!showCourseWizard && (
-          <Container maxWidth="lg">
-            <Box sx={{ mb: 4 }}>
-              <Grid container justifyContent="space-between" alignItems="center">
-                <Grid item>
-                  <Typography variant="h4" gutterBottom>
-                    Welcome back, Professor
-                  </Typography>
-                  <Typography variant="subtitle1" color="text.secondary">
-                    Here's what's happening with your courses
-                  </Typography>
-                </Grid>
-                <Grid item>
-                  <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={() => setShowCourseWizard(true)}
-                  >
-                    Create New Course
-                  </Button>
-                </Grid>
-              </Grid>
-            </Box>
-
-            <Grid container spacing={3}>
-              <Grid item xs={12} sm={6} md={3}>
-                <StatCard
-                  title="Active Courses"
-                  value="12"
-                  icon={<SchoolIcon />}
-                  trend="+2"
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <StatCard
-                  title="Total Students"
-                  value="156"
-                  icon={<PeopleIcon />}
-                  trend="+23"
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <StatCard
-                  title="Upcoming Sessions"
-                  value="8"
-                  icon={<ScheduleIcon />}
-                  trend="+1"
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <StatCard
-                  title="Average Rating"
-                  value="4.8"
-                  icon={<AssessmentIcon />}
-                  trend="+0.2"
-                />
-              </Grid>
-
-              <Grid item xs={12} md={8}>
-                <Paper
-                  sx={{
-                    p: 2,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    height: 240,
-                  }}
-                >
-                  <Typography variant="h6" gutterBottom>
-                    Course Analytics
-                  </Typography>
-                  {/* Add analytics chart here */}
-                </Paper>
-              </Grid>
-
-              <Grid item xs={12} md={4}>
-                <UpcomingSchedule />
-              </Grid>
-
-              <Grid item xs={12}>
-                <RecentActivity />
+        <Container maxWidth="lg">
+          <Box sx={{ mb: 4 }}>
+            <Grid container justifyContent="space-between" alignItems="center">
+              <Grid item>
+                <Typography variant="h4" gutterBottom>
+                  Welcome back, Professor
+                </Typography>
+                <Typography variant="subtitle1" color="text.secondary">
+                  Here's what's happening with your courses
+                </Typography>
               </Grid>
             </Grid>
-          </Container>
-        )}
+          </Box>
+
+          <Grid container spacing={3}>
+            <Grid item xs={12} sm={6} md={3}>
+              <StatCard
+                title="Active Courses"
+                value="12"
+                icon={<SchoolIcon />}
+                trend="+2"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <StatCard
+                title="Total Students"
+                value="156"
+                icon={<PeopleIcon />}
+                trend="+23"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <StatCard
+                title="Upcoming Sessions"
+                value="8"
+                icon={<ScheduleIcon />}
+                trend="+1"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <StatCard
+                title="Average Rating"
+                value="4.8"
+                icon={<AssessmentIcon />}
+                trend="+0.2"
+              />
+            </Grid>
+
+            <Grid item xs={12} md={8}>
+              <Paper
+                sx={{
+                  p: 2,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  height: 240,
+                }}
+              >
+                <Typography variant="h6" gutterBottom>
+                  Course Analytics
+                </Typography>
+                {/* Add analytics chart here */}
+              </Paper>
+            </Grid>
+
+            <Grid item xs={12} md={4}>
+              <UpcomingSchedule />
+            </Grid>
+
+            <Grid item xs={12}>
+              <RecentActivity />
+            </Grid>
+          </Grid>
+        </Container>
       </Box>
 
       <Menu

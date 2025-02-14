@@ -30,11 +30,11 @@ import {
 } from './pages/instructor';
 import CourseAnalytics from './pages/instructor/CourseAnalytics';
 import Content from './pages/instructor/Content';
-import CreateCourse from './pages/instructor/CreateCourse';
+import CourseForm from './components/instructor/CourseForm';
 import CourseDetails from './pages/instructor/CourseDetails';
 import VideoManagement from './pages/instructor/VideoManagement';
 import InstructorSettings from './pages/instructor/Settings';
-import EditCourse from './pages/instructor/EditCourse'; // Added import statement
+import EditCourse from './pages/instructor/EditCourse'; 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 
@@ -139,8 +139,8 @@ const router = createBrowserRouter([
       },
       {
         path: 'courses/new',
-        element: <CreateCourse />,
-        errorElement: <div>Error loading Create Course page</div>
+        element: <CourseForm mode="create" />,
+        errorElement: <div>Error loading Course Creation page</div>
       },
       {
         path: 'courses/:courseId',
@@ -154,8 +154,8 @@ const router = createBrowserRouter([
       },
       {
         path: '',
-        element: <Navigate to="courses/new" replace />,
-        errorElement: <div>Error loading Course Creation page</div>
+        element: <Dashboard />,
+        errorElement: <div>Error loading Dashboard page</div>
       }
     ]
   },

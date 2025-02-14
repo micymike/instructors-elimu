@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { Edit, Trash2, ArrowLeft } from 'lucide-react';
-import ApiService from '../../services/api.service';
 import AIModal from '../../components/AIModal';
 import toast from 'react-hot-toast';
+
+const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 
 const CourseDetails = () => {
   const { courseId } = useParams();
@@ -11,23 +13,54 @@ const CourseDetails = () => {
   const [course, setCourse] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Validate MongoDB ObjectId
+  const isValidObjectId = (id) => {
+    // Check if the id is a valid 24-character hex string
+    return /^[0-9a-fA-F]{24}$/.test(id);
+  };
+
+  // Get authentication headers
+  const getHeaders = () => {
+    const token = localStorage.getItem('token');
+    return token 
+      ? { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      : { 'Content-Type': 'application/json' };
+  };
 
   useEffect(() => {
     const fetchCourseDetails = async () => {
+      // Validate courseId before making the request
+      if (!courseId || !isValidObjectId(courseId)) {
+        setError('Invalid course ID');
+        setIsLoading(false);
+        navigate('/instructor/courses');
+        return;
+      }
+
       try {
         setIsLoading(true);
-        const courseData = await ApiService.getCourseById(courseId);
-        setCourse(courseData);
+        const response = await axios.get(`${BASE_URL}/instructor/courses/${courseId}`, {
+          headers: getHeaders()
+        });
+        setCourse(response.data);
       } catch (error) {
-        toast.error('Failed to fetch course details');
+        const errorMessage = error.response?.data?.message || 'Failed to fetch course details';
+        toast.error(errorMessage);
         console.error('Course details error:', error);
+        setError(errorMessage);
+        navigate('/instructor/courses');
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchCourseDetails();
-  }, [courseId]);
+  }, [courseId, navigate]);
 
   const handleEditCourse = () => {
     navigate(`/instructor/courses/${courseId}/edit`);
@@ -37,12 +70,15 @@ const CourseDetails = () => {
     try {
       const confirmDelete = window.confirm('Are you sure you want to delete this course?');
       if (confirmDelete) {
-        await ApiService.deleteCourse(courseId);
+        await axios.delete(`${BASE_URL}/instructor/courses/${courseId}`, {
+          headers: getHeaders()
+        });
         toast.success('Course deleted successfully');
         navigate('/instructor/courses');
       }
     } catch (error) {
-      toast.error('Failed to delete course');
+      const errorMessage = error.response?.data?.message || 'Failed to delete course';
+      toast.error(errorMessage);
       console.error('Delete course error:', error);
     }
   };
@@ -66,10 +102,10 @@ const CourseDetails = () => {
     );
   }
 
-  if (!course) {
+  if (error || !course) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-600">Course not found</p>
+        <p className="text-gray-600">{error || 'Course not found'}</p>
       </div>
     );
   }

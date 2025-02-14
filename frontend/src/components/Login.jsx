@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { FiMail, FiLock, FiAlertCircle } from 'react-icons/fi';
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+const API_BASE_URL = 'https://centralize-auth-elimu.onrender.com'
 
 const Login = () => {
   const navigate = useNavigate();
@@ -27,6 +27,10 @@ const Login = () => {
       return false;
     }
     return true;
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
 
   const handleSubmit = async (e) => {
@@ -56,14 +60,26 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white rounded-2xl p-8 shadow-xl">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-50 to-purple-50 relative overflow-hidden">
+      {/* SVG Wave Background */}
+      <svg
+        className="absolute inset-0 z-0 w-full h-full"
+        viewBox="0 0 1440 320"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          fill="#4F46E5"
+          fillOpacity="0.1"
+          d="M0,256L48,245.3C96,235,192,213,288,197.3C384,181,480,171,576,186.7C672,203,768,245,864,250.7C960,256,1056,224,1152,208C1248,192,1344,192,1392,192L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"
+        ></path>
+      </svg>
+
+      {/* Glassy Login Form */}
+      <div className="relative z-10 bg-white/30 backdrop-blur-lg rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 border border-white/20">
         <div className="text-center">
-          <h2 className="text-4xl font-bold text-gray-900 mb-2">
-            Welcome Back
-          </h2>
-          <p className="text-gray-600">
-            Sign in to manage your courses and students
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back!</h2>
+          <p className="text-gray-600 mb-6">
+            Sign in to continue your teaching journey.
           </p>
         </div>
 

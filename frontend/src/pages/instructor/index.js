@@ -11,5 +11,7 @@ export { default as Settings } from './Settings';
 export { default as CreateCourse } from './CreateCourse';;
 export { default as VideoManagement } from './VideoManagement';
 export { default as CreateSession } from './CreateSession';
+export { default as AssignmentsList } from './AssessmentList';
+
 export { default as WebinarSchedule } from './WebinarSchedule';
 export { default as CourseAnalytics } from './CourseAnalytics';

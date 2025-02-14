@@ -4,7 +4,7 @@ import { settingsAPI } from '../../services/api';
 import {
   BarChart2, BookOpen, Video, Users, Calendar, Settings,
   LogOut, Menu, X, Layers, UserPlus, FileText,
-  GraduationCap, Bell, Plus, ChevronDown
+  GraduationCap, Bell, Plus, ClipboardCheck, TrendingUp, DollarSign, Clock, CreditCard,ChevronDown
 } from 'lucide-react';
 
 const DashboardLayout = () => {
@@ -55,10 +55,114 @@ const DashboardLayout = () => {
       description: 'Manage live sessions'
     },
     {
+      icon: Video,
+      label: 'Zoom Meetings',
+      path: '/instructor/zoom-meetings',
+      description: 'Manage live sessions'
+    },
+    {
       icon: Users,
       label: 'Students',
       path: '/instructor/students',
       description: 'Student management'
+    },
+    {
+      icon: ClipboardCheck,
+      label: 'Assessments',
+      path: '/instructor/assessments',
+      description: 'View and grade assessments',
+      subItems: [
+        {
+          icon: Plus,
+          label: 'Create Assessment',
+          path: '/instructor/assessments',
+          description: 'Create new assessment'
+        },
+        {
+          icon: FileText,
+          label: 'All Assessments',
+          path: '/instructor/assessments/list',
+          description: 'View all assessments'
+        }
+      ]
+    },
+    {
+      icon: UserPlus,
+      label: 'Collaboration',
+      path: '/instructor/collaboration',
+      description: 'Group projects & collaboration',
+      subItems: [
+        {
+          icon: Users,
+          label: 'Group Projects',
+          path: '/instructor/collaboration/projects',
+          description: 'Manage group projects'
+        },
+        {
+          icon: Video,
+          label: 'Live Sessions',
+          path: '/instructor/collaboration/sessions',
+          description: 'Virtual classroom sessions'
+        },
+        {
+          icon: Video,
+          label: 'Zoom Classes',
+          path: '/instructor/zoom-meetings',
+          description: 'Manage Zoom classes'
+        }
+      ]
+    },
+    {
+      icon: BarChart2,
+      label: 'Analytics',
+      path: '/instructor/analytics',
+      description: 'Course and student analytics',
+      subItems: [
+        {
+          icon: TrendingUp,
+          label: 'Course Analytics',
+          path: '/instructor/analytics/courses',
+          description: 'Course performance metrics'
+        },
+        {
+          icon: Users,
+          label: 'Student Analytics',
+          path: '/instructor/analytics/students',
+          description: 'Student engagement metrics'
+        },
+        {
+          icon: Clock,
+          label: 'Time Analytics',
+          path: '/instructor/analytics/time',
+          description: 'Time spent metrics'
+        }
+      ]
+    },
+    {
+      icon: DollarSign,
+      label: 'Payments',
+      path: '/instructor/payments',
+      description: 'Revenue and payments',
+      subItems: [
+        {
+          icon: TrendingUp,
+          label: 'Revenue Dashboard',
+          path: '/instructor/payments/dashboard',
+          description: 'Revenue overview'
+        },
+        {
+          icon: CreditCard,
+          label: 'Withdrawals',
+          path: '/instructor/payments/withdrawals',
+          description: 'Manage withdrawals'
+        },
+        {
+          icon: FileText,
+          label: 'Payment History',
+          path: '/instructor/payments/history',
+          description: 'Transaction history'
+        }
+      ]
     },
     {
       icon: Calendar,
@@ -287,7 +391,10 @@ const DashboardLayout = () => {
         {/* Content Area */}
         <main className="flex-1 overflow-auto p-6 bg-gray-50">
           <div className="max-w-6xl mx-auto">
-            <Outlet />
+            {/* Debug logging */}
+          {console.log('Current Location:', location.pathname)}
+          {console.log('Current Location State:', location.state)}
+          <Outlet context={{ location }} />
           </div>
         </main>
       </div>
