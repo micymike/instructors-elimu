@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import axios from 'axios';
 import { toast } from 'react-toastify';
 import {
   BookOpen,
@@ -40,7 +41,7 @@ import {
 import { DateTimePicker } from '@mui/x-date-pickers';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { courseAPI, liveSessionAPI, resourceAPI } from '../../services/api';
+import { courseAPI, liveSessionAPI } from '../../services/api';
 
 const CourseContentManager = () => {
   const { id } = useParams();
@@ -73,6 +74,14 @@ const CourseContentManager = () => {
         if (!id) {
           setError('No course ID provided');
           setIsLoading(false);
+          return;
+        }
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setError('Authentication required');
+          setIsLoading(false);
+          navigate('/login');
           return;
         }
 
@@ -122,11 +131,21 @@ const CourseContentManager = () => {
 
   const handleDownloadResource = async (resourceId) => {
     try {
-      const response = await resourceAPI.downloadResource(id, resourceId);
+      const token = localStorage.getItem('token');
+      const response = await axios.get(
+        `http://localhost:3000/api/courses/${id}/resources/${resourceId}/download`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          responseType: 'blob',
+        }
+      );
+
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', response.filename);
+      link.setAttribute('download', response.headers['x-filename'] || 'resource');
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -138,16 +157,27 @@ const CourseContentManager = () => {
 
   const handleAddResource = async (file) => {
     try {
-      const metadata = {
-        type: 'article',
-        subject: course?.category?.toLowerCase().replace(/\s+/g, '') || 'general',
-        level: course?.level || 'beginner',
-        courseId: id
-      };
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type', 'article');  
+      formData.append('subject', course?.category?.toLowerCase().replace(/\s+/g, '') || 'general');
+      formData.append('level', course?.level || 'beginner');
+      formData.append('courseId', id);  
 
-      const response = await resourceAPI.uploadResource(id, file, metadata);
+      const response = await axios.post(
+        `http://localhost:3000/api/courses/${id}/resources`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+
       toast.success('Resource uploaded successfully');
-      setResources([...resources, response]);
+      setResources([...resources, response.data]);
     } catch (error) {
       console.error('Error uploading resource:', error);
       toast.error(error.response?.data?.message || 'Failed to upload resource');
@@ -172,15 +202,29 @@ const CourseContentManager = () => {
 
   const fetchCourseResources = async () => {
     try {
-      const params = {
-        subject: course?.category?.toLowerCase().replace(/\s+/g, '') || 'general',
-        type: 'article',
-        level: course?.level || 'beginner',
-        isFree: 'true'
-      };
+      const token = localStorage.getItem('token');
+      if (!token) {
+        navigate('/login');
+        return;
+      }
 
-      const response = await resourceAPI.getResources(params);
-      setResources(response);
+      const response = await axios.get(
+        `http://localhost:3000/content/resources`, 
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          params: {
+            subject: course?.category?.toLowerCase().replace(/\s+/g, '') || 'general',
+            type: 'article',
+            level: course?.level || 'beginner',
+            isFree: 'true'
+          }
+        }
+      );
+
+      // Set resources from the response
+      setResources(response.data);
     } catch (error) {
       console.error('Error fetching course resources:', error);
       toast.error('Failed to fetch resources');
@@ -195,8 +239,18 @@ const CourseContentManager = () => {
 
   const handlePreviewResource = async (resourceId) => {
     try {
-      const response = await resourceAPI.previewResource(id, resourceId);
-      const url = window.URL.createObjectURL(new Blob([response], { type: 'application/pdf' }));
+      const token = localStorage.getItem('token');
+      const response = await axios.get(
+        `http://localhost:3000/api/courses/${id}/resources/${resourceId}/preview`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          responseType: 'blob',
+        }
+      );
+
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
       setSelectedPdfUrl(url);
     } catch (error) {
       console.error('Error previewing resource:', error);
@@ -238,12 +292,19 @@ const CourseContentManager = () => {
 
   const handleCreateLiveSession = async () => {
     try {
-      const response = await liveSessionAPI.createLiveSession(id, liveSessionDialog.sessionData);
-      
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        `/api/live-sessions/${id}`, 
+        liveSessionDialog.sessionData,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
       // Update course state with new live session
       setCourse(prev => ({
         ...prev,
-        liveSessions: [...(prev.liveSessions || []), response]
+        liveSessions: [...(prev.liveSessions || []), response.data]
       }));
 
       toast.success('Live session created successfully');
@@ -259,18 +320,26 @@ const CourseContentManager = () => {
 
   const handleUpdateLiveSession = async () => {
     try {
+      const token = localStorage.getItem('token');
       const sessionId = liveSessionDialog.sessionData._id;
-      const response = await liveSessionAPI.updateLiveSession(id, sessionId, {
-        topic: liveSessionDialog.sessionData.topic,
-        startTime: liveSessionDialog.sessionData.startTime,
-        duration: liveSessionDialog.sessionData.duration
-      });
+      
+      const response = await axios.put(
+        `/api/live-sessions/${id}/${sessionId}`, 
+        {
+          topic: liveSessionDialog.sessionData.topic,
+          startTime: liveSessionDialog.sessionData.startTime,
+          duration: liveSessionDialog.sessionData.duration
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
 
       // Update course state with updated live session
       setCourse(prev => ({
         ...prev,
         liveSessions: prev.liveSessions.map(session => 
-          session._id === sessionId ? response : session
+          session._id === sessionId ? response.data : session
         )
       }));
 

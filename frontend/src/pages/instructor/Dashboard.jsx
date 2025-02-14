@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
@@ -8,15 +8,18 @@ import {
   Plus,
   Calendar,
   ChevronRight,
-} from 'lucide-react';
-import CourseAnalytics from '../../components/dashboard/CourseAnalytics.jsx';
+  DollarSign,
+  BarChart,
+} from 'lucide-react'; // Added DollarSign and BarChart
 import UpcomingSchedule from '../../components/dashboard/UpcomingSchedule';
 import RecentActivity from '../../components/dashboard/RecentActivity';
 import StatCard from '../../components/dashboard/StatCard';
+import DashboardStatistics from '../../components/dashboard/DashboardStatistics.jsx';
 import io from 'socket.io-client';
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3000';
+
+const API_BASE_URL = 'https://centralize-auth-elimu.onrender.com';
+
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -42,7 +45,6 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Function to get personalized time-based greeting
   const getTimeBasedGreeting = () => {
     const hour = new Date().getHours();
     let greeting = 'Good';
@@ -58,9 +60,8 @@ const Dashboard = () => {
     return greeting;
   };
 
-  // Establish socket connection
   useEffect(() => {
-    const newSocket = io(SOCKET_URL, {
+    const newSocket = io('https://centralize-auth-elimu.onrender.com', {
       auth: {
         token: localStorage.getItem('token')
       }
@@ -91,27 +92,7 @@ const Dashboard = () => {
     };
   }, []);
 
-  // Single hook to handle authentication and data fetching
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    const storedUser = JSON.parse(localStorage.getItem('user'));
-    
-    if (!token || !storedUser) {
-      navigate('/login');
-      return;
-    }
-
-    // Update user state with localStorage data
-    setUser({
-      firstName: storedUser.name?.trim() || 'Instructor',
-      email: storedUser.email || '',
-      instructorStatus: storedUser.instructorStatus || 'Active'
-    });
-
-    fetchDashboardData();
-  }, [navigate]);
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
@@ -119,6 +100,11 @@ const Dashboard = () => {
       const token = localStorage.getItem('token');
       const storedUser = JSON.parse(localStorage.getItem('user'));
       
+      if (!token || !storedUser) {
+        navigate('/login');
+        return;
+      }
+
       const axiosConfig = {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -126,7 +112,6 @@ const Dashboard = () => {
         }
       };
 
-      // Fetch both dashboard and statistics concurrently
       const [dashboardResponse, statisticsResponse] = await Promise.all([
         axios.get(`${API_BASE_URL}/api/instructors/profile/dashboard`, axiosConfig),
         axios.get(`${API_BASE_URL}/api/instructors/profile/dashboard-statistics`, axiosConfig)
@@ -135,7 +120,6 @@ const Dashboard = () => {
       const dashboardData = dashboardResponse.data;
       const statisticsData = statisticsResponse.data;
 
-      // Prioritize API data, fallback to localStorage
       setUser({
         firstName: dashboardData.name?.trim() || storedUser.name?.trim() || 'Instructor',
         email: dashboardData.email || storedUser.email || '',
@@ -165,7 +149,25 @@ const Dashboard = () => {
         navigate('/login');
       }
     }
-  };
+  }, [navigate]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const storedUser = JSON.parse(localStorage.getItem('user'));
+    
+    if (!token || !storedUser) {
+      navigate('/login');
+      return;
+    }
+
+    setUser({
+      firstName: storedUser.name?.trim() || 'Instructor',
+      email: storedUser.email || '',
+      instructorStatus: storedUser.instructorStatus || 'Active'
+    });
+
+    fetchDashboardData();
+  }, [navigate, fetchDashboardData]);
 
   const statCards = [
     {
@@ -178,8 +180,10 @@ const Dashboard = () => {
     {
       name: 'Current Balance',
       value: `$${stats.currentBalance.toLocaleString()}`,
-      icon: Award,
-      change: `${((stats.currentBalance / stats.totalRevenue) * 100).toFixed(1)}%`,
+      icon: DollarSign,
+      change: stats.totalRevenue === 0 
+        ? '0%' 
+        : `${((stats.currentBalance / stats.totalRevenue) * 100).toFixed(1)}%`,
       changeType: 'neutral'
     },
     {
@@ -187,14 +191,14 @@ const Dashboard = () => {
       value: stats.totalStudents,
       icon: Users,
       change: `${((stats.activeStudents / stats.totalStudents) * 100).toFixed(1)}% active`,
-      changeType: 'positive'
+      changeType: stats.activeStudents > 0 ? 'positive' : 'neutral'
     },
     {
       name: 'Total Courses',
       value: stats.totalCourses,
       icon: BookOpen,
       change: `${stats.coursePerformance.length} performing well`,
-      changeType: 'positive'
+      changeType: stats.coursePerformance.length > 0 ? 'positive' : 'neutral'
     }
   ];
 
@@ -215,8 +219,8 @@ const Dashboard = () => {
     },
     {
       title: 'View Analytics',
-      icon: ChevronRight,
-      path: '/instructor/analytics',
+      icon: BarChart,
+      path: '/instructor/courses/:id/analytics',
       description: 'Track your progress',
       color: 'bg-green-100 text-green-600 hover:bg-green-200'
     }
@@ -224,27 +228,47 @@ const Dashboard = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header Section with Enhanced Personalization */}
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
+        </div>
+      )}
+
+      {/* Header Section */}
       <div className="flex flex-col justify-between items-start mb-8">
         <div className="flex flex-wrap items-center gap-2 w-full">
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center flex-wrap">
             {getTimeBasedGreeting()},
-            <span className="ml-2 text-blue-600">{user?.firstName || 'Instructor'}</span>
+            <span className="ml-2 text-blue-600">{user?.firstName}</span>
             <span className="ml-3 text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-              {user?.instructorStatus || 'Active'}
+              {user?.instructorStatus}
             </span>
           </h1>
         </div>
         <p className="text-sm text-gray-600 mt-2">
-          {user?.email ? `Your email: ${user.email}` : 'Instructor Dashboard'}
+          {user?.email && `Your email: ${user.email}`}
         </p>
       </div>
-      {/* Error Display */}
-      {error && (
-        <div className="mb-8 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg">
-          {error}
-        </div>
-      )}
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        {quickActions.map((action, index) => (
+          <Link
+            key={index}
+            to={action.path}
+            className={`${action.color} p-4 rounded-lg transition-colors duration-200`}
+          >
+            <div className="flex items-center">
+              <action.icon className="h-5 w-5 mr-2" />
+              <div>
+                <h3 className="font-semibold">{action.title}</h3>
+                <p className="text-sm mt-1">{action.description}</p>
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
 
       {/* Loading State */}
       {isLoading ? (
@@ -262,29 +286,27 @@ const Dashboard = () => {
 
           {/* Main Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column - Course Analytics */}
+            {/* Left Column */}
             <div className="lg:col-span-2 space-y-6">
-              <CourseAnalytics 
+              <DashboardStatistics
                 coursePerformance={stats.coursePerformance}
                 monthlyRevenue={stats.monthlyRevenue}
                 courseRevenue={stats.courseRevenue}
               />
               
-              {/* Recent Activity */}
               <div className="bg-white rounded-lg shadow-sm p-6">
                 <h2 className="text-lg font-semibold mb-4">Recent Activity</h2>
                 <RecentActivity activities={stats.recentActivity} />
               </div>
             </div>
 
-            {/* Right Column - Upcoming Schedule */}
+            {/* Right Column */}
             <div className="space-y-6">
               <div className="bg-white rounded-lg shadow-sm p-6">
                 <h2 className="text-lg font-semibold mb-4">Upcoming Sessions</h2>
                 <UpcomingSchedule sessions={stats.upcomingSchedule} />
               </div>
 
-              {/* Monthly Revenue */}
               <div className="bg-white rounded-lg shadow-sm p-6">
                 <h2 className="text-lg font-semibold mb-4">Monthly Revenue</h2>
                 <div className="space-y-4">
@@ -297,7 +319,6 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              {/* Course Revenue */}
               <div className="bg-white rounded-lg shadow-sm p-6">
                 <h2 className="text-lg font-semibold mb-4">Course Revenue</h2>
                 <div className="space-y-4">

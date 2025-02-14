@@ -1,93 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { useAuth } from '../../contexts/AuthContext';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Link, useLocation, Outlet, useNavigate, useMatch } from 'react-router-dom';
+import { settingsAPI } from '../../services/api';
 import {
   BarChart2, BookOpen, Video, Users, Calendar, Settings,
   LogOut, Menu, X, Layers, UserPlus, FileText,
-  GraduationCap, Bell, Plus, ChevronDown, ClipboardCheck,
-  Award, TrendingUp, Clock, DollarSign, CreditCard
+  GraduationCap, Bell, Plus, ClipboardCheck, TrendingUp, DollarSign, Clock, CreditCard,ChevronDown
 } from 'lucide-react';
-import AIAssistantChat from '../AIAssistantChat';
-
-import { API_URL } from '../../config';
 
 const DashboardLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
-  const { user: authUser, loading, logout } = useAuth();
-  const [instructorData, setInstructorData] = useState(null);
+  const [user, setUser] = useState(null);
   const [expandedItem, setExpandedItem] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
 
-  useEffect(() => {
-    const fetchInstructorData = async () => {
-      try {
-        if (!authUser) {
-          navigate('/login');
-          return;
-        }
-
-        const token = localStorage.getItem('token');
-        if (!token) {
-          logout();
-          return;
-        }
-
-        const config = {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        };
-
-        // Fetch dashboard and statistics directly
-        const [dashboardResponse, statisticsResponse] = await Promise.all([
-          axios.get(`${API_URL}/api/instructors/profile/dashboard`, config),
-          axios.get(`${API_URL}/api/instructors/profile/dashboard-statistics`, config)
-        ]);
-
-        const instructorDetails = {
-          ...dashboardResponse.data,
-          statistics: statisticsResponse.data
-        };
-
-        setInstructorData(instructorDetails);
-      } catch (error) {
-        console.error('Error fetching instructor data:', error);
-        if (error.response?.status === 401) {
-          logout();
-        }
-      }
-    };
-
-    fetchInstructorData();
-    
-    const handleResize = () => {
-      const isMobileView = window.innerWidth < 1024;
-      setIsMobile(isMobileView);
-      setIsSidebarOpen(!isMobileView);
-    };
-
-    handleResize(); // Initial check
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, [navigate, authUser, logout]);
-
-  useEffect(() => {
-    console.error('CURRENT LOCATION CHANGED', {
-      pathname: location.pathname,
-      search: location.search,
-      hash: location.hash,
-      state: location.state
-    });
-  }, [location]);
-
-  const menuItems = [
+  const menuItems = useMemo(() => [
     {
       icon: BarChart2,
       label: 'Dashboard',
@@ -109,10 +37,28 @@ const DashboardLayout = () => {
         {
           icon: Plus,
           label: 'Create Course',
-          path: '/instructor/courses/new',
+          path: '/instructor/courses/create',
           description: 'Add new course'
+        },
+        {
+          icon: BarChart2,
+          label: 'Course Analytics',
+          path: '/instructor/courses/:id/analytics',
+          description: 'Detailed course metrics'
         }
       ]
+    },
+    {
+      icon: Video,
+      label: 'Zoom Meetings',
+      path: '/instructor/zoom-meetings',
+      description: 'Manage live sessions'
+    },
+    {
+      icon: Video,
+      label: 'Zoom Meetings',
+      path: '/instructor/zoom-meetings',
+      description: 'Manage live sessions'
     },
     {
       icon: Users,
@@ -225,64 +171,104 @@ const DashboardLayout = () => {
       description: 'Class timetable'
     },
     {
+      icon: UserPlus,
+      label: 'Group Management',
+      path: '/instructor/groups',
+      description: 'Manage student groups'
+    },
+    {
+      icon: FileText,
+      label: 'Content',
+      path: '/instructor/content',
+      description: 'Course materials'
+    },
+    {
+      icon: GraduationCap,
+      label: 'Quizzes',
+      path: '/instructor/Quizzes',
+      description: 'Quizzes'
+    },
+    {
+      icon: GraduationCap,
+      label: 'Assessments',
+      path: '/instructor/Assessment',
+      description: 'Create Assessments'
+    },
+    {
       icon: Settings,
       label: 'Settings',
       path: '/instructor/settings',
       description: 'Account settings'
     }
-  ];
+  ], []);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const isMobileView = window.innerWidth < 1024;
+      setIsMobile(isMobileView);
+      setIsSidebarOpen(!isMobileView);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [navigate]);
 
   const handleLogout = () => {
-    logout();
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/login');
   };
 
-  const MenuItem = ({ item, index }) => {
-    const isActive = location.pathname === item.path;
-    const isExpanded = expandedItem === item.label;
-    const hasSubItems = item.subItems && item.subItems.length > 0;
+  const MenuItem = ({ item }) => {
+    const hasSubItems = item.subItems?.length > 0;
+    const match = useMatch(hasSubItems ? `${item.path}/*` : item.path);
+    const isActive = !!match;
+    const isExpanded = expandedItem === item.path;
 
     return (
-      <div key={item.path || `menu-item-${index}`}>
+      <div className="group relative">
         <Link
           to={item.path}
-          className={`flex items-center justify-between rounded-lg transition-all duration-200 group-hover:bg-blue-50/80 ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
-          onClick={() => {
+          className={`flex items-center justify-between p-3 rounded-xl transition-all duration-300
+            ${isActive 
+              ? 'bg-blue-50/90 text-blue-600 shadow-[inset_4px_0_0_0_rggb(59,130,246)]'
+              : 'text-gray-600 hover:bg-gray-50/80 hover:text-blue-500'}
+            ${hasSubItems ? 'pr-3' : ''}`}
+          onClick={(e) => {
             if (hasSubItems) {
-              setExpandedItem(isExpanded ? null : item.label);
+              e.preventDefault();
+              setExpandedItem(isExpanded ? null : item.path);
             }
+            if (isMobile && !hasSubItems) setIsSidebarOpen(false);
           }}
         >
-          <div className="flex items-center min-w-0">
-            <item.icon className="h-5 w-5 mr-3 flex-shrink-0" />
+          <div className="flex items-center gap-3 min-w-0">
+            <item.icon className={`h-5 w-5 shrink-0 ${isActive ? 'text-blue-600' : 'text-gray-500'}`} />
             <div className="truncate">
-              <div className="flex items-center gap-2">
-                <span className="font-medium">{item.label}</span>
-              </div>
-              <p className="text-xs text-gray-500 truncate">{item.description}</p>
+              <span className="font-medium text-sm">{item.label}</span>
+              <p className="text-xs text-gray-500/90 mt-0.5 truncate">{item.description}</p>
             </div>
           </div>
           {hasSubItems && (
-            <ChevronDown className={`w-5 h-5 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
           )}
         </Link>
 
         {hasSubItems && isExpanded && (
-          <div className="ml-8 mt-1 space-y-1">
+          <div className="ml-11 mt-1.5 space-y-1.5">
             {item.subItems.map((subItem) => (
-              <div 
-                key={subItem.path} 
-                className="cursor-pointer hover:bg-gray-100 p-2"
+              <Link
+                key={subItem.path}
+                to={subItem.path}
+                className={`flex items-center px-3 py-2 rounded-lg transition-colors
+                  ${location.pathname === subItem.path
+                    ? 'bg-blue-50 text-blue-600 font-medium'
+                    : 'text-gray-600 hover:bg-gray-100/50'}`}
               >
-                <div className="flex items-center">
-                  <subItem.icon className="mr-2 w-4 h-4" />
-                  <Link 
-                    to={subItem.path}
-                    className="flex-1"
-                  >
-                    {subItem.label}
-                  </Link>
-                </div>
-              </div>
+                <subItem.icon className="h-4 w-4 mr-2 text-gray-500" />
+                <span className="text-sm">{subItem.label}</span>
+              </Link>
             ))}
           </div>
         )}
@@ -290,81 +276,78 @@ const DashboardLayout = () => {
     );
   };
 
-  useEffect(() => {
-    if (!loading && !authUser) {
-      navigate('/login');
-    }
-  }, [authUser, loading, navigate]);
-
-  if (loading || !authUser) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Overlay for mobile */}
+    <div className="flex h-screen bg-gray-50/95">
+      {/* Overlay */}
       {isSidebarOpen && isMobile && (
-        <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setIsSidebarOpen(false)} />
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40" onClick={() => setIsSidebarOpen(false)} />
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:static`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-white/95 backdrop-blur-sm border-r border-gray-100
+        transform transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] 
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:static`}>
+        
         <div className="flex flex-col h-full">
-          {/* Logo/Header */}
-          <div className="flex items-center justify-between p-4 border-b">
-            <div className="flex items-center space-x-2">
-              <Layers className="h-8 w-8 text-blue-600" />
+          {/* Header */}
+          <div className="flex items-center justify-between p-5 border-b border-gray-100">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Layers className="h-6 w-6 text-blue-600" />
+              </div>
               <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
                 Elimu
               </span>
             </div>
             {isMobile && (
-              <button onClick={() => setIsSidebarOpen(false)} className="p-2 rounded-lg hover:bg-gray-100">
-                <X className="h-6 w-6 text-gray-600" />
+              <button 
+                onClick={() => setIsSidebarOpen(false)}
+                className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
+              >
+                <X className="h-5 w-5" />
               </button>
             )}
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-            {menuItems.map((item, index) => (
-              <MenuItem key={item.path || `menu-item-${index}`} item={item} index={index} />
+          <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+            {menuItems.map((item) => (
+              <MenuItem key={item.path} item={item} />
             ))}
           </nav>
 
-          {/* User Profile and Logout */}
-          <div className="p-4 border-t border-gray-200">
-            <div className="flex items-center gap-3 mb-4">
-              {instructorData?.profilePicture ? (
+          {/* Profile Section */}
+          <div className="p-4 border-t border-gray-100 mt-auto">
+            <div className="flex items-center gap-3 mb-4 p-3 bg-gray-50 rounded-xl">
+              {user?.profilePicture ? (
                 <img
-                  src={instructorData.profilePicture}
+                  src={user.profilePicture}
                   alt="Profile"
-                  className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
+                  className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm"
                 />
               ) : (
-                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shadow-sm">
                   <span className="text-blue-600 font-medium text-lg">
-                    {instructorData?.firstName?.[0]}{instructorData?.lastName?.[0]}
+                    {user?.firstName?.[0]}{user?.lastName?.[0]}
                   </span>
                 </div>
               )}
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 truncate">
-                  {instructorData?.firstName} {instructorData?.lastName}
+                  {user?.firstName} {user?.lastName}
                 </p>
                 <p className="text-xs text-gray-500 truncate">
-                  {instructorData?.expertise || 'Instructor'}
+                  {user?.expertise || 'Instructor'}
                 </p>
               </div>
             </div>
 
-            <button onClick={handleLogout} className="flex items-center w-full px-4 py-2.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200">
+            <button 
+              onClick={handleLogout}
+              className="flex items-center w-full px-4 py-2.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            >
               <LogOut className="h-5 w-5 mr-3" />
-              <span className="font-medium">Logout</span>
+              <span className="text-sm font-medium">Logout</span>
             </button>
           </div>
         </div>
@@ -372,27 +355,32 @@ const DashboardLayout = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <header className="bg-white border-b py-4 px-6">
-          <div className="flex items-center justify-between">
-            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="lg:hidden p-2 rounded-md hover:bg-gray-100">
+        {/* Top Bar */}
+        <header className="sticky top-0 bg-white/90 backdrop-blur-sm border-b border-gray-100 z-30">
+          <div className="flex items-center justify-between px-6 h-16">
+            <button 
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="lg:hidden p-2 rounded-lg hover:bg-gray-100 text-gray-600"
+            >
               <Menu className="h-6 w-6" />
             </button>
 
-            <div className="flex items-center space-x-4">
-              <button className="p-2 hover:bg-gray-100 rounded-full">
-                <Bell className="h-6 w-6 text-gray-600" />
+            <div className="flex items-center gap-4">
+              <button className="p-2 hover:bg-gray-100 rounded-full text-gray-600 relative">
+                <Bell className="h-6 w-6" />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
               </button>
-              {instructorData?.profilePicture ? (
+              <div className="w-px h-6 bg-gray-200 mx-2"></div>
+              {user?.profilePicture ? (
                 <img
-                  src={instructorData.profilePicture}
+                  src={user.profilePicture}
                   alt="Profile"
-                  className="h-8 w-8 rounded-full object-cover"
+                  className="h-9 w-9 rounded-full object-cover border-2 border-white shadow-sm"
                 />
               ) : (
-                <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                <div className="h-9 w-9 rounded-full bg-blue-100 flex items-center justify-center shadow-sm">
                   <span className="text-blue-600 font-medium">
-                    {instructorData?.firstName?.[0]}{instructorData?.lastName?.[0]}
+                    {user?.firstName?.[0]}{user?.lastName?.[0]}
                   </span>
                 </div>
               )}
@@ -400,14 +388,15 @@ const DashboardLayout = () => {
           </div>
         </header>
 
-        {/* Main Content Area */}
-        <main className="flex-1 overflow-auto p-6">
-          {/* Debug logging */}
+        {/* Content Area */}
+        <main className="flex-1 overflow-auto p-6 bg-gray-50">
+          <div className="max-w-6xl mx-auto">
+            {/* Debug logging */}
           {console.log('Current Location:', location.pathname)}
           {console.log('Current Location State:', location.state)}
           <Outlet context={{ location }} />
+          </div>
         </main>
-        <AIAssistantChat />
       </div>
     </div>
   );

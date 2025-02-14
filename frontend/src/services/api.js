@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+const API_BASE_URL = 'https://centralize-auth-elimu.onrender.com';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -201,7 +201,7 @@ export const instructorInteractiveAPI = {
 
 export const instructorSettingsAPI = {
   // Get the Instructor's Profile
-  async getSettings() {
+  async getProfile() {
     const token = localStorage.getItem('token');
     if (!token) {
       throw new Error('No authentication token found');
