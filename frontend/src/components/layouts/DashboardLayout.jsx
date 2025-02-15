@@ -40,19 +40,7 @@ const DashboardLayout = () => {
           path: '/instructor/courses/create',
           description: 'Add new course'
         },
-        {
-          icon: BarChart2,
-          label: 'Course Analytics',
-          path: '/instructor/courses/:id/analytics',
-          description: 'Detailed course metrics'
-        }
       ]
-    },
-    {
-      icon: Video,
-      label: 'Zoom Meetings',
-      path: '/instructor/zoom-meetings',
-      description: 'Manage live sessions'
     },
     {
       icon: Video,
@@ -74,8 +62,8 @@ const DashboardLayout = () => {
       subItems: [
         {
           icon: Plus,
-          label: 'Create Assessment',
-          path: '/instructor/assessments',
+          label: 'Create Assessment',path: '/instructor/Assessment',
+          path: '/instructor/Assessment',
           description: 'Create new assessment'
         },
         {
@@ -121,7 +109,7 @@ const DashboardLayout = () => {
         {
           icon: TrendingUp,
           label: 'Course Analytics',
-          path: '/instructor/analytics/courses',
+          path: '/instructor/analytics/:id/analytics',
           description: 'Course performance metrics'
         },
         {
@@ -187,12 +175,6 @@ const DashboardLayout = () => {
       label: 'Quizzes',
       path: '/instructor/Quizzes',
       description: 'Quizzes'
-    },
-    {
-      icon: GraduationCap,
-      label: 'Assessments',
-      path: '/instructor/Assessment',
-      description: 'Create Assessments'
     },
     {
       icon: Settings,

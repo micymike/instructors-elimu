@@ -220,7 +220,7 @@ const Dashboard = () => {
     {
       title: 'View Analytics',
       icon: BarChart,
-      path: '/instructor/courses/:id/analytics',
+      path: '/instructor/analytics/:id/analytics',
       description: 'Track your progress',
       color: 'bg-green-100 text-green-600 hover:bg-green-200'
     }
