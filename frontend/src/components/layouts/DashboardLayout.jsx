@@ -62,7 +62,7 @@ const DashboardLayout = () => {
       subItems: [
         {
           icon: Plus,
-          label: 'Create Assessment',path: '/instructor/Assessment',
+          label: 'Create Assessment',
           path: '/instructor/Assessment',
           description: 'Create new assessment'
         },
