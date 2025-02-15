@@ -12,6 +12,8 @@ import ZoomMeetings from './pages/instructor/ZoomMeetings';
 import CreateSession from './pages/instructor/CreateSession';
 import GroupManagement from './pages/instructor/GroupManagement';
 import InstructorsLanding from './components/InstructorsLanding';
+import Contact  from './components/Contact';
+import Pricing from './components/Pricing';
 import CourseLearning from './pages/instructor/CourseLearning';
 import AssessmentCreator from './pages/instructor/Assessments';
 import Assessments from './pages/instructor/Assessments';
@@ -158,6 +160,16 @@ const router = createBrowserRouter([
   {
     path: '/',
     element: <InstructorsLanding />,
+    errorElement: <div>Error loading Instructors Landing page</div>
+  },
+  {
+    path: '/pricing',
+    element: <Pricing />,
+    errorElement: <div>Error loading Instructors Landing page</div>
+  },
+  {
+    path: '/contact',
+    element: <Contact />,
     errorElement: <div>Error loading Instructors Landing page</div>
   },
   {
