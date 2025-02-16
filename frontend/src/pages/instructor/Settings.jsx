@@ -158,10 +158,12 @@ const InstructorSettings = () => {
   // Profile Picture Update Handler
 const handleProfilePictureUpdate = async (file) => {
   if (!file) return;
+  const formData = new FormData();
+  formData.append('profilePhoto', file,file.name); 
 
   try {
     // Update only profile picture
-    const response = await instructorSettingsAPI.updateProfilePicture(file);
+    const response = await instructorSettingsAPI.updateProfilePicture(formData);
     const updatedUser = {
       ...contextUser,
       profilePhotoUrl: response.data.profilePhotoUrl
@@ -174,7 +176,7 @@ const handleProfilePictureUpdate = async (file) => {
     });
     toast.success('Profile picture updated successfully');
   } catch (error) {
-    toast.error('Profile picture update failed');
+    toast.error(error.response?.data?.message || 'Failed to update profile picture');
   }
 };
 
@@ -350,49 +352,6 @@ const handleProfilePictureUpdate = async (file) => {
           </div>
         </motion.div>
 
-        {/* Dashboard Stats */}
-        <motion.div variants={itemVariants} className="bg-white rounded-xl shadow-lg p-6 mb-8">
-          <div className="flex items-center mb-4">
-            <DollarSign className="w-6 h-6 text-green-600 mr-2" />
-            <h2 className="text-xl font-semibold text-gray-800">Performance Overview</h2>
-          </div>
-          <div className="grid md:grid-cols-3 gap-4">
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <div className="text-blue-600 font-semibold">Current Balance</div>
-              <div className="text-2xl font-bold">${dashboardStats.currentBalance}</div>
-            </div>
-            <div className="bg-purple-50 p-4 rounded-lg">
-              <div className="text-purple-600 font-semibold">Total Courses</div>
-              <div className="text-2xl font-bold">{dashboardStats.totalCourses}</div>
-            </div>
-            <div className="bg-green-50 p-4 rounded-lg">
-              <div className="text-green-600 font-semibold">Total Students</div>
-              <div className="text-2xl font-bold">{dashboardStats.totalStudents}</div>
-            </div>
-          </div>
-
-          <div className="mt-8">
-            <h3 className="text-lg font-semibold mb-4">Withdrawal History</h3>
-            <div className="space-y-3">
-              {withdrawalHistory.map((withdrawal) => (
-                <div key={withdrawal.transactionId} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                  <div>
-                    <div className="font-medium">${withdrawal.amount}</div>
-                    <div className="text-sm text-gray-500">
-                      {new Date(withdrawal.createdAt).toLocaleDateString()}
-                    </div>
-                  </div>
-                  <span className={`px-3 py-1 rounded-full text-sm ${
-                    withdrawal.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
-                    withdrawal.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
-                  }`}>
-                    {withdrawal.status}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </motion.div>
 
         {/* Profile Settings Form */}
         <motion.form 

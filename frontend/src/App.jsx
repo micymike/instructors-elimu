@@ -18,6 +18,8 @@ import QuizzManager from './pages/instructor/Quizzes';
 import CourseWizard from './components/CourseWizard/CourseWizard';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
+import StudentAnalytics from './components/instructor/analytics/StudentAnalytics'
+import TimeAnalytics from './components/instructor/analytics/TimeAnalytics';
 import StudentCourseView from './pages/student/StudentCourseView';
 import {
   CourseSettings,
@@ -65,7 +67,18 @@ const router = createBrowserRouter([
       },
       {
         path: 'analytics/:id/analytics',
-        element: <CourseAnalytics />
+        element: <CourseAnalytics />,
+        errorElement: <div>Error loading Course Analytics page</div>
+      },
+      {
+        path: '/instructor/analytics/time',
+        element: <TimeAnalytics/>,
+        errorElement: <div>Error loading Time Analytics page</div>
+      },
+      {
+        path: '/instructor/analytics/students',
+        element: <StudentAnalytics/>,
+        errorElement: <div>Error loading Student Analytics page</div>
       },
       {
         path: 'content',
