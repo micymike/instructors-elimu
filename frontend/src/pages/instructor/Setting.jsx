@@ -177,8 +177,6 @@ const InstructorSettings = () => {
       preview: null,
       file: null
     });
-    // If you want to also update the backend (optional):
-    // settingsAPI.updateProfile({ profilePicture: null });
   };
 
   const handlePasswordChange = async (e) => {
