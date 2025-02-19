@@ -42,25 +42,33 @@ const CourseAnalytics = () => {
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
+
         const token = localStorage.getItem('token');
-        const response = await axios.get(`https://centralize-auth-elimu.onrender.com/instructor/courses/${courseId}/analytics`, {
+        const response = await axios.get(`https://540e-102-207-191-6.ngrok-free.app/instructor/courses/${courseId}/analytics`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        
+
         const transformed = {
           ...response.data,
-          ageGroups: Object.entries(response.data.studentDemographics.ageGroups)
-            .map(([name, value]) => ({ name, value })),
-          countries: Object.entries(response.data.studentDemographics.countries)
-            .map(([name, value]) => ({ name, value })),
-          completedStudents: response.data.completedStudents.map(student => ({
-            ...student,
-            hasCertificate: student.certificateGenerated
-          }))
+          ageGroups: response.data.studentDemographics?.ageGroups 
+            ? Object.entries(response.data.studentDemographics.ageGroups).map(([name, value]) => ({ name, value })) 
+            : [],
+          countries: response.data.studentDemographics?.countries 
+            ? Object.entries(response.data.studentDemographics.countries).map(([name, value]) => ({ name, value })) 
+            : [],
+          completedStudents: Array.isArray(response.data.completedStudents) 
+            ? response.data.completedStudents.map(student => ({
+                ...student,
+                hasCertificate: student.certificateGenerated
+              }))
+            : []
         };
         
         setAnalytics(transformed);
+        
+     
       } catch (err) {
+           console.error('API Error:', err.response?.data || err.message);
         setError(err.response?.data?.message || 'Failed to load analytics');
       } finally {
         setLoading(false);
@@ -152,23 +160,23 @@ const CourseAnalytics = () => {
         <StatCard
           icon={Users}
           title="Total Enrollments"
-          value={analytics.totalEnrollments}
+          value={analytics?.totalEnrollments??0}
         />
         <StatCard
           icon={BookCheck}
           title="Completed"
           value={analytics.completedEnrollments}
-          description={`${((analytics.completedEnrollments / analytics.totalEnrollments) * 100).toFixed(1)}% completion rate`}
+          description={`${((analytics?.completedEnrollments ?? 0) / (analytics?.totalEnrollments || 1) * 100).toFixed(1)}% completion rate`}
         />
         <StatCard
           icon={Trophy}
           title="Avg Progress"
-          value={`${analytics.averageProgress}%`}
+          value={`${analytics?.averageProgress??0}%`}
         />
         <StatCard
           icon={CalendarDays}
           title="Recent Enrollments"
-          value={analytics.recentEnrollments}
+          value={analytics.recentEnrollment??0}
           description="Last 7 days"
         />
       </div>
@@ -221,7 +229,10 @@ const CourseAnalytics = () => {
               <RadialBarChart
                 innerRadius="20%"
                 outerRadius="100%"
-                data={[{ name: 'Score', value: analytics.performanceMetrics.averageQuizScore }]}
+                data={[{ 
+                  name: 'Score', 
+                  value: analytics?.performanceMetrics?.averageQuizScore ?? 0 
+                }]}
               >
                 <RadialBar
                   background
@@ -235,7 +246,7 @@ const CourseAnalytics = () => {
                   dominantBaseline="middle"
                   className="text-2xl font-bold"
                 >
-                  {analytics.performanceMetrics.averageQuizScore}%
+                 {analytics?.performanceMetrics?.averageQuizScore ?? 0}%
                 </text>
               </RadialBarChart>
             </ResponsiveContainer>
@@ -248,7 +259,7 @@ const CourseAnalytics = () => {
             <div className="relative w-48 h-48">
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-3xl font-bold text-gray-700">
-                  {analytics.performanceMetrics.completionRate}%
+                {analytics?.performanceMetrics?.completionRate ?? 0}%
                 </div>
               </div>
               <svg className="transform -rotate-90 w-48 h-48">
@@ -266,7 +277,8 @@ const CourseAnalytics = () => {
                   r="88"
                   className="stroke-current text-blue-600"
                   strokeWidth="16"
-                  strokeDasharray={`${(2 * Math.PI * 88) * (analytics.performanceMetrics.completionRate / 100)} ${2 * Math.PI * 88}`}
+                  strokeDasharray={`${(2 * Math.PI * 88) * ((analytics?.performanceMetrics?.completionRate ?? 0) / 100)} ${2 * Math.PI * 88}`}
+
                   strokeDashoffset="0"
                   fill="none"
                 />

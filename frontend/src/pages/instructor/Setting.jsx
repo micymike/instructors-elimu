@@ -28,10 +28,11 @@ const InstructorSettings = () => {
 
   // Profile Picture State
   const [profilePicture, setProfilePicture] = useState({
-    preview: contextUser?.profilePicture || '',
+    preview: contextUser?.profilePhotoUrl || '',
     file: null,
     isUploading: false,
   });
+
 
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
@@ -70,22 +71,22 @@ const InstructorSettings = () => {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const { personalInfo } = response.data;
-
+        const profileResponse = await settingsAPI.getProfile();
+        const profileData = profileResponse.data;
+        
         setProfileForm({
-          name: contextUser?.name || '',
-          email: contextUser?.email || '',
-          phoneNumber: contextUser?.phoneNumber || '',
-          paymentRate: contextUser?.paymentRate || 0,
-          bio: contextUser?.bio || ''
+          name: profileData.name,
+          email: profileData.email,
+          phoneNumber: profileData.phoneNumber,
+          paymentRate: profileData.paymentRate,
+          bio: profileData.bio
         });
 
-        // Set profile picture preview if it exists
-        if (personalInfo.profilePicture) {
-          setProfilePicture({
-            preview: personalInfo.profilePicture,
-            file: null
-          });
+        if (profileData.profilePhotoUrl) {
+          setProfilePicture(prev => ({
+            ...prev,
+            preview: profileData.profilePhotoUrl
+          }));
         }
       } catch (error) {
         toast.error('Failed to load profile settings');
@@ -114,28 +115,32 @@ const InstructorSettings = () => {
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
     setIsProfileUpdating(true);
-
     const formData = new FormData();
     formData.append('name', profileForm.name);
     formData.append('email', profileForm.email);
     formData.append('phoneNumber', profileForm.phoneNumber);
     formData.append('paymentRate', profileForm.paymentRate.toString());
-    formData.append('bio', profileForm.bio);  
+    formData.append('bio', profileForm.bio);
+
+    if (profilePicture.file) {
+      formData.append('profilePhoto', profilePicture.file);
+    }
 
     try {
       const response = await settingsAPI.updateProfile(formData);
       const updatedUser = {
         ...contextUser,
         ...response.data,
+        profilePhotoUrl: response.data.profilePhotoUrl
       };
       setUser(updatedUser);
 
-      // Update local state
       setProfilePicture(prev => ({
         ...prev,
-        preview: response.data.profilePicture,
+        preview: response.data.profilePhotoUrl,
         file: null
       }));
+
 
       toast.success('Profile updated successfully');
     } catch (error) {
@@ -146,30 +151,7 @@ const InstructorSettings = () => {
     }
   };
 
-  // Handle withdrawal
-  const handleWithdrawal = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await settingsAPI.withdrawFunds({
-        amount: parseFloat(withdrawAmount),
-        phoneNumber: contextUser.phoneNumber
-      });
-      
-      if (response.mpesaResponse.ResponseCode === '0') {
-        toast.success('Withdrawal initiated successfully');
-        // Update balance in dashboard stats
-        setDashboardStats(prev => ({
-          ...prev,
-          currentBalance: prev.currentBalance - parseFloat(withdrawAmount)
-        }));
-      } 
-    } catch (error) {
-      toast.error('Failed to withdraw funds');
-      console.error('Withdrawal error:', error);
-    } finally {
-      setIsProcessingWithdrawal(false);
-    }
-  };
+ 
 
   // Handle profile picture removal
   const handleRemoveProfilePicture = () => {
@@ -372,20 +354,11 @@ const InstructorSettings = () => {
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                 <input
                   type="text"
-                  value={profileForm.firstName}
-                  onChange={(e) => setProfileForm(prev => ({ ...prev, firstName: e.target.value }))}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                <input
-                  type="text"
-                  value={profileForm.lastName}
-                  onChange={(e) => setProfileForm(prev => ({ ...prev, lastName: e.target.value }))}
+                  value={profileForm.name}
+                  onChange={(e) => setProfileForm(prev => ({ ...prev, name: e.target.value }))}
                   className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -411,20 +384,13 @@ const InstructorSettings = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Expertise</label>
-                <input
-                  type="text"
-                  value={profileForm.expertise}
-                  onChange={(e) => setProfileForm(prev => ({ ...prev, expertise: e.target.value }))}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
                 <textarea
                   value={profileForm.bio}
                   onChange={(e) => setProfileForm(prev => ({ ...prev, bio: e.target.value }))}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 h-32"
+                  //className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 h-32"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="Tell the students about yourself"
                 />
               </div>
             </div>
@@ -563,48 +529,6 @@ const InstructorSettings = () => {
             </div>
           </div>
         </motion.div>
-
-
-
-        {/* Withdrawal Section */}
-        <motion.form 
-          onSubmit={handleWithdrawal}
-          variants={itemVariants}
-          className="bg-white rounded-xl shadow-lg p-6"
-        >
-          <div className="flex items-center mb-6">
-            <DollarSign className="w-6 h-6 text-green-600 mr-2" />
-            <h2 className="text-xl font-semibold text-gray-800">Withdraw Funds</h2>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
-              <input
-                type="number"
-                value={withdrawAmount}
-                onChange={(e) => setWithdrawAmount(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-              />
-            </div>
-          </div>
-
-          <div className="mt-6 flex justify-end">
-            <motion.button
-              type="submit"
-              disabled={isProcessingWithdrawal}
-              className="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 disabled:opacity-50"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              {isProcessingWithdrawal ? (
-                <Loader2 className="animate-spin h-5 w-5" />
-              ) : (
-                'Request Withdrawal'
-              )}
-            </motion.button>
-          </div>
-        </motion.form>
       </motion.div>
     </div>
   );
