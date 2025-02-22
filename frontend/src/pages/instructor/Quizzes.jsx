@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UploadCloud, FileText, BookOpen, Loader, CheckCircle, XCircle } from 'lucide-react';
+import { API_URL } from '../../config';
 
 const QuizManager = () => {
   const [quizCourseId, setQuizCourseId] = useState('');
@@ -52,7 +53,7 @@ const QuizManager = () => {
     setLoading(true);
     try {
       const response = await axios.post(
-        'https://centralize-auth-elimu.onrender.com/instructor/quizzes/create',
+        `${API_URL}/instructor/quizzes/create`,
         formData,
         {
           headers: {
@@ -82,7 +83,7 @@ const QuizManager = () => {
 
     try {
       const response = await axios.get(
-        `https://centralize-auth-elimu.onrender.com/instructor/quizzes/${selectedCourseId}`,
+        `${API_URL}/instructor/quizzes/${selectedCourseId}`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`,

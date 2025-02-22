@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://centralize-auth-elimu.onrender.com';
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -221,7 +221,7 @@ export const instructorSettingsAPI = {
   },
 
   // Update Instructor Profile
-  async updateProfile(updateProfileDto, profilePhoto) {
+  async updateProfile(updateProfileDto) {
     const token = localStorage.getItem('token');
     if (!token) {
       throw new Error('No authentication token found');
@@ -229,11 +229,6 @@ export const instructorSettingsAPI = {
 
     const formData = new FormData();
     formData.append('updateProfileDto', JSON.stringify(updateProfileDto));
-
-    if (profilePhoto) {
-      formData.append('profilePhoto', profilePhoto);
-    }
-
     try {
       const response = await api.put('/api/instructors/profile/update', formData, {
         headers: {

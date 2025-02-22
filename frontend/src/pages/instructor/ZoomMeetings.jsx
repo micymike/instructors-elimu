@@ -19,6 +19,7 @@ const ZoomMeetings = () => {
       participants: 100
     }
   });
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
   useEffect(() => {
     fetchMeetings();
@@ -33,7 +34,7 @@ const ZoomMeetings = () => {
         return;
       }
 
-      const response = await fetch('https://centralize-auth-elimu.onrender.com/zoom/meetings', {
+      const response = await fetch(`${API_BASE_URL}/zoom/meetings`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -70,7 +71,7 @@ const ZoomMeetings = () => {
 
       const instructorId = "current_user_id"; // Replace with actual ID
 
-      const response = await fetch('https://centralize-auth-elimu.onrender.com/zoom/meetings', {
+      const response = await fetch(`${API_BASE_URL}/zoom/meetings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -116,7 +117,7 @@ const ZoomMeetings = () => {
       }
 
       const response = await fetch(
-        `https://centralize-auth-elimu.onrender.com/zoom/meetings/${meetingId}/join`, 
+        `${API_BASE_URL}/${meetingId}/join`, 
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
 
@@ -142,7 +143,7 @@ const ZoomMeetings = () => {
       if (!confirmDelete) return;
 
       const response = await fetch(
-        `https://centralize-auth-elimu.onrender.com/zoom/meetings/${meetingId}`, 
+        `${API_BASE_URL}/zoom/meetings/${meetingId}`, 
         { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }
       );
 
