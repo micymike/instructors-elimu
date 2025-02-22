@@ -168,7 +168,7 @@ const QuizManager = () => {
                     onChange={(e) => e.target.files && setQuestionsFile(e.target.files[0])}
                     className="hidden"
                     id="questionsFile"
-                    accept=".pdf,.docx,.txt"
+                    accept=".csv,.xlsx,.xls"
                     required
                   />
                   <label
@@ -178,7 +178,7 @@ const QuizManager = () => {
                     Browse Files
                   </label>
                   <p className="text-xs text-gray-400 mt-2">
-                    Supported formats: .docx, .pdf, .txt (max 5MB)
+                    Supported formats: .pdf,.docx,.txt, .csv, .xls, .xlsx (max 5MB)
                   </p>
                 </div>
 
@@ -190,7 +190,7 @@ const QuizManager = () => {
                     type="file"
                     onChange={(e) => e.target.files && setAnswersFile(e.target.files[0])}
                     className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                    accept=".pdf,.docx,.txt"
+                    accept=".csv,.xlsx,.xls,.pdf,.docx,.txt"
                   />
                 </div>
               </div>
@@ -207,7 +207,7 @@ const QuizManager = () => {
                 {loading ? (
                   <>
                     <Loader className="animate-spin w-5 h-5" />
-                    Uploading...
+                    Creating...
                   </>
                 ) : (
                   <>
