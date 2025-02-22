@@ -265,6 +265,7 @@ const DashboardLayout = () => {
             if (hasSubItems) {
               setExpandedItem(isExpanded ? null : item.label)
             }
+            if (isMobile && !hasSubItems) setIsSidebarOpen(false);
           }}
         >
           <div className="flex items-center min-w-0">
@@ -361,8 +362,11 @@ const DashboardLayout = () => {
               <span className="text-xl font-bold text-white">Elimu</span>
             </div>
             {isMobile && (
-              <button onClick={() => setIsSidebarOpen(false)} className="p-2 rounded-lg hover:bg-gray-100">
-                <X className="h-6 w-6 text-gray-600" />
+              <button 
+                onClick={() => setIsSidebarOpen(false)}
+                className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
+              >
+                <X className="h-5 w-5" />
               </button>
             )}
           </div>
@@ -404,7 +408,7 @@ const DashboardLayout = () => {
               className="flex items-center w-full px-4 py-2.5 text-white hover:bg-blue-700 rounded-lg transition-colors duration-200"
             >
               <LogOut className="h-5 w-5 mr-3" />
-              <span className="font-medium">Logout</span>
+              <span className="text-sm font-medium">Logout</span>
             </button>
           </div>
         </div>
@@ -427,18 +431,19 @@ const DashboardLayout = () => {
               <Menu className="h-6 w-6" />
             </button>
 
-            <div className="flex items-center space-x-4">
-              <button className="p-2 hover:bg-gray-100 rounded-full">
-                <Bell className="h-6 w-6 text-gray-600" />
+            <div className="flex items-center gap-4">
+              <button className="p-2 hover:bg-gray-100 rounded-full text-gray-600 relative">
+                <Bell className="h-6 w-6" />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
               </button>
               {instructorData?.profilePicture ? (
                 <img
                   src={instructorData.profilePicture || "/placeholder.svg"}
                   alt="Profile"
-                  className="h-8 w-8 rounded-full object-cover"
+                  className="h-9 w-9 rounded-full object-cover border-2 border-white shadow-sm"
                 />
               ) : (
-                <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                <div className="h-9 w-9 rounded-full bg-blue-100 flex items-center justify-center shadow-sm">
                   <span className="text-blue-600 font-medium">
                     {instructorData?.firstName?.[0]}
                     {instructorData?.lastName?.[0]}

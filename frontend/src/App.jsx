@@ -5,21 +5,23 @@ import { BrowserRouter as Router, Routes, Route, Navigate, createBrowserRouter, 
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { SnackbarProvider } from 'notistack';
+import { UserProvider } from './services/UserContext';
 import InstructorForm from './components/InstructorForm';
 import Login from './components/Login';
 import DashboardLayout from './components/layouts/DashboardLayout';
 import ZoomMeetings from './pages/instructor/ZoomMeetings';
-import CreateSession from './pages/instructor/CreateSession';
+import CreateAssessment from './pages/instructor/CreateAssessment';
 import GroupManagement from './pages/instructor/GroupManagement';
 import InstructorsLanding from './components/InstructorsLanding';
 import Contact  from './components/Contact';
 import Pricing from './components/Pricing';
 import CourseLearning from './pages/instructor/CourseLearning';
-import AssessmentCreator from './pages/instructor/Assessments';
-import Assessments from './pages/instructor/Assessments';
-import CourseAnalytics from './components/dashboard/CourseAnalytics';
+import QuizzManager from './pages/instructor/Quizzes';
+import CourseWizard from './components/CourseWizard/CourseWizard';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
+import StudentAnalytics from './components/instructor/analytics/StudentAnalytics'
+import TimeAnalytics from './components/instructor/analytics/TimeAnalytics';
 import StudentCourseView from './pages/student/StudentCourseView';
 import {
   CourseSettings,
@@ -30,6 +32,7 @@ import {
   WebinarSchedule,
   Students
 } from './pages/instructor';
+import CourseAnalytics from './pages/instructor/CourseAnalytics';
 import Content from './pages/instructor/Content';
 import CourseForm from './components/instructor/CourseForm';
 import CourseDetails from './pages/instructor/CourseDetails';
@@ -37,7 +40,7 @@ import VideoManagement from './pages/instructor/VideoManagement';
 import InstructorSettings from './pages/instructor/Settings';
 import EditCourse from './pages/instructor/EditCourse'; 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AuthProvider } from './contexts/AuthContext';
+
 
 const queryClient = new QueryClient();
 
@@ -63,6 +66,21 @@ const router = createBrowserRouter([
         path: 'courses',
         element: <Courses />,
         errorElement: <div>Error loading Courses page</div>
+      },
+      {
+        path: 'analytics/:id/analytics',
+        element: <CourseAnalytics />,
+        errorElement: <div>Error loading Course Analytics page</div>
+      },
+      {
+        path: '/instructor/analytics/time',
+        element: <TimeAnalytics/>,
+        errorElement: <div>Error loading Time Analytics page</div>
+      },
+      {
+        path: '/instructor/analytics/students',
+        element: <StudentAnalytics/>,
+        errorElement: <div>Error loading Student Analytics page</div>
       },
       {
         path: 'content',
@@ -105,10 +123,20 @@ const router = createBrowserRouter([
         errorElement: <div>Error loading Settings page</div>
       },
       {
-        path: 'assessments',
-        element: <AssessmentCreator/>,
+        path: 'create-course',
+        element: <CourseWizard />,
+        errorElement: <div>Error loading Create Course page</div>
+      },
+      {
+        path: 'Quizzes',
+        element: <QuizzManager/>,
         errorElement: <div>Error loading Assessments page</div>
       },
+      {
+        path: 'Assessment',
+        element: <CreateAssessment/>,
+        errorElement: <div>Error loading Assessments  Creator page</div>
+        },
       {
         path: 'video-management',
         element: <VideoManagement />,
@@ -116,7 +144,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'create-session',
-        element: <CreateSession />,
+        element: <ZoomMeetings />,
         errorElement: <div>Error loading Create Session page</div>
       },
       {
@@ -130,11 +158,6 @@ const router = createBrowserRouter([
         errorElement: <div>Error loading Course Creation page</div>
       },
       {
-        path: 'instructor/student-assessments',
-        element: <Assessments />,
-        errorElement: <div>Error loading Assessments page</div>
-      },
-      {
         path: 'courses/:courseId',
         element: <CourseDetails />,
         errorElement: <div>Error loading Course Details page</div>
@@ -144,12 +167,6 @@ const router = createBrowserRouter([
         element: <EditCourse />,
         errorElement: <div>Error loading Edit Course page</div>
       },
-      {
-        path: 'courses/:courseId/analytics', 
-        element: <CourseAnalytics />,
-        errorElement: <div>Error loading Course Analytics page</div>
-      },
-      
       {
         path: '',
         element: <Dashboard />,
@@ -193,8 +210,8 @@ const router = createBrowserRouter([
 
 function App() {
   return (
+    <UserProvider>
     <QueryClientProvider client={queryClient}>
-    <AuthProvider>
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <SnackbarProvider maxSnack={3}>
         <AnimatePresence mode="wait">
@@ -212,8 +229,8 @@ function App() {
         />
       </SnackbarProvider>
     </LocalizationProvider>
-    </AuthProvider>
     </QueryClientProvider>
+    </UserProvider>
   );
 }
 

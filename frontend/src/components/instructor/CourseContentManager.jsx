@@ -35,6 +35,7 @@ const CourseContentManager = () => {
     return token ? `Bearer ${token}` : null;
   };
 
+  // Fetch course data
   useEffect(() => {
     const token = getAuthToken();
     if (token) {
@@ -151,7 +152,7 @@ const CourseContentManager = () => {
     setIsEditing(true);
   };
 
-  const saveChanges = async () => {
+  const handlePreviewResource = async (resourceId) => {
     try {
       // Update course content
       const updatedCourse = await axios.put(`/instructor/multimedia/${selectedCourse}`, courseContent);

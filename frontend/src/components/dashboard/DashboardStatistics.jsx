@@ -27,7 +27,7 @@ import {
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
-const CourseAnalytics = ({ 
+const DashboardStatistics = ({ 
   coursePerformance = [], 
   monthlyRevenue = [],
   courseRevenue = []
@@ -70,7 +70,7 @@ const CourseAnalytics = ({
       <Grid container spacing={3}>
         <Grid item xs={12}>
           <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h6">Course Analytics</Typography>
+            <Typography variant="h6">Dashboard Statistics</Typography>
             <FormControl size="small" sx={{ minWidth: 200 }}>
               <InputLabel>Time Period</InputLabel>
               <Select
@@ -184,4 +184,4 @@ const CourseAnalytics = ({
   );
 };
 
-export default CourseAnalytics;
+export default DashboardStatistics;

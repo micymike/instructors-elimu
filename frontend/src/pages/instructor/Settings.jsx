@@ -1,354 +1,524 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Settings, Bell, Shield, UserCircle, Key, Loader2, DollarSign, CheckCircle } from 'lucide-react';
-import { settingsAPI } from '../../services/api';
+import { motion } from 'framer-motion';
+import { Settings, Bell, Shield, UserCircle, Key, Loader2, DollarSign } from 'lucide-react';
+import { instructorSettingsAPI} from '../../services/api';
 import toast from 'react-hot-toast';
+import { useUser } from '../../services/UserContext';
+import io from 'socket.io-client';
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: { 
+    opacity: 1,
+    transition: { staggerChildren: 0.1 }
+  }
+};
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: { 
+    y: 0, 
+    opacity: 1,
+    transition: { type: 'spring', stiffness: 120 }
+  }
+};
 
 const InstructorSettings = () => {
   const fileInputRef = useRef(null);
+  const { user: contextUser, setUser } = useUser();
+  const [socket, setSocket] = useState(null);
+  const [notifications, setNotifications] = useState([]);
 
-  // Profile Picture State
-  const [profilePicture, setProfilePicture] = useState({
-    preview: '',
-    file: null
-  });
-
-  // Profile Form State
-  const [profileForm, setProfileForm] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    expertise: '',
-    bio: ''
-  });
-
-  // Dashboard Stats State
-  const [dashboardStats, setDashboardStats] = useState({
-    totalEarnings: 0,
-    totalCourses: 0,
-    totalStudents: 0,
-  });
-
-  // Withdrawal State
-  const [withdrawAmount, setWithdrawAmount] = useState('');
+  // State variables
+  const [isProfileUpdating, setIsProfileUpdating] = useState(false);
+  const [isPasswordChanging, setIsPasswordChanging] = useState(false);
   const [isProcessingWithdrawal, setIsProcessingWithdrawal] = useState(false);
 
-  // Loading States
-  const [isProfileUpdating, setIsProfileUpdating] = useState(false);
+  // Profile State
+  const [profileForm, setProfileForm] = useState({
+    name: contextUser?.name || '',
+    email: contextUser?.email || '',
+    phoneNumber: contextUser?.phoneNumber || '',
+    paymentRate: contextUser?.paymentRate || 0,
+    bio: contextUser?.bio || ''
+  });
 
-  // Fetch initial settings on component mount
+  // Dashboard Stats
+  const [dashboardStats, setDashboardStats] = useState({
+    totalCourses: 0,
+    totalStudents: 0,
+    totalRevenue: 0,
+    currentBalance: 0,
+    monthlyRevenue: [],
+    courseRevenue: []
+  });
+
+  // Withdrawals
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [withdrawalHistory, setWithdrawalHistory] = useState([]);
+
+  // Password
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+
+  // Profile Picture
+  const [profilePicture, setProfilePicture] = useState({
+    preview: contextUser?.profilePhotoUrl || '',
+    file: null,
+    isUploading: false,
+  });
+
+  // WebSocket Setup
   useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const response = await settingsAPI.getSettings();
-        const { personalInfo } = response.data;
-
-        setProfileForm({
-          firstName: personalInfo.firstName || '',
-          lastName: personalInfo.lastName || '',
-          email: personalInfo.email || '',
-          phone: personalInfo.phone || '',
-          expertise: personalInfo.expertise || '',
-          bio: personalInfo.bio || ''
-        });
-
-        // Set profile picture preview if it exists
-        if (personalInfo.profilePicture) {
-          setProfilePicture({
-            preview: personalInfo.profilePicture,
-            file: null
-          });
-        }
-      } catch (error) {
-        toast.error('Failed to load profile settings');
-        console.error('Settings fetch error:', error);
+    const newSocket = io('https://centralize-auth-elimu.onrender.com', {
+      auth: {
+        token: localStorage.getItem('token')
       }
-    };
+    });
+    
+    newSocket.on('newNotification', (notification) => {
+      setNotifications(prev => [...prev, notification]);
+    });
 
-    const fetchDashboardStats = async () => {
-      try {
-        const stats = await settingsAPI.getDashboardStats();
-        setDashboardStats(stats);
-      } catch (error) {
-        toast.error('Failed to load dashboard stats');
-        console.error('Dashboard stats fetch error:', error);
-      }
-    };
+    newSocket.on('notificationMarkedAsRead', (notificationId) => {
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+    });
 
-    fetchSettings();
-    fetchDashboardStats();
+    setSocket(newSocket);
+
+    return () => newSocket.disconnect();
   }, []);
 
-  // Handle profile update
+  // Fetch Initial Data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [profileRes, statsRes, withdrawalsRes] = await Promise.all([
+          instructorSettingsAPI.getProfile(),
+          instructorSettingsAPI.getDashboardStats(),
+          instructorSettingsAPI.getWithdrawalStatus()
+        ]);
+
+        setProfileForm({
+          name: profileRes.data.name,
+          email: profileRes.data.email,
+          phoneNumber: profileRes.data.phoneNumber,
+          paymentRate: profileRes.data.paymentRate,
+          bio: profileRes.data.bio
+        });
+
+        setDashboardStats(statsRes.data);
+        setWithdrawalHistory(withdrawalsRes.data);
+
+        if (profileRes.data.profilePhotoUrl) {
+          setProfilePicture(prev => ({
+            ...prev,
+            preview: profileRes.data.profilePhotoUrl
+          }));
+        }
+      } catch (error) {
+        toast.error('Failed to load data');
+      }
+    };
+    fetchData();
+  }, []);
+
+  // Profile Update Handler
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
     setIsProfileUpdating(true);
-
-    const formData = new FormData();
-    formData.append('firstName', profileForm.firstName);
-    formData.append('lastName', profileForm.lastName);
-    formData.append('email', profileForm.email);
-    formData.append('phone', profileForm.phone);
-    formData.append('expertise', profileForm.expertise);
-    formData.append('bio', profileForm.bio);
-
-    // If a profile picture is selected, append it to form data
-    if (profilePicture.file) {
-      formData.append('profilePhoto', profilePicture.file);
-    }
-
+  
+    const updateProfileDto = {
+      name: profileForm.name,
+      email: profileForm.email,
+      phoneNumber: profileForm.phoneNumber,
+      paymentRate: profileForm.paymentRate,
+      bio: profileForm.bio
+    };
+  
     try {
-      await settingsAPI.updateProfile(formData);  // Ensure this handles 'multipart/form-data'
+      // Update only profile information
+      const response = await instructorSettingsAPI.updateProfile(updateProfileDto, null);
+      const updatedUser = {
+        ...contextUser,
+        ...response.data
+      };
+      setUser(updatedUser);
       toast.success('Profile updated successfully');
     } catch (error) {
-      toast.error('Failed to update profile');
-      console.error('Profile update error:', error);
+      toast.error('Profile update failed');
     } finally {
       setIsProfileUpdating(false);
     }
   };
 
-  // Handle withdrawal
+  // Profile Picture Update Handler
+const handleProfilePictureUpdate = async (file) => {
+  if (!file) return;
+  const formData = new FormData();
+  formData.append('profilePhoto', file,file.name); 
+
+  try {
+    // Update only profile picture
+    const response = await instructorSettingsAPI.updateProfilePicture(formData);
+    const updatedUser = {
+      ...contextUser,
+      profilePhotoUrl: response.data.profilePhotoUrl
+    };
+    
+    setUser(updatedUser);
+    setProfilePicture({
+      preview: response.data.profilePhotoUrl,
+      file: null
+    });
+    toast.success('Profile picture updated successfully');
+  } catch (error) {
+    toast.error(error.response?.data?.message || 'Failed to update profile picture');
+  }
+};
+
+  // Profile Picture Handlers
+  const handleProfilePictureChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Create preview and update profile picture
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfilePicture({
+          preview: reader.result,
+          file: file
+        });
+        handleProfilePictureUpdate(file);
+      };
+      reader.readAsDataURL(file);
+    }
+   
+  };
+
+  const handleRemoveProfilePicture = async () => {
+    try {
+      setProfilePicture({
+        preview: null,
+        file: null
+      });
+     
+      toast.success('Profile picture removed');
+    } catch (error) {
+      toast.error('Failed to remove profile picture');
+  }};
+
+  // Withdrawal Handler
   const handleWithdrawal = async (e) => {
     e.preventDefault();
-    if (isProcessingWithdrawal) return;
-
     setIsProcessingWithdrawal(true);
-
     try {
-      const phoneNumber = profileForm.phone; // Assuming the instructor's phone number is used for withdrawals.
-      const response = await settingsAPI.withdrawFunds(withdrawAmount, phoneNumber);
-      toast.success('Withdrawal successful');
+      const response = await instructorSettingsAPI.withdrawFunds({
+        amount: parseFloat(withdrawAmount),
+        phoneNumber: profileForm.phoneNumber
+      });
+      
+      setDashboardStats(prev => ({
+        ...prev,
+        currentBalance: prev.currentBalance - parseFloat(withdrawAmount)
+      }));
+      
+      setWithdrawalHistory(prev => [response.data, ...prev]);
+      toast.success('Withdrawal initiated successfully');
       setWithdrawAmount('');
     } catch (error) {
-      toast.error('Failed to withdraw funds');
-      console.error('Withdrawal error:', error);
+      toast.error('Withdrawal failed');
     } finally {
       setIsProcessingWithdrawal(false);
     }
   };
 
-  // Handle profile picture removal
-  const handleRemoveProfilePicture = () => {
-    setProfilePicture({
-      preview: null,
-      file: null
-    });
-    // If you want to also update the backend (optional):
-    // settingsAPI.updateProfile({ profilePicture: null });
+  // Password Change Handler
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordRegex.test(passwordForm.newPassword)) {
+      toast.error('Password must be at least 8 characters with uppercase, lowercase, number, and special character');
+      return;
+    }
+
+    setIsPasswordChanging(true);
+    try {
+      await instructorSettingsAPI.changePassword({
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword
+      });
+      toast.success('Password changed successfully');
+      setPasswordForm({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Password change failed');
+    } finally {
+      setIsPasswordChanging(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="flex items-center mb-8">
+      <motion.div
+        className="container mx-auto px-4 py-8"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        {/* Header */}
+        <motion.div variants={itemVariants} className="flex items-center mb-8">
           <Settings className="w-8 h-8 text-blue-600 mr-3" />
-          <h1 className="text-3xl font-bold text-gray-900">Instructor Settings</h1>
-        </div>
+          <h1 className="text-3xl font-bold text-gray-900">Account Settings</h1>
+        </motion.div>
 
-        {/* Profile Picture Section  */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+        {/* Profile Picture Section */}
+        <motion.div variants={itemVariants} className="bg-white rounded-xl shadow-lg p-6 mb-8">
           <div className="flex items-center mb-4">
             <UserCircle className="w-6 h-6 text-blue-600 mr-2" />
             <h2 className="text-xl font-semibold text-gray-800">Profile Picture</h2>
           </div>
-          <div className="flex items-center">
-            {profilePicture.preview ? (
-              <>
-                <img
-                  src={profilePicture.preview}
-                  alt="Profile Preview"
-                  className="w-24 h-24 rounded-full object-cover mr-4"
-                />
-                <button
-                  type="button"
-                  onClick={handleRemoveProfilePicture}
-                  className="px-4 py-2 bg-red-600 text-white rounded-md"
-                >
-                  Remove Picture
-                </button>
-              </>
-            ) : (
-              <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center mr-4">
-                <UserCircle className="w-12 h-12 text-gray-400" />
-              </div>
-            )}
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={(e) => {
-                const file = e.target.files[0];
-                if (file) {
-                  const reader = new FileReader();
-                  reader.onloadend = () => {
-                    setProfilePicture({
-                      preview: reader.result,
-                      file
-                    });
-                  };
-                  reader.readAsDataURL(file);
-                }
-              }}
-              className="hidden"
-            />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current.click()}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md"
-            >
-              Change Picture
-            </button>
-          </div>
-        </div>
-
-        {/* Dashboard Stats Section */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex items-center mb-4">
-            <DollarSign className="w-6 h-6 text-green-600 mr-2" />
-            <h2 className="text-xl font-semibold text-gray-800">Dashboard Stats</h2>
-          </div>
-          <div className="space-y-4">
-            <div className="flex justify-between">
-              <span className="text-gray-700">Total Earnings</span>
-              <span className="font-semibold text-green-600">${dashboardStats.totalEarnings}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-700">Total Courses</span>
-              <span className="font-semibold text-blue-600">{dashboardStats.totalCourses}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-700">Total Students</span>
-              <span className="font-semibold text-purple-600">{dashboardStats.totalStudents}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Profile Section */}
-        <form onSubmit={handleProfileUpdate} className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex items-center mb-4">
-            <UserCircle className="w-6 h-6 text-blue-600 mr-2" />
-            <h2 className="text-xl font-semibold text-gray-800">Profile Settings</h2>
-          </div>
           
-          <div className="space-y-4">
-            {/* First Name */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">First Name</label>
+          <div className="flex flex-col items-center">
+            <div className="relative">
+              <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-lg">
+                {profilePicture.isUploading ? (
+                  <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                  </div>
+                ) : (
+                  profilePicture.preview ? (
+                    <img 
+                      src={profilePicture.preview} 
+                      alt="Profile" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                      <UserCircle className="w-16 h-16 text-gray-400" />
+                    </div>
+                  )
+                )}
+              </div>
               <input
-                type="text"
-                value={profileForm.firstName}
-                onChange={(e) => setProfileForm(prev => ({ ...prev, firstName: e.target.value }))}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                placeholder="John"
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="image/*"
+                onChange={handleProfilePictureChange}
               />
+              <button
+                onClick={() => fileInputRef.current.click()}
+                className="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full p-2 hover:bg-blue-600"
+                disabled={profilePicture.isUploading}
+              >
+                {profilePicture.isUploading ? (
+                  <Loader2 className="animate-spin h-5 w-5" />
+                ) : (
+                  <UserCircle size={16} />
+                )}
+              </button>
+            </div>
+            <div className="mt-4 flex gap-2">
+              {profilePicture.file && (
+                <button
+                  onClick={ handleProfilePictureUpdate}
+                  disabled={profilePicture.isUploading}
+                  className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 disabled:opacity-50"
+                >
+                  {profilePicture.isUploading ? 'Uploading...' : 'Save Photo'}
+                </button>
+              )}
+              {(profilePicture.preview || contextUser?.profilePhotoUrl) && (
+                <button
+                  onClick={handleRemoveProfilePicture}
+                  className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
+                  disabled={profilePicture.isUploading}
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+          </div>
+        </motion.div>
+
+
+        {/* Profile Settings Form */}
+        <motion.form 
+          onSubmit={handleProfileUpdate}
+          variants={itemVariants}
+          className="bg-white rounded-xl shadow-lg p-6 mb-8"
+        >
+          <div className="flex items-center mb-6">
+            <Key className="w-6 h-6 text-blue-600 mr-2" />
+            <h2 className="text-xl font-semibold text-gray-800">Profile Information</h2>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                <input
+                  type="text"
+                  value={profileForm.name}
+                  onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={profileForm.email}
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  disabled
+                />
+              </div>
             </div>
 
-            {/* Last Name */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Last Name</label>
-              <input
-                type="text"
-                value={profileForm.lastName}
-                onChange={(e) => setProfileForm(prev => ({ ...prev, lastName: e.target.value }))}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                placeholder="Doe"
-              />
-            </div>
-
-            {/* Email */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Email</label>
-              <input
-                type="email"
-                value={profileForm.email}
-                onChange={(e) => setProfileForm(prev => ({ ...prev, email: e.target.value }))}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                placeholder="email@example.com"
-              />
-            </div>
-
-            {/* Phone */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Phone</label>
-              <input
-                type="text"
-                value={profileForm.phone}
-                onChange={(e) => setProfileForm(prev => ({ ...prev, phone: e.target.value }))}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                placeholder="(123) 456-7890"
-              />
-            </div>
-
-            {/* Expertise */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Expertise</label>
-              <input
-                type="text"
-                value={profileForm.expertise}
-                onChange={(e) => setProfileForm(prev => ({ ...prev, expertise: e.target.value }))}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                placeholder="Example: Web Development"
-              />
-            </div>
-
-            {/* Bio */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Bio</label>
-              <textarea
-                value={profileForm.bio}
-                onChange={(e) => setProfileForm(prev => ({ ...prev, bio: e.target.value }))}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                placeholder="Write a short bio about yourself"
-              />
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                <input
+                  type="text"
+                  value={profileForm.phoneNumber}
+                  onChange={(e) => setProfileForm({ ...profileForm, phoneNumber: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Hourly Rate ($)</label>
+                <input
+                  type="number"
+                  value={profileForm.paymentRate}
+                  onChange={(e) => setProfileForm({ ...profileForm, paymentRate: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
             </div>
           </div>
 
-          <div className="flex justify-end mt-6">
-            <button
+          <div className="mt-6">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
+            <textarea
+              value={profileForm.bio}
+              onChange={(e) => setProfileForm({ ...profileForm, bio: e.target.value })}
+              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 h-32"
+            />
+          </div>
+
+          <div className="mt-6 flex justify-end">
+            <motion.button
               type="submit"
               disabled={isProfileUpdating}
-              className="px-6 py-2 bg-blue-600 text-white rounded-md disabled:bg-gray-400"
+              className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
               {isProfileUpdating ? (
-                <Loader2 className="animate-spin w-4 h-4" />
+                <Loader2 className="animate-spin h-5 w-5" />
               ) : (
                 'Save Changes'
               )}
-            </button>
+            </motion.button>
           </div>
-        </form>
+        </motion.form>
 
-        {/* Withdrawal Section */}
-        <form onSubmit={handleWithdrawal} className="bg-white rounded-lg shadow-sm p-6">
-          <div className="flex items-center mb-4">
-            <DollarSign className="w-6 h-6 text-green-600 mr-2" />
-            <h2 className="text-xl font-semibold text-gray-800">Request Withdrawal</h2>
+        {/* Security Section */}
+        <motion.form 
+          onSubmit={handlePasswordChange}
+          variants={itemVariants}
+          className="bg-white rounded-xl shadow-lg p-6 mb-8"
+        >
+          <div className="flex items-center mb-6">
+            <Shield className="w-6 h-6 text-blue-600 mr-2" />
+            <h2 className="text-xl font-semibold text-gray-800">Security Settings</h2>
           </div>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700">Withdrawal Amount</label>
-            <input
-              type="number"
-              value={withdrawAmount}
-              onChange={(e) => setWithdrawAmount(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              placeholder="Enter amount"
-            />
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+                <input
+                  type="password"
+                  value={passwordForm.currentPassword}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                <input
+                  type="password"
+                  value={passwordForm.newPassword}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+                <input
+                  type="password"
+                  value={passwordForm.confirmPassword}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
           </div>
-          <div className="flex justify-end">
-            <button
+
+          <div className="mt-6 flex justify-end">
+            <motion.button
               type="submit"
-              disabled={isProcessingWithdrawal}
-              className="px-6 py-2 bg-green-600 text-white rounded-md disabled:bg-gray-400"
+              disabled={isPasswordChanging}
+              className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
-              {isProcessingWithdrawal ? (
-                <Loader2 className="animate-spin w-4 h-4" />
+              {isPasswordChanging ? (
+                <Loader2 className="animate-spin h-5 w-5" />
               ) : (
-                'Request Withdrawal'
+                'Change Password'
               )}
-            </button>
+            </motion.button>
           </div>
-        </form>
-      </div>
+        </motion.form>
+
+        {/* Notifications Section */}
+        <motion.div variants={itemVariants} className="bg-white rounded-xl shadow-lg p-6 mb-8">
+          <div className="flex items-center mb-6">
+            <Bell className="w-6 h-6 text-blue-600 mr-2" />
+            <h2 className="text-xl font-semibold text-gray-800">Notifications</h2>
+          </div>
+
+          <div className="space-y-3">
+            {notifications.map((notification) => (
+              <div key={notification.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div>
+                  <div className="font-medium">{notification.type}</div>
+                  <div className="text-sm text-gray-600">{notification.message}</div>
+                </div>
+                <button 
+                  onClick={() => socket.emit('markNotificationAsRead', notification.id)}
+                  className="text-blue-600 hover:text-blue-800"
+                >
+                  Mark Read
+                </button>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      </motion.div>
     </div>
   );
 };
