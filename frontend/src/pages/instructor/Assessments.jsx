@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_BACKEND_URL || 'https://centralize-auth-elimu.onrender.com';
 
 const ASSESSMENT_TYPES = {
   ASSIGNMENT: 'ASSIGNMENT',
@@ -45,7 +45,7 @@ const AssessmentCreator = () => {
   const fetchCourses = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/instructor/courses`, {
+      const response = await axios.get(`https://centralize-auth-elimu.onrender.com/courses/instructor`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setCourses(response.data.courses || response.data);

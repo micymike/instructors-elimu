@@ -35,7 +35,7 @@ const ZoomMeetings = () => {
         return;
       }
 
-      const response = await fetch(`${API_URL}/api/zoom/meetings`, {
+const response = await fetch(`${ API_URL }/zoom/meetings/{meetingId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -45,7 +45,7 @@ const ZoomMeetings = () => {
         throw new Error('Failed to fetch meetings');
       }
 
-      const data = await response.json();
+      const data = response.ok ? await response.json() : {};
       // Handle the array of meetings from the Zoom API
       setMeetings(data.map(meeting => ({
         id: meeting.id,
@@ -103,7 +103,7 @@ const ZoomMeetings = () => {
         return;
       }
 
-      const response = await fetch(`${API_URL}/api/zoom/meetings`, {
+      const response = await fetch(`${API_URL}/zoom/meetings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -113,11 +113,11 @@ const ZoomMeetings = () => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = response.ok ? await response.json() : {};
         throw new Error(errorData.message || 'Failed to create meeting');
       }
 
-      const data = await response.json();
+      const data = response.ok ? await response.json() : {};
       setMeetings(prev => [...prev, data]);
       toast.success('Meeting created successfully');
       
@@ -149,18 +149,18 @@ const ZoomMeetings = () => {
         return;
       }
 
-      const response = await fetch(`${API_URL}/api/zoom/meetings/${meetingId}/join`, {
+const response = await fetch(`${API_URL}/zoom/meetings/${meetingId}/join`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+        const errorData = response.ok ? await response.json().catch(() => ({})) : {};
         throw new Error(errorData.message || 'Failed to join meeting');
       }
 
-      const { joinUrl, topic, startTime } = await response.json();
+      const { joinUrl, topic, startTime } = response.ok ? await response.json() : {};
       
       if (!joinUrl) {
         toast.error('No join URL available for this meeting');
@@ -191,7 +191,7 @@ const ZoomMeetings = () => {
       const confirmDelete = window.confirm('Are you sure you want to permanently delete this meeting?');
       if (!confirmDelete) return;
 
-      const response = await fetch(`${API_URL}/api/zoom/meetings/${meetingId}`, {
+const response = await fetch(`${API_URL}/zoom/meetings/${meetingId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -199,7 +199,7 @@ const ZoomMeetings = () => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+        const errorData = response.ok ? await response.json().catch(() => ({})) : {};
         throw new Error(errorData.message || 'Failed to delete meeting');
       }
 

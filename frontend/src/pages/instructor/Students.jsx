@@ -4,7 +4,7 @@ import axios from 'axios';
 import { Search, User, Mail, Phone, MapPin, School, Filter, Loader2, GraduationCap, TrendingUp, UserX } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://centralize-auth-elimu.onrender.com';
 
 const Students = () => {
   const [loading, setLoading] = useState(false);
@@ -35,7 +35,7 @@ const Students = () => {
   // Fetch instructor's courses
   const fetchCourses = async () => {
     try {
-      const response = await axios.get(`${BASE_URL}/instructor/courses`, {
+      const response = await axios.get('https://centralize-auth-elimu.onrender.com/courses/instructor', {
         headers: getHeaders()
       });
       
