@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { MessageCircle } from 'lucide-react';
 import { CourseForm } from '../../components/instructor/CourseForm';
 import AIModal from '../../components/AIModal';
-import ApiService from '../../services/api.service';
 import toast from 'react-hot-toast';
+
+const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 
 const EditCourse = () => {
   const { courseId } = useParams();
@@ -12,16 +14,58 @@ const EditCourse = () => {
   const [course, setCourse] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Validate MongoDB ObjectId
+  const isValidObjectId = (id) => {
+    // Check if the id is a valid 24-character hex string
+    return /^[0-9a-fA-F]{24}$/.test(id);
+  };
+
+  // Get authentication headers
+  const getHeaders = () => {
+    const token = localStorage.getItem('token');
+    return token 
+      ? { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      : { 'Content-Type': 'application/json' };
+  };
+
+  // Filter out properties not allowed in update request
+  const prepareUpdateData = (formData) => {
+    const allowedProperties = ['title', 'description'];
+    
+    return Object.keys(formData)
+      .filter(key => allowedProperties.includes(key))
+      .reduce((obj, key) => {
+        obj[key] = formData[key];
+        return obj;
+      }, {});
+  };
 
   useEffect(() => {
     const fetchCourseDetails = async () => {
+      // Validate courseId before making the request
+      if (!courseId || !isValidObjectId(courseId)) {
+        setError('Invalid course ID');
+        setIsLoading(false);
+        navigate('/instructor/courses');
+        return;
+      }
+
       try {
         setIsLoading(true);
-        const courseData = await ApiService.getCourseById(courseId);
-        setCourse(courseData);
+        const response = await axios.get(`${BASE_URL}/instructor/courses/${courseId}`, {
+          headers: getHeaders()
+        });
+        setCourse(response.data);
       } catch (error) {
-        toast.error('Failed to fetch course details');
+        const errorMessage = error.response?.data?.message || 'Failed to fetch course details';
+        toast.error(errorMessage);
         console.error('Course details error:', error);
+        setError(errorMessage);
         navigate('/instructor/courses');
       } finally {
         setIsLoading(false);
@@ -33,12 +77,25 @@ const EditCourse = () => {
 
   const handleSubmit = async (formData) => {
     try {
-      const updatedCourse = await ApiService.updateCourse(courseId, formData);
+      // Prepare data with only allowed properties
+      const cleanedData = prepareUpdateData(formData);
+
+      const response = await axios.put(`${BASE_URL}/instructor/courses/${courseId}`, cleanedData, {
+        headers: getHeaders()
+      });
+      
       toast.success('Course updated successfully');
       navigate(`/instructor/courses/${courseId}`);
+      return response.data;
     } catch (error) {
-      toast.error('Failed to update course');
+      const errorMessage = error.response?.data?.message || 'Failed to update course';
+      toast.error(errorMessage);
       console.error('Update course error:', error);
+      
+      // Log the full error response for debugging
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+      }
     }
   };
 
@@ -61,6 +118,14 @@ const EditCourse = () => {
     );
   }
 
+  if (error || !course) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p className="text-gray-600">{error || 'Course not found'}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-gray-50 min-h-screen relative">
       {/* AI Assistant Modal */}
@@ -68,9 +133,9 @@ const EditCourse = () => {
         isOpen={isAIModalOpen} 
         onClose={() => setIsAIModalOpen(false)}
         context={{
-          title: course?.title,
-          category: course?.category,
-          level: course?.level
+          title: course.title,
+          category: course.category,
+          level: course.level
         }}
         onSuggestionSelect={handleAIAssistantResponse}
       />

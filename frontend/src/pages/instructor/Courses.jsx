@@ -6,7 +6,7 @@ import axios from 'axios';
 import { useToast } from '../../hooks/useToast';
 
 // Configure axios base URL and defaults
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 axios.defaults.baseURL = API_BASE_URL;
 
 const Courses = () => {
@@ -35,13 +35,32 @@ const Courses = () => {
   const fetchCourses = async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get('/courses/all');
+      console.log('Fetching courses with token:', axios.defaults.headers.common['Authorization']);
+      
+      const response = await axios.get('/instructor/courses');
+      console.log('Full response:', response);
 
-      // New response structure handling
-      const validCourses = response.data?.data || [];
+      // Robust response handling
+      let validCourses = [];
+      if (Array.isArray(response.data)) {
+        validCourses = response.data;
+      } else if (response.data && Array.isArray(response.data.courses)) {
+        validCourses = response.data.courses;
+      } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
+        validCourses = response.data.data;
+      }
+
+      console.log('Parsed courses:', validCourses);
       setCourses(validCourses);
     } catch (error) {
-      console.error('Course fetch error:', error);
+      console.error('Course fetch error FULL:', error);
+
+      // More detailed error logging
+      if (error.response) {
+        console.error('Error response data:', error.response.data);
+        console.error('Error response status:', error.response.status);
+        console.error('Error response headers:', error.response.headers);
+      }
 
       // Improved error handling
       if (error.response) {
@@ -68,11 +87,22 @@ const Courses = () => {
     }
   };
 
+  const handleGetCourseAnalytics = async (courseId) => {
+    try {
+      const response = await axios.get(`/courses/${courseId}/analytics`);
+      return response.data;
+    } catch (error) {
+      console.error('Course analytics fetch error:', error);
+      toast.error('Failed to fetch course analytics');
+      return null;
+    }
+  };
+
   const handleEdit = async (courseId, updatedData) => {
     if (!courseId || !updatedData) return;
 
     try {
-      await axios.put(`/courses/${courseId}`, updatedData);
+      await axios.patch(`/courses/${courseId}`, updatedData);
       toast.success('Course updated successfully');
       setEditingCourse(null);
       fetchCourses();
@@ -98,6 +128,20 @@ const Courses = () => {
         const errorMessage = error.response?.data?.message || 'Failed to delete course';
         toast.error(errorMessage);
       }
+    }
+  };
+
+  const handleCreateCourse = async (courseData) => {
+    try {
+      const response = await axios.post('/courses', courseData);
+      toast.success('Course created successfully');
+      fetchCourses();
+      return response.data;
+    } catch (error) {
+      console.error('Error creating course:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to create course';
+      toast.error(errorMessage);
+      return null;
     }
   };
 
@@ -196,7 +240,7 @@ const Courses = () => {
             </p>
           </div>
           <Link
-            to="/instructor/courses/new"
+            to="/instructor/create-course"
             className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
           >
             Create New Course

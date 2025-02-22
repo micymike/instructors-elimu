@@ -9,7 +9,6 @@ import BlobButton from './ui/BlobButton';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { API_URL } from '../config';
-import { authAPI } from '../services/api';
 
 // Move InputField outside the main component
 const InputField = ({ 
@@ -121,7 +120,11 @@ const InstructorForm = () => {
         formDataToSubmit.append('cv', formData.cv);
       }
 
-      await authAPI.registerInstructor(formDataToSubmit);
+      await axios.post(`${API_URL}/auth/register/instructor`, formDataToSubmit, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
       toast.success('Instructor registration submitted successfully!');
       navigate('/login');
     } catch (error) {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { instructorGroupAPI as groupAPI } from '../services/api';
 
 const GroupManagement = () => {
   const [groups, setGroups] = useState([]);
@@ -13,7 +13,7 @@ const GroupManagement = () => {
 
   const fetchGroups = async () => {
     try {
-      const response = await axios.get('/api/groups'); // Adjust the endpoint as needed
+      const response = await groupAPI.getInstructorGroups();
       setGroups(response.data);
     } catch (error) {
       console.error('Error fetching groups:', error);
@@ -22,7 +22,7 @@ const GroupManagement = () => {
 
   const createGroup = async () => {
     try {
-      const response = await axios.post('/api/groups', {
+      const response = await groupAPI.createInstructorGroup({
         name: groupName,
         instructorId,
         studentIds: studentIds.split(',').map(id => id.trim()),

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+const API_BASE_URL = 'https://centralize-auth-elimu.onrender.com';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -18,67 +18,87 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-export const courseAPI = {
-  // Course Management
-  async getCourseToLearn(id) {
-    const response = await api.get(`/api/courses/${id}/learn`);
+export const instructorAPI = {
+  async getDashboard() {
+    const response = await api.get('/api/instructors/profile/dashboard');
     return response.data;
   },
 
+  async getDashboardStatistics() {
+    const response = await api.get('/api/instructors/profile/dashboard-statistics');
+    return response.data;
+  },
+
+  async updateProfile(profileData) {
+    const response = await api.put('/api/instructors/profile/update', profileData);
+    return response.data;
+  },
+
+  async updateProfilePicture(pictureData) {
+    const formData = new FormData();
+    formData.append('profilePhoto', pictureData);
+    const response = await api.put('/api/instructors/profile/profile-picture', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  }
+};
+
+export const instructorCourseAPI = {
   async createCourse(courseData) {
-    const response = await api.post('/api/courses', courseData);
+    const response = await api.post('/instructor/courses', courseData);
     return response.data;
   },
 
   async getAllCourses() {
-    const response = await api.get('/api/courses/all');
-    return response.data;
-  },
-
-  async getCoursesList() {
-    const response = await api.get('/api/courses/list');
-    return response.data;
-  },
-
-  async generateCourse(params) {
-    const response = await api.post('/api/courses/generate', params);
+    const response = await api.get('/instructor/courses');
     return response.data;
   },
 
   async getCourse(id) {
-    const response = await api.get(`/api/courses/${id}`);
+    const response = await api.get(`/instructor/courses/${id}`);
     return response.data;
   },
 
   async updateCourse(id, courseData) {
-    const response = await api.put(`/api/courses/${id}`, courseData);
+    const response = await api.patch(`/instructor/courses/${id}`, courseData);
     return response.data;
   },
 
   async deleteCourse(id) {
-    const response = await api.delete(`/api/courses/${id}`);
+    const response = await api.delete(`/instructor/courses/${id}`);
     return response.data;
   },
 
+  async getCourseAnalytics(courseId) {
+    const response = await api.get(`/instructor/courses/${courseId}/analytics`);
+    return response.data;
+  }
+};
+
+// Course management methods
+export const instructorCourseManagementAPI = {
   async getInstructorStats() {
-    const response = await api.get('/api/courses/instructor/stats');
+    const response = await api.get('/api/instructors/profile/dashboard-statistics');
     return response.data;
   },
 
   async updateCourseContent(id, content) {
-    const response = await api.put(`/api/courses/${id}/content`, content);
+    const response = await api.put(`/instructor/courses/${id}/content`, content);
     return response.data;
   },
 
   async getCourseContent(id) {
-    const response = await api.get(`/api/courses/${id}/content`);
+    const response = await api.get(`/instructor/courses/${id}/content`);
     return response.data;
   },
 
   async uploadCourseFile(id, fileData) {
     const formData = new FormData();
     formData.append('file', fileData);
-    const response = await api.post(`/api/courses/${id}/upload`, formData, {
+    const response = await api.post(`/instructor/courses/${id}/upload`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -87,25 +107,101 @@ export const courseAPI = {
   },
 
   async generateContent(params) {
-    const response = await api.post('/api/courses/generate-content', params);
+    const response = await api.post('/instructor/ai-assistant/summarize', params);
     return response.data;
   },
 
   async getCourseMaterials(courseId) {
-    const response = await api.get(`/api/courses/${courseId}/materials`);
+    const response = await api.get(`/instructor/multimedia/${courseId}`);
     return response.data;
   },
 
   async uploadCourseMaterial(courseId, materialData) {
-    const response = await api.post(`/api/courses/${courseId}/materials`, materialData);
+    const response = await api.post('/instructor/multimedia/create', {
+      courseId,
+      ...materialData
+    });
     return response.data;
   }
 };
 
 // Handle API requests for Instructor Profile-related functionalities
-export const settingsAPI = {
+export const instructorAssessmentAPI = {
+  // Course assessments
+  async createAssessment(courseId, assessmentData) {
+    const response = await api.post(`/instructor/assessments/course/${courseId}`, assessmentData);
+    return response.data;
+  },
+
+  async getCourseAssessments(courseId) {
+    const response = await api.get(`/instructor/assessments/course/${courseId}`);
+    return response.data;
+  },
+
+  async getAssessmentSubmissions(assessmentId) {
+    const response = await api.get(`/instructor/assessments/${assessmentId}/submissions`);
+    return response.data;
+  },
+
+  async gradeSubmission(assessmentId, submissionId, gradeData) {
+    const response = await api.put(
+      `/instructor/assessments/${assessmentId}/submissions/${submissionId}/grade`, 
+      gradeData
+    );
+    return response.data;
+  },
+
+  async getAssessmentStats(courseId) {
+    const response = await api.get(`/instructor/assessments/stats/course/${courseId}`);
+    return response.data;
+  },
+
+  // AI-assisted assessment generation
+  async generateAssessment(courseId) {
+    const response = await api.post(`/instructor/assessments/ai-generate/${courseId}`);
+    return response.data;
+  }
+};
+
+export const instructorMultimediaAPI = {
+  async createContent(contentData) {
+    const response = await api.post('/instructor/multimedia/create', contentData);
+    return response.data;
+  },
+
+  async getCourseContent(courseId) {
+    const response = await api.get(`/instructor/multimedia/${courseId}`);
+    return response.data;
+  }
+};
+
+export const instructorQuizAPI = {
+  async createQuiz(quizData) {
+    const response = await api.post('/instructor/quizzes/create', quizData);
+    return response.data;
+  },
+
+  async getCourseQuizzes(courseId) {
+    const response = await api.get(`/instructor/quizzes/${courseId}`);
+    return response.data;
+  }
+};
+
+export const instructorInteractiveAPI = {
+  async createElement(elementData) {
+    const response = await api.post('/instructor/interactive-elements/create', elementData);
+    return response.data;
+  },
+
+  async getCourseElements(courseId) {
+    const response = await api.get(`/instructor/interactive-elements/${courseId}`);
+    return response.data;
+  }
+};
+
+export const instructorSettingsAPI = {
   // Get the Instructor's Profile
-  async getSettings() {
+  async getProfile() {
     const token = localStorage.getItem('token');
     if (!token) {
       throw new Error('No authentication token found');
@@ -318,20 +414,16 @@ export const settingsAPI = {
     throw new Error('Password change is not currently supported.');
   }
 };
-// src/api/auth.js
-
-// src/api/index.js (main API configuration)
-
-export const documentsAPI = {
+export const instructorDocumentsAPI = {
   async getAllDocuments() {
-    const response = await api.get('/api/documents');
+    const response = await api.get('/api/instructors/documents');
     return response.data;
   },
 
   async uploadDocument(fileData) {
     const formData = new FormData();
     formData.append('file', fileData);
-    const response = await api.post('/api/documents/upload', formData, {
+    const response = await api.post('/api/instructors/documents/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -340,150 +432,52 @@ export const documentsAPI = {
   },
 
   async checkPlagiarism(documentData) {
-    const response = await api.post('/api/documents/check-plagiarism', documentData);
+    const response = await api.post('/api/instructors/documents/check-plagiarism', documentData);
     return response.data;
   },
 
   async previewDocument(id) {
-    const response = await api.get(`/api/documents/${id}/preview`);
+    const response = await api.get(`/api/instructors/documents/${id}/preview`);
     return response.data;
   },
 
   async downloadDocument(id) {
-    const response = await api.get(`/api/documents/${id}/download`);
+    const response = await api.get(`/api/instructors/documents/${id}/download`);
     return response.data;
   },
 
   async deleteDocument(id) {
-    const response = await api.delete(`/api/documents/${id}`);
+    const response = await api.delete(`/api/instructors/documents/${id}`);
     return response.data;
   }
 };
 
-export const authAPI = {
+export const instructorAuthAPI = {
   async login(credentials) {
-    try {
-      // Log base URL and credentials for debugging
-      console.log('Login Configuration:', {
-        baseURL: API_BASE_URL,
-        loginEndpoint: '/auth/login/instructor',
-        email: credentials.email,
-        passwordLength: credentials.password.length
-      });
-
-      // Validate input
-      if (!credentials.email || !credentials.password) {
-        throw new Error('Email and password are required');
-      }
-
-      // Attempt to log in with full configuration logging
-      const response = await api.post('/auth/login/instructor', credentials, {
-        // Explicitly remove Authorization header
-        headers: {
-          'Authorization': undefined,
-          // Ensure correct content type
-          'Content-Type': 'application/json'
-        },
-        // Add timeout to catch network issues
-        timeout: 10000
-      });
-      
-      // Log full response details
-      console.log('Login API Full Response:', {
-        status: response.status,
-        headers: response.headers,
-        data: response.data
-      });
-
-      // Validate response structure more comprehensively
-      if (!response.data) {
-        throw new Error('Empty response received from server');
-      }
-
-      // Check for token in multiple possible locations
-      const token = 
-        response.data.token || 
-        response.data.access_token || 
-        response.headers['authorization']?.replace('Bearer ', '');
-
-      if (!token) {
-        throw new Error('No authentication token found in response');
-      }
-
-      // Store token in local storage
-      localStorage.setItem('token', token);
-      
-      return response.data;
-    } catch (error) {
-      // Comprehensive error logging
-      console.error('Login API Detailed Error:', {
-        name: error.name,
-        message: error.message,
-        code: error.code,
-        response: error.response?.data,
-        status: error.response?.status,
-        headers: error.response?.headers,
-        config: {
-          url: error.config?.url,
-          method: error.config?.method,
-          baseURL: error.config?.baseURL
-        }
-      });
-
-      // Clear any existing tokens
-      localStorage.removeItem('token');
-
-      // Detailed error handling
-      if (error.response) {
-        // Server responded with an error
-        switch (error.response.status) {
-          case 401:
-            throw new Error('Invalid credentials. Please check your email and password.');
-          case 403:
-            throw new Error('Access denied. Your account may be locked or inactive.');
-          case 404:
-            throw new Error('Login service not found. Please contact support.');
-          case 500:
-            throw new Error('Server error. Please try again later.');
-          default:
-            throw new Error(error.response.data?.message || 'Login failed. Please try again.');
-        }
-      } else if (error.request) {
-        // Request made but no response received
-        throw new Error('No response from server. Please check your network connection.');
-      } else if (error.code === 'ECONNABORTED') {
-        // Request timed out
-        throw new Error('Login request timed out. Please check your internet connection.');
-      } else {
-        // Something else went wrong
-        throw new Error('An unexpected error occurred during login. Please try again.');
-      }
-    }
+    const authService = await import('./auth.service');
+    return authService.default.login(credentials);
   },
 
-  async register(userData) {
-    const response = await api.post('/auth/register', userData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      }
-    });
-    // Store token in local storage after registration
-    if (response.data.token) {
-      localStorage.setItem('token', response.data.token);
-    }
-    return response.data;
-  },
-
-  async registerInstructor(instructorData) {
+  async register(instructorData) {
     const response = await api.post('/auth/register/instructor', instructorData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       }
     });
-    // Store token in local storage after instructor registration
     if (response.data.token) {
       localStorage.setItem('token', response.data.token);
     }
+    return response.data;
+  },
+
+  async uploadCV(id, cvData) {
+    const formData = new FormData();
+    formData.append('cv', cvData);
+    const response = await api.post(`/auth/register/instructor/${id}/cv`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      }
+    });
     return response.data;
   },
 
@@ -492,96 +486,312 @@ export const authAPI = {
     return response.data;
   },
 
-  async verifyEmailToken(token) {
-    const response = await api.post('/auth/verify-email-token', { token });
-    return response.data;
-  },
-
-  // Add a logout method to clear the token
   logout() {
     localStorage.removeItem('token');
   }
 };
 
-export const zoomAPI = {
+export const instructorZoomAPI = {
   async getAllMeetings() {
-    const response = await api.get('/api/zoom/meetings');
+    const response = await api.get('/api/instructors/zoom/meetings');
     return response.data;
   },
 
   async createMeeting(meetingData) {
-    const response = await api.post('/api/zoom/meetings', meetingData);
+    const response = await api.post('/api/instructors/zoom/meetings', meetingData);
     return response.data;
   },
 
   async getMeetingDetails(meetingId) {
-    const response = await api.get(`/api/zoom/meetings/${meetingId}`);
+    const response = await api.get(`/api/instructors/zoom/meetings/${meetingId}`);
     return response.data;
   },
 
   async updateMeeting(meetingId, meetingData) {
-    const response = await api.patch(`/api/zoom/meetings/${meetingId}`, meetingData);
+    const response = await api.patch(`/api/instructors/zoom/meetings/${meetingId}`, meetingData);
     return response.data;
   },
 
   async deleteMeeting(meetingId) {
-    const response = await api.delete(`/api/zoom/meetings/${meetingId}`);
+    const response = await api.delete(`/api/instructors/zoom/meetings/${meetingId}`);
     return response.data;
   },
 
   async getJoinUrl(meetingId) {
-    const response = await api.get(`/api/zoom/meetings/${meetingId}/join`);
+    const response = await api.get(`/api/instructors/zoom/meetings/${meetingId}/join`);
     return response.data;
   },
 
   async createGroupMeeting(groupId, meetingData) {
-    const response = await api.post(`/api/zoom/meetings/group/${groupId}`, meetingData);
+    const response = await api.post(`/api/instructors/zoom/meetings/group/${groupId}`, meetingData);
     return response.data;
   }
 };
 
-export const scheduleAPI = {
-  async getSchedule() {
-    const response = await api.get('/api/schedule');
+export const instructorScheduleAPI = {
+  async getInstructorSchedule() {
+    const response = await api.get('/api/instructors/schedule');
     return response.data;
   },
 
-  async createEvent(eventData) {
-    const response = await api.post('/api/schedule', eventData);
+  async createInstructorEvent(eventData) {
+    const response = await api.post('/api/instructors/schedule', eventData);
     return response.data;
   }
 };
 
-export const groupAPI = {
-  async getAllGroups() {
-    const response = await api.get('/api/groups');
+export const instructorResourceAPI = {
+  async downloadResource(courseId, resourceId) {
+    const response = await api.get(`/api/instructor/courses/${courseId}/resources/${resourceId}/download`, {
+      responseType: 'blob'
+    });
+    return {
+      data: response.data,
+      filename: response.headers['x-filename'] || 'resource'
+    };
+  },
+
+  async uploadResource(courseId, file, metadata) {
+    const formData = new FormData();
+    formData.append('file', file);
+    Object.keys(metadata).forEach(key => formData.append(key, metadata[key]));
+    
+    const response = await api.post(`/api/instructor/courses/${courseId}/resources`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
 
-  async createGroup(groupData) {
-    const response = await api.post('/api/groups', groupData);
+  async getResources(params) {
+    const response = await api.get('/api/instructor/content/resources', { params });
+    return response.data;
+  },
+
+  async previewResource(courseId, resourceId) {
+    const response = await api.get(`/api/instructor/courses/${courseId}/resources/${resourceId}/preview`, {
+      responseType: 'blob'
+    });
     return response.data;
   }
 };
 
-export const courseProgressAPI = {
+export const instructorLiveSessionAPI = {
+  async createLiveSession(courseId, sessionData) {
+    const response = await api.post(`/api/instructor/live-sessions/${courseId}`, sessionData);
+    return response.data;
+  },
+
+  async updateLiveSession(courseId, sessionId, sessionData) {
+    const response = await api.put(`/api/instructor/live-sessions/${courseId}/${sessionId}`, sessionData);
+    return response.data;
+  },
+
+  async deleteLiveSession(courseId, sessionId) {
+    const response = await api.delete(`/api/instructor/live-sessions/${courseId}/${sessionId}`);
+    return response.data;
+  },
+
+  async getLiveSessions(courseId) {
+    const response = await api.get(`/api/instructor/live-sessions/${courseId}`);
+    return response.data;
+  }
+};
+
+export const instructorGroupAPI = {
+  async getInstructorGroups() {
+    const response = await api.get('/api/instructors/groups');
+    return response.data;
+  },
+
+  async createInstructorGroup(groupData) {
+    const response = await api.post('/api/instructors/groups', groupData);
+    return response.data;
+  }
+};
+
+export const instructorContentGenerationAPI = {
+  async generateContent(content) {
+    const response = await api.post('/instructor/ai-assistant/generate', content);
+    return response.data;
+  },
+
+  async summarizeContent(content) {
+    const response = await api.post('/instructor/ai-assistant/summarize', content);
+    return response.data;
+  }
+};
+
+export const instructorModuleAPI = {
+  async createModule(moduleData) {
+    const response = await api.post('/instructor/modules', moduleData);
+    return response.data;
+  },
+
+  async getAllModules() {
+    const response = await api.get('/instructor/modules');
+    return response.data;
+  },
+
+  async getModule(id) {
+    const response = await api.get(`/instructor/modules/${id}`);
+    return response.data;
+  },
+
+  async updateModule(id, moduleData) {
+    const response = await api.put(`/instructor/modules/${id}`, moduleData);
+    return response.data;
+  },
+
+  async deleteModule(id) {
+    const response = await api.delete(`/instructor/modules/${id}`);
+    return response.data;
+  },
+
+  async addLessonToModule(moduleId, lessonId) {
+    const response = await api.post(`/instructor/modules/${moduleId}/lessons/${lessonId}`);
+    return response.data;
+  },
+
+  async removeLessonFromModule(moduleId, lessonId) {
+    const response = await api.delete(`/instructor/modules/${moduleId}/lessons/${lessonId}`);
+    return response.data;
+  }
+};
+
+export const instructorLessonAPI = {
+  async createLesson(lessonData) {
+    const response = await api.post('/instructor/lessons', lessonData);
+    return response.data;
+  },
+
+  async getAllLessons() {
+    const response = await api.get('/instructor/lessons');
+    return response.data;
+  },
+
+  async getLesson(id) {
+    const response = await api.get(`/instructor/lessons/${id}`);
+    return response.data;
+  },
+
+  async getLessonsByModule(moduleId) {
+    const response = await api.get(`/instructor/lessons/module/${moduleId}`);
+    return response.data;
+  },
+
+  async updateLesson(id, lessonData) {
+    const response = await api.put(`/instructor/lessons/${id}`, lessonData);
+    return response.data;
+  },
+
+  async deleteLesson(id) {
+    const response = await api.delete(`/instructor/lessons/${id}`);
+    return response.data;
+  }
+};
+
+export const instructorNotesAPI = {
+  async createNote(noteData) {
+    const response = await api.post('/api/instructors/notes', noteData);
+    return response.data;
+  },
+
+  async getAllNotes() {
+    const response = await api.get('/api/instructors/notes');
+    return response.data;
+  },
+
+  async searchNotes(query) {
+    const response = await api.get('/api/instructors/notes/search', { params: { query } });
+    return response.data;
+  },
+
+  async getNote(id) {
+    const response = await api.get(`/api/instructors/notes/${id}`);
+    return response.data;
+  },
+
+  async updateNote(id, noteData) {
+    const response = await api.put(`/api/instructors/notes/${id}`, noteData);
+    return response.data;
+  },
+
+  async deleteNote(id) {
+    const response = await api.delete(`/api/instructors/notes/${id}`);
+    return response.data;
+  }
+};
+
+export const instructorAIChatAPI = {
+  async sendMessage(message) {
+    const response = await api.post('/instructor/ai-chat', message);
+    return response.data;
+  },
+
+  async provideFeedback(chatId, feedback) {
+    const response = await api.post(`/instructor/ai-chat/${chatId}/feedback`, feedback);
+    return response.data;
+  }
+};
+
+export const instructorAnalyticsAPI = {
+  async getCourseAnalytics(courseId) {
+    const response = await api.get(`/instructor/courses/${courseId}/analytics`);
+    return response.data;
+  }
+};
+
+export const instructorAccessibilityAPI = {
+  async transcribe(data) {
+    const response = await api.post('/accessibility/transcribe', data);
+    return response.data;
+  },
+
+  async generateCaptions(data) {
+    const response = await api.post('/accessibility/captions', data);
+    return response.data;
+  },
+
+  async synthesizeSpeech(data) {
+    const response = await api.post('/accessibility/synthesize', data);
+    return response.data;
+  }
+};
+
+// Course progress API implementation
+export const instructorCourseProgressAPI = {
   async getCourseProgress(courseId) {
-    const response = await api.get(`/api/courses/${courseId}/progress`);
+    const response = await api.get(`/instructor/courses/${courseId}/progress`);
     return response.data;
   },
 
   async updateCourseProgress(courseId, progressData) {
-    const response = await api.post(`/api/courses/${courseId}/progress`, progressData);
+    const response = await api.put(`/instructor/courses/${courseId}/progress`, progressData);
     return response.data;
   }
 };
 
-export const liveSessionAPI = {
-  async deleteLiveSession(courseId, sessionId) {
-    const response = await api.delete(`/api/live-sessions/${courseId}/${sessionId}`);
-    return response.data;
-  }
-};
-
-
-
+// Backwards compatibility exports
+export const courseProgressAPI = instructorCourseProgressAPI;
+export const liveSessionAPI = instructorLiveSessionAPI;
+export const resourceAPI = instructorResourceAPI;
+export const authAPI = instructorAuthAPI;
+export const courseAPI = instructorCourseAPI;
+export const assessmentAPI = instructorAssessmentAPI;
+export const multimediaAPI = instructorMultimediaAPI;
+export const quizAPI = instructorQuizAPI;
+export const interactiveAPI = instructorInteractiveAPI;
+export const settingsAPI = instructorSettingsAPI;
+export const documentsAPI = instructorDocumentsAPI;
+export const zoomAPI = instructorZoomAPI;
+export const notesAPI = instructorNotesAPI;
+export const aiChatAPI = instructorAIChatAPI;
+export const groupAPI = instructorGroupAPI;
+export const scheduleAPI = instructorScheduleAPI;
+export const moduleAPI = instructorModuleAPI;
+export const lessonAPI = instructorLessonAPI;
+export const analyticsAPI = instructorAnalyticsAPI;
+export const accessibilityAPI = instructorAccessibilityAPI;
+export const contentGenerationAPI = instructorContentGenerationAPI;

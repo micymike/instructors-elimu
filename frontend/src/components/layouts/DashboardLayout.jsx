@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Link, useLocation, Outlet, useNavigate, useMatch } from 'react-router-dom';
 import { settingsAPI } from '../../services/api';
 import {
   BarChart2, BookOpen, Video, Users, Calendar, Settings,
   LogOut, Menu, X, Layers, UserPlus, FileText,
-  GraduationCap, Bell, Plus, ChevronDown
+  GraduationCap, Bell, Plus, ClipboardCheck, TrendingUp, DollarSign, Clock, CreditCard,ChevronDown
 } from 'lucide-react';
 
 const DashboardLayout = () => {
@@ -15,46 +15,7 @@ const DashboardLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          navigate('/login');
-          return;
-        }
-
-        const response = await settingsAPI.getSettings();
-        if (response && response.data) {
-          setUser(response.data.personalInfo || response.data);
-        }
-      } catch (error) {
-        console.error('Error fetching settings:', error);
-        if (error.response?.status === 401) {
-          // Clear token and redirect to login
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          navigate('/login');
-        }
-      }
-    };
-
-    fetchSettings();
-    const handleResize = () => {
-      const isMobileView = window.innerWidth < 1024;
-      setIsMobile(isMobileView);
-      setIsSidebarOpen(!isMobileView);
-    };
-
-    handleResize(); // Initial check
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, [navigate]);
-
-  const menuItems = [
+  const menuItems = useMemo(() => [
     {
       icon: BarChart2,
       label: 'Dashboard',
@@ -76,9 +37,9 @@ const DashboardLayout = () => {
         {
           icon: Plus,
           label: 'Create Course',
-          path: '/instructor/create-course',
+          path: '/instructor/courses/create',
           description: 'Add new course'
-        }
+        },
       ]
     },
     {
@@ -92,6 +53,104 @@ const DashboardLayout = () => {
       label: 'Students',
       path: '/instructor/students',
       description: 'Student management'
+    },
+    {
+      icon: ClipboardCheck,
+      label: 'Assessments',
+      path: '/instructor/assessments',
+      description: 'View and grade assessments',
+      subItems: [
+        {
+          icon: Plus,
+          label: 'Create Assessment',
+          path: '/instructor/Assessment',
+          description: 'Create new assessment'
+        },
+        {
+          icon: FileText,
+          label: 'All Assessments',
+          path: '/instructor/assessments/list',
+          description: 'View all assessments'
+        }
+      ]
+    },
+    {
+      icon: UserPlus,
+      label: 'Collaboration',
+      path: '/instructor/collaboration',
+      description: 'Group projects & collaboration',
+      subItems: [
+        {
+          icon: Users,
+          label: 'Group Projects',
+          path: '/instructor/collaboration/projects',
+          description: 'Manage group projects'
+        },
+        {
+          icon: Video,
+          label: 'Live Sessions',
+          path: '/instructor/collaboration/sessions',
+          description: 'Virtual classroom sessions'
+        },
+        {
+          icon: Video,
+          label: 'Zoom Classes',
+          path: '/instructor/zoom-meetings',
+          description: 'Manage Zoom classes'
+        }
+      ]
+    },
+    {
+      icon: BarChart2,
+      label: 'Analytics',
+      path: '/instructor/analytics',
+      description: 'Course and student analytics',
+      subItems: [
+        {
+          icon: TrendingUp,
+          label: 'Course Analytics',
+          path: '/instructor/analytics/:id/analytics',
+          description: 'Course performance metrics'
+        },
+        {
+          icon: Users,
+          label: 'Student Analytics',
+          path: '/instructor/analytics/students',
+          description: 'Student engagement metrics'
+        },
+        {
+          icon: Clock,
+          label: 'Time Analytics',
+          path: '/instructor/analytics/time',
+          description: 'Time spent metrics'
+        }
+      ]
+    },
+    {
+      icon: DollarSign,
+      label: 'Payments',
+      path: '/instructor/payments',
+      description: 'Revenue and payments',
+      subItems: [
+        {
+          icon: TrendingUp,
+          label: 'Revenue Dashboard',
+          path: '/instructor/payments/dashboard',
+          description: 'Revenue overview'
+        },
+        {
+          icon: CreditCard,
+          label: 'Withdrawals',
+          path: '/instructor/payments/withdrawals',
+          description: 'Manage withdrawals'
+        },
+        {
+          icon: FileText,
+          label: 'Payment History',
+          path: '/instructor/payments/history',
+          description: 'Transaction history'
+        }
+      ]
     },
     {
       icon: Calendar,
@@ -113,9 +172,9 @@ const DashboardLayout = () => {
     },
     {
       icon: GraduationCap,
-      label: 'Assessments',
-      path: '/instructor/assessments',
-      description: 'Tests and assignments'
+      label: 'Quizzes',
+      path: '/instructor/Quizzes',
+      description: 'Quizzes'
     },
     {
       icon: Settings,
@@ -123,7 +182,19 @@ const DashboardLayout = () => {
       path: '/instructor/settings',
       description: 'Account settings'
     }
-  ];
+  ], []);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const isMobileView = window.innerWidth < 1024;
+      setIsMobile(isMobileView);
+      setIsSidebarOpen(!isMobileView);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [navigate]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -132,51 +203,53 @@ const DashboardLayout = () => {
   };
 
   const MenuItem = ({ item }) => {
-    const isActive = location.pathname === item.path;
+    const hasSubItems = item.subItems?.length > 0;
+    const match = useMatch(hasSubItems ? `${item.path}/*` : item.path);
+    const isActive = !!match;
     const isExpanded = expandedItem === item.path;
-    const hasSubItems = item.subItems && item.subItems.length > 0;
 
     return (
-      <div className="group">
+      <div className="group relative">
         <Link
           to={item.path}
-          className={`flex items-center justify-between rounded-lg transition-all duration-200 group-hover:bg-blue-50/80 ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}
+          className={`flex items-center justify-between p-3 rounded-xl transition-all duration-300
+            ${isActive 
+              ? 'bg-blue-50/90 text-blue-600 shadow-[inset_4px_0_0_0_rggb(59,130,246)]'
+              : 'text-gray-600 hover:bg-gray-50/80 hover:text-blue-500'}
+            ${hasSubItems ? 'pr-3' : ''}`}
           onClick={(e) => {
             if (hasSubItems) {
               e.preventDefault();
               setExpandedItem(isExpanded ? null : item.path);
             }
+            if (isMobile && !hasSubItems) setIsSidebarOpen(false);
           }}
         >
-          <div className="flex items-center min-w-0">
-            <item.icon className="h-5 w-5 mr-3 flex-shrink-0" />
+          <div className="flex items-center gap-3 min-w-0">
+            <item.icon className={`h-5 w-5 shrink-0 ${isActive ? 'text-blue-600' : 'text-gray-500'}`} />
             <div className="truncate">
-              <div className="flex items-center gap-2">
-                <span className="font-medium">{item.label}</span>
-                {item.badge && (
-                  <span className={`px-2 py-0.5 text-xs rounded-full ${isActive ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'}`}>
-                    {item.badge}
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-gray-500 truncate">{item.description}</p>
+              <span className="font-medium text-sm">{item.label}</span>
+              <p className="text-xs text-gray-500/90 mt-0.5 truncate">{item.description}</p>
             </div>
           </div>
           {hasSubItems && (
-            <ChevronDown className={`w-5 h-5 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
           )}
         </Link>
 
         {hasSubItems && isExpanded && (
-          <div className="ml-8 mt-1 space-y-1">
+          <div className="ml-11 mt-1.5 space-y-1.5">
             {item.subItems.map((subItem) => (
               <Link
                 key={subItem.path}
                 to={subItem.path}
-                className={`flex items-center px-4 py-2.5 rounded-lg transition-colors duration-200 text-sm hover:bg-blue-50 hover:text-blue-600 ${location.pathname === subItem.path ? 'bg-blue-50 text-blue-600' : 'text-gray-600'}`}
+                className={`flex items-center px-3 py-2 rounded-lg transition-colors
+                  ${location.pathname === subItem.path
+                    ? 'bg-blue-50 text-blue-600 font-medium'
+                    : 'text-gray-600 hover:bg-gray-100/50'}`}
               >
-                <subItem.icon className="h-4 w-4 mr-2" />
-                <span>{subItem.label}</span>
+                <subItem.icon className="h-4 w-4 mr-2 text-gray-500" />
+                <span className="text-sm">{subItem.label}</span>
               </Link>
             ))}
           </div>
@@ -186,48 +259,56 @@ const DashboardLayout = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Overlay for mobile */}
+    <div className="flex h-screen bg-gray-50/95">
+      {/* Overlay */}
       {isSidebarOpen && isMobile && (
-        <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setIsSidebarOpen(false)} />
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40" onClick={() => setIsSidebarOpen(false)} />
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:static`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-white/95 backdrop-blur-sm border-r border-gray-100
+        transform transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] 
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:static`}>
+        
         <div className="flex flex-col h-full">
-          {/* Logo/Header */}
-          <div className="flex items-center justify-between p-4 border-b">
-            <div className="flex items-center space-x-2">
-              <Layers className="h-8 w-8 text-blue-600" />
+          {/* Header */}
+          <div className="flex items-center justify-between p-5 border-b border-gray-100">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Layers className="h-6 w-6 text-blue-600" />
+              </div>
               <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
                 Elimu
               </span>
             </div>
             {isMobile && (
-              <button onClick={() => setIsSidebarOpen(false)} className="p-2 rounded-lg hover:bg-gray-100">
-                <X className="h-6 w-6 text-gray-600" />
+              <button 
+                onClick={() => setIsSidebarOpen(false)}
+                className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
+              >
+                <X className="h-5 w-5" />
               </button>
             )}
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+          <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
             {menuItems.map((item) => (
               <MenuItem key={item.path} item={item} />
             ))}
           </nav>
 
-          {/* User Profile and Logout */}
-          <div className="p-4 border-t border-gray-200">
-            <div className="flex items-center gap-3 mb-4">
+          {/* Profile Section */}
+          <div className="p-4 border-t border-gray-100 mt-auto">
+            <div className="flex items-center gap-3 mb-4 p-3 bg-gray-50 rounded-xl">
               {user?.profilePicture ? (
                 <img
                   src={user.profilePicture}
                   alt="Profile"
-                  className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
+                  className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm"
                 />
               ) : (
-                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shadow-sm">
                   <span className="text-blue-600 font-medium text-lg">
                     {user?.firstName?.[0]}{user?.lastName?.[0]}
                   </span>
@@ -243,35 +324,43 @@ const DashboardLayout = () => {
               </div>
             </div>
 
-            <button onClick={handleLogout} className="flex items-center w-full px-4 py-2.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200">
+            <button 
+              onClick={handleLogout}
+              className="flex items-center w-full px-4 py-2.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            >
               <LogOut className="h-5 w-5 mr-3" />
-              <span className="font-medium">Logout</span>
+              <span className="text-sm font-medium">Logout</span>
             </button>
           </div>
         </div>
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden ">
-        {/* Header */}
-        <header className="bg-white border-b py-4 px-6">
-          <div className="flex items-center justify-between">
-            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="lg:hidden p-2 rounded-md hover:bg-gray-100">
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Top Bar */}
+        <header className="sticky top-0 bg-white/90 backdrop-blur-sm border-b border-gray-100 z-30">
+          <div className="flex items-center justify-between px-6 h-16">
+            <button 
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="lg:hidden p-2 rounded-lg hover:bg-gray-100 text-gray-600"
+            >
               <Menu className="h-6 w-6" />
             </button>
 
-            <div className="flex items-center space-x-4">
-              <button className="p-2 hover:bg-gray-100 rounded-full">
-                <Bell className="h-6 w-6 text-gray-600" />
+            <div className="flex items-center gap-4">
+              <button className="p-2 hover:bg-gray-100 rounded-full text-gray-600 relative">
+                <Bell className="h-6 w-6" />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
               </button>
+              <div className="w-px h-6 bg-gray-200 mx-2"></div>
               {user?.profilePicture ? (
                 <img
                   src={user.profilePicture}
                   alt="Profile"
-                  className="h-8 w-8 rounded-full object-cover"
+                  className="h-9 w-9 rounded-full object-cover border-2 border-white shadow-sm"
                 />
               ) : (
-                <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                <div className="h-9 w-9 rounded-full bg-blue-100 flex items-center justify-center shadow-sm">
                   <span className="text-blue-600 font-medium">
                     {user?.firstName?.[0]}{user?.lastName?.[0]}
                   </span>
@@ -281,9 +370,14 @@ const DashboardLayout = () => {
           </div>
         </header>
 
-        {/* Main Content Area */}
-        <main className="flex-1 overflow-auto p-6">
-          <Outlet />
+        {/* Content Area */}
+        <main className="flex-1 overflow-auto p-6 bg-gray-50">
+          <div className="max-w-6xl mx-auto">
+            {/* Debug logging */}
+          {console.log('Current Location:', location.pathname)}
+          {console.log('Current Location State:', location.state)}
+          <Outlet context={{ location }} />
+          </div>
         </main>
       </div>
     </div>
