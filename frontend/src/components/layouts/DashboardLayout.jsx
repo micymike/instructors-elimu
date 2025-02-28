@@ -139,67 +139,67 @@ const DashboardLayout = () => {
       path: "/instructor/students",
       description: "Student management",
     },
+{
+  icon: ClipboardCheck,
+  label: "Assessments",
+  path: "/instructor/Assessment",
+  description: "View and grade assessments",
+  subItems: [
     {
-      icon: ClipboardCheck,
-      label: "Assessments",
-      path: "/instructor/assessments",
-      description: "View and grade assessments",
-      subItems: [
-        {
-          icon: Plus,
-          label: "Create Assessment",
-          path: "/instructor/assessments",
-          description: "Create new assessment",
-        },
-       
-      ],
+      icon: Plus,
+      label: "Create Assessment",
+      path: "/instructor/Assessment",
+      description: "Create new assessment",
     },
+   
+  ],
+},
+{
+  icon: UserPlus,
+  label: "Collaboration",
+  path: "/instructor/groups",
+  description: "Group projects & collaboration",
+  subItems: [
     {
-      icon: UserPlus,
-      label: "Collaboration",
+      icon: Users,
+      label: "Group Projects",
       path: "/instructor/groups",
-      description: "Group projects & collaboration",
-      subItems: [
-        {
-          icon: Users,
-          label: "Group Projects",
-          path: "/instructor/groups/groups",
-          description: "Manage group projects",
-        },
-        {
-          icon: Video,
-          label: "Zoom Classes",
-          path: "/instructor/zoom-meetings",
-          description: "Manage Zoom classes",
-        },
-      ],
+      description: "Manage group projects",
     },
     {
-      icon: BarChart2,
-      label: "Analytics",
-      path: "/instructor/analytics",
-      description: "Course and student analytics",
-      subItems: [
-        {
-          icon: TrendingUp,
-          label: "Course Analytics",
-          path: "/instructor/analytics/courses",
-          description: "Course performance metrics",
-        },
-        {
-          icon: Users,
-          label: "Student Analytics",
-          path: "/instructor/analytics/students",
-          description: "Student engagement metrics",
-        },
-        {
-          icon: Clock,
-          label: "Time Analytics",
-          path: "/instructor/analytics/time",
-          description: "Time spent metrics",
-        },
-      ],
+      icon: Video,
+      label: "Zoom Classes",
+      path: "/instructor/zoom-meetings",
+      description: "Manage Zoom classes",
     },
+  ],
+},
+{
+  icon: BarChart2,
+  label: 'Analytics',
+  path: '/instructor/analytics/:id/analytics',
+  description: 'Course and student analytics',
+  subItems: [
+    {
+      icon: TrendingUp,
+      label: 'Course Analytics',
+      path: '/instructor/analytics/:id/analytics',
+      description: 'Course performance metrics'
+    },
+    {
+      icon: Users,
+      label: 'Student Analytics',
+      path: '/instructor/analytics/students',
+      description: 'Student engagement metrics'
+    },
+    {
+      icon: Clock,
+      label: 'Time Analytics',
+      path: '/instructor/analytics/time',
+      description: 'Time spent metrics'
+    }
+  ]
+},
     {
       icon: DollarSign,
       label: "Payments",
@@ -265,7 +265,6 @@ const DashboardLayout = () => {
             if (hasSubItems) {
               setExpandedItem(isExpanded ? null : item.label)
             }
-            if (isMobile && !hasSubItems) setIsSidebarOpen(false);
           }}
         >
           <div className="flex items-center min-w-0">
@@ -362,11 +361,8 @@ const DashboardLayout = () => {
               <span className="text-xl font-bold text-white">Elimu</span>
             </div>
             {isMobile && (
-              <button 
-                onClick={() => setIsSidebarOpen(false)}
-                className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
-              >
-                <X className="h-5 w-5" />
+              <button onClick={() => setIsSidebarOpen(false)} className="p-2 rounded-lg hover:bg-gray-100">
+                <X className="h-6 w-6 text-gray-600" />
               </button>
             )}
           </div>
@@ -408,7 +404,7 @@ const DashboardLayout = () => {
               className="flex items-center w-full px-4 py-2.5 text-white hover:bg-blue-700 rounded-lg transition-colors duration-200"
             >
               <LogOut className="h-5 w-5 mr-3" />
-              <span className="text-sm font-medium">Logout</span>
+              <span className="font-medium">Logout</span>
             </button>
           </div>
         </div>
@@ -431,19 +427,18 @@ const DashboardLayout = () => {
               <Menu className="h-6 w-6" />
             </button>
 
-            <div className="flex items-center gap-4">
-              <button className="p-2 hover:bg-gray-100 rounded-full text-gray-600 relative">
-                <Bell className="h-6 w-6" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
+            <div className="flex items-center space-x-4">
+              <button className="p-2 hover:bg-gray-100 rounded-full">
+                <Bell className="h-6 w-6 text-gray-600" />
               </button>
               {instructorData?.profilePicture ? (
                 <img
                   src={instructorData.profilePicture || "/placeholder.svg"}
                   alt="Profile"
-                  className="h-9 w-9 rounded-full object-cover border-2 border-white shadow-sm"
+                  className="h-8 w-8 rounded-full object-cover"
                 />
               ) : (
-                <div className="h-9 w-9 rounded-full bg-blue-100 flex items-center justify-center shadow-sm">
+                <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
                   <span className="text-blue-600 font-medium">
                     {instructorData?.firstName?.[0]}
                     {instructorData?.lastName?.[0]}

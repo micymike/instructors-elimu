@@ -137,7 +137,7 @@ const Students = () => {
             You haven't created any courses yet. Start by creating a course to view and manage students.
           </p>
           <button 
-            onClick={() => navigate('/instructor/courses/create')}
+            onClick={() => navigate('/instructor/courses/new')}
             className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
           >
             Create First Course

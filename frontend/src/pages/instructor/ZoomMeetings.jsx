@@ -33,7 +33,7 @@ const ZoomMeetings = () => {
         return;
       }
 
-const response = await fetch(`${ API_URL }/zoom/meetings/{meetingId}`, {
+const response = await fetch(`https://centralize-auth-elimu.onrender.com/zoom/meetings/{meetingId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -80,7 +80,7 @@ const response = await fetch(`${ API_URL }/zoom/meetings/{meetingId}`, {
         return;
       }
 
-      const response = await fetch(`${API_URL}/api/zoom/meetings`, {
+      const response = await fetch(`https://centralize-auth-elimu.onrender.com/api/zoom/meetings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -125,7 +125,7 @@ const response = await fetch(`${ API_URL }/zoom/meetings/{meetingId}`, {
         return;
       }
 
-      const response = await fetch(`${API_URL}/api/zoom/meetings/${meetingId}/join`, {
+      const response = await fetch(`https://centralize-auth-elimu.onrender.com/api/zoom/meetings/${meetingId}/join`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -167,7 +167,7 @@ const response = await fetch(`${ API_URL }/zoom/meetings/{meetingId}`, {
       const confirmDelete = window.confirm('Are you sure you want to delete this meeting?');
       if (!confirmDelete) return;
 
-      const response = await fetch(`${API_URL}/api/zoom/meetings/${meetingId}`, {
+      const response = await fetch(`https://centralize-auth-elimu.onrender.com/api/zoom/meetings/${meetingId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
