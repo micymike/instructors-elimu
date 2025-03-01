@@ -55,12 +55,6 @@ const DashboardLayout = () => {
       description: 'Manage live sessions'
     },
     {
-      icon: Video,
-      label: 'Zoom Meetings',
-      path: '/instructor/zoom-meetings',
-      description: 'Manage live sessions'
-    },
-    {
       icon: Users,
       label: 'Students',
       path: '/instructor/students',
@@ -106,9 +100,9 @@ const DashboardLayout = () => {
         },
         {
           icon: Video,
-          label: 'Zoom Classes',
-          path: '/instructor/zoom-meetings',
-          description: 'Manage Zoom classes'
+          label: 'Virtual Classes',
+          path: '/instructor/virtual-classes',
+          description: 'Manage virtual classes'
         }
       ]
     },

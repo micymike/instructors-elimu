@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { 
-  Box, 
-  Container, 
-  Typography, 
-  Grid, 
-  TextField, 
-  Select, 
-  MenuItem, 
-  InputLabel, 
+import {
+  Box,
+  Container,
+  Typography,
+  Grid,
+  TextField,
+  Select,
+  MenuItem,
+  InputLabel,
   FormControl,
   Button,
   Paper,
@@ -17,8 +17,9 @@ import {
   Step,
   StepLabel,
   FormHelperText,
-  Divider,
-  Chip
+  LinearProgress,
+  IconButton,
+  CircularProgress
 } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DateTimePicker } from '@mui/x-date-pickers';
@@ -42,35 +43,20 @@ const CourseWizard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [activeStep, setActiveStep] = useState(0);
+  const [courseFile, setCourseFile] = useState(null);
+  const [extractRaw, setExtractRaw] = useState(false);
   const [courseData, setCourseData] = useState({
     title: '',
     description: '',
-    category: '',
-    level: 'beginner',
-    deliveryMethod: 'on-demand',
-    topics: [],
-    resources: [],
-    duration: {
-      totalHours: 0,
-      weeksDuration: 1,
-      selfPacedDeadline: null
-    },
-    courseSettings: {
-      isEnrollmentOpen: true,
-      startDate: null,
-      endDate: null,
-      maxStudents: null,
-      prerequisites: [],
-      objectives: [],
-      certificateAvailable: false,
-      completionCriteria: {
-        minAttendance: 80,
-        minAssignments: 70,
-        minQuizScore: 60
-      }
-    },
-    modules: [],
-    liveSessions: []
+    sections: [],
+    price: 0,
+    durationInWeeks: 0,
+    learningOutcomes: [],
+    prerequisites: [],
+    difficulty: 'Beginner',
+    category: 'Web Development',
+    tags: [],
+    isPublished: false
   });
 
   const [showAIAssistant, setShowAIAssistant] = useState(false);
@@ -84,9 +70,8 @@ const CourseWizard = () => {
   const steps = [
     'Basic Information',
     'Course Structure',
-    'Content Upload',
-    'Schedule & Delivery',
-    'Settings & Requirements'
+    'Course Materials',
+    'Review & Publish'
   ];
 
   const handleInputChange = (field, value) => {
@@ -106,60 +91,40 @@ const CourseWizard = () => {
     }));
   };
 
-  const handleModuleAdd = () => {
+  const handleSectionAdd = () => {
     setCourseData(prev => ({
       ...prev,
-      modules: [
-        ...prev.modules,
+      sections: [
+        ...prev.sections,
         {
           title: '',
-          description: '',
-          content: []
+          content: '',
+          subsections: []
         }
       ]
     }));
   };
 
-  const handleContentAdd = (moduleIndex, contentType) => {
-    const newContent = {
-      type: contentType,
-      title: '',
-      description: '',
-      url: '',
-      duration: 0
-    };
-
-    if (contentType === 'video') {
-      newContent.maxDuration = 45; // 45 minutes max
-    }
-
-    if (contentType === 'live-session') {
-      newContent.scheduledTime = null;
-      newContent.meetingLink = '';
-    }
-
+  const handleSubsectionAdd = (sectionIndex) => {
     setCourseData(prev => {
-      const newModules = [...prev.modules];
-      newModules[moduleIndex].content.push(newContent);
-      return { ...prev, modules: newModules };
+      const newSections = [...prev.sections];
+      newSections[sectionIndex].subsections.push({
+        title: '',
+        content: ''
+      });
+      return {
+        ...prev,
+        sections: newSections
+      };
     });
   };
 
-  const handleLiveSessionAdd = () => {
-    setCourseData(prev => ({
-      ...prev,
-      liveSessions: [
-        ...prev.liveSessions,
-        {
-          sessionDate: null,
-          startTime: '',
-          endTime: '',
-          topic: '',
-          meetingLink: '',
-          materials: []
-        }
-      ]
-    }));
+  const handleFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      setCourseFile(file);
+      toast.success('Course material file uploaded successfully');
+    }
   };
 
   const handleNext = () => {
@@ -173,32 +138,23 @@ const CourseWizard = () => {
   const validateStep = () => {
     switch (activeStep) {
       case 0:
-        return !!(courseData.title && courseData.description && courseData.category && courseData.level);
+        return !!(courseData.title && courseData.description && courseData.category && courseData.difficulty);
       case 1:
-        return courseData.modules.length > 0;
+        return courseData.sections.length > 0 && courseData.sections.every(section => section.title && section.content);
       case 2:
-        return courseData.modules.every(module => 
-          module.content.every(content => 
-            content.title && (content.url || content.type === 'live-session')
-          )
-        );
+        return !!courseFile;
       case 3:
-        if (courseData.deliveryMethod === 'live') {
-          return courseData.liveSessions.length > 0;
-        }
         return true;
-      case 4:
-        return !!(courseData.courseSettings.startDate && courseData.courseSettings.endDate);
       default:
         return true;
     }
   };
 
   const handleSubmit = async () => {
-    setSubmissionStatus({ 
-      isSubmitting: true, 
-      success: false, 
-      error: null 
+    setSubmissionStatus({
+      isSubmitting: true,
+      success: false,
+      error: null
     });
 
     try {
@@ -207,12 +163,17 @@ const CourseWizard = () => {
         throw new Error('Authentication required. Please log in.');
       }
 
+      const formData = new FormData();
+      formData.append('file', courseFile);
+      formData.append('extractRaw', extractRaw);
+      formData.append('course', JSON.stringify(courseData));
+
       const response = await axios.post(
-        'http://localhost:3000/api/courses', 
-        courseData, 
+        `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}/courses/instructor`,
+        formData,
         {
           headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'multipart/form-data',
             'Authorization': `Bearer ${token}`
           }
         }
@@ -309,7 +270,7 @@ const CourseWizard = () => {
     switch (step) {
       case 0:
         return (
-          <Grid container spacing={3}>
+          <Grid container spacing={{ xs: 2, sm: 3 }}>
             <Grid item xs={12}>
               <TextField
                 fullWidth
@@ -317,6 +278,12 @@ const CourseWizard = () => {
                 value={courseData.title}
                 onChange={(e) => handleInputChange('title', e.target.value)}
                 required
+                size="small"
+                sx={{
+                  '& .MuiInputBase-root': {
+                    fontSize: { xs: '0.875rem', sm: '1rem' }
+                  }
+                }}
               />
             </Grid>
             <Grid item xs={12}>
@@ -328,58 +295,132 @@ const CourseWizard = () => {
                 value={courseData.description}
                 onChange={(e) => handleInputChange('description', e.target.value)}
                 required
+                size="small"
+                sx={{
+                  '& .MuiInputBase-root': {
+                    fontSize: { xs: '0.875rem', sm: '1rem' }
+                  }
+                }}
               />
             </Grid>
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth required>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth required size="small">
                 <InputLabel>Category</InputLabel>
                 <Select
                   value={courseData.category}
                   onChange={(e) => handleInputChange('category', e.target.value)}
+                  sx={{
+                    fontSize: { xs: '0.875rem', sm: '1rem' }
+                  }}
                 >
-                  <MenuItem value="programming">Programming</MenuItem>
-                  <MenuItem value="business">Business</MenuItem>
-                  <MenuItem value="mathematics">Mathematics</MenuItem>
-                  <MenuItem value="science">Science</MenuItem>
-                  <MenuItem value="language">Language</MenuItem>
-                  <MenuItem value="arts">Arts</MenuItem>
-                  <MenuItem value="design">Design</MenuItem>
-                  <MenuItem value="marketing">Marketing</MenuItem>
-                  <MenuItem value="personal-development">Personal Development</MenuItem>
-                  <MenuItem value="other">Other</MenuItem>
+                  <MenuItem value="Web Development">Web Development</MenuItem>
+                  <MenuItem value="Mobile Development">Mobile Development</MenuItem>
+                  <MenuItem value="Data Science">Data Science</MenuItem>
+                  <MenuItem value="DevOps">DevOps</MenuItem>
+                  <MenuItem value="Cloud Computing">Cloud Computing</MenuItem>
+                  <MenuItem value="Cybersecurity">Cybersecurity</MenuItem>
+                  <MenuItem value="Artificial Intelligence">Artificial Intelligence</MenuItem>
+                  <MenuItem value="Blockchain">Blockchain</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth required>
-                <InputLabel>Level</InputLabel>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth required size="small">
+                <InputLabel>Difficulty</InputLabel>
                 <Select
-                  value={courseData.level}
-                  onChange={(e) => handleInputChange('level', e.target.value)}
+                  value={courseData.difficulty}
+                  onChange={(e) => handleInputChange('difficulty', e.target.value)}
+                  sx={{
+                    fontSize: { xs: '0.875rem', sm: '1rem' }
+                  }}
                 >
-                  <MenuItem value="beginner">Beginner</MenuItem>
-                  <MenuItem value="intermediate">Intermediate</MenuItem>
-                  <MenuItem value="advanced">Advanced</MenuItem>
+                  <MenuItem value="Beginner">Beginner</MenuItem>
+                  <MenuItem value="Intermediate">Intermediate</MenuItem>
+                  <MenuItem value="Advanced">Advanced</MenuItem>
                 </Select>
               </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                type="number"
+                label="Price"
+                value={courseData.price}
+                onChange={(e) => handleInputChange('price', parseFloat(e.target.value))}
+                InputProps={{
+                  startAdornment: <span>$</span>
+                }}
+                size="small"
+                sx={{
+                  '& .MuiInputBase-root': {
+                    fontSize: { xs: '0.875rem', sm: '1rem' }
+                  }
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                type="number"
+                label="Duration (weeks)"
+                value={courseData.durationInWeeks}
+                onChange={(e) => handleInputChange('durationInWeeks', parseInt(e.target.value))}
+                size="small"
+                sx={{
+                  '& .MuiInputBase-root': {
+                    fontSize: { xs: '0.875rem', sm: '1rem' }
+                  }
+                }}
+              />
             </Grid>
             <Grid item xs={12}>
-              <FormControl fullWidth required>
-                <InputLabel>Delivery Method</InputLabel>
-                <Select
-                  value={courseData.deliveryMethod}
-                  onChange={(e) => handleInputChange('deliveryMethod', e.target.value)}
-                >
-                  <MenuItem value="on-demand">On-Demand</MenuItem>
-                  <MenuItem value="live">Live Virtual Sessions</MenuItem>
-                  <MenuItem value="self-paced">Self-Paced</MenuItem>
-                </Select>
-                <FormHelperText>
-                  {courseData.deliveryMethod === 'on-demand' && 'Pre-recorded videos and materials available anytime'}
-                  {courseData.deliveryMethod === 'live' && 'Scheduled live virtual sessions with instructor'}
-                  {courseData.deliveryMethod === 'self-paced' && 'Flexible learning with extended access'}
-                </FormHelperText>
-              </FormControl>
+              <TextField
+                fullWidth
+                multiline
+                rows={3}
+                label="Prerequisites (one per line)"
+                value={courseData.prerequisites.join('\n')}
+                onChange={(e) => handleInputChange('prerequisites', e.target.value.split('\n'))}
+                helperText="Enter each prerequisite on a new line"
+                size="small"
+                sx={{
+                  '& .MuiInputBase-root': {
+                    fontSize: { xs: '0.875rem', sm: '1rem' }
+                  }
+                }}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                multiline
+                rows={3}
+                label="Learning Outcomes (one per line)"
+                value={courseData.learningOutcomes.join('\n')}
+                onChange={(e) => handleInputChange('learningOutcomes', e.target.value.split('\n'))}
+                helperText="Enter each learning outcome on a new line"
+                size="small"
+                sx={{
+                  '& .MuiInputBase-root': {
+                    fontSize: { xs: '0.875rem', sm: '1rem' }
+                  }
+                }}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Tags (comma separated)"
+                value={courseData.tags.join(', ')}
+                onChange={(e) => handleInputChange('tags', e.target.value.split(',').map(tag => tag.trim()))}
+                helperText="Enter tags separated by commas"
+                size="small"
+                sx={{
+                  '& .MuiInputBase-root': {
+                    fontSize: { xs: '0.875rem', sm: '1rem' }
+                  }
+                }}
+              />
             </Grid>
           </Grid>
         );
@@ -387,26 +428,44 @@ const CourseWizard = () => {
       case 1:
         return (
           <Box>
-            <Button 
-              variant="outlined" 
-              startIcon={<BookIcon />} 
-              onClick={handleModuleAdd}
-              sx={{ mb: 3 }}
+            <Button
+              variant="outlined"
+              startIcon={<BookIcon />}
+              onClick={handleSectionAdd}
+              sx={{
+                mb: { xs: 2, sm: 3 },
+                fontSize: { xs: '0.875rem', sm: '1rem' }
+              }}
+              size="small"
             >
-              ADD MODULE
+              Add Section
             </Button>
-            {courseData.modules.map((module, moduleIndex) => (
-              <Paper key={moduleIndex} sx={{ p: 3, mb: 2 }}>
-                <Grid container spacing={2} sx={{ mb: 2 }}>
+            {courseData.sections.map((section, sectionIndex) => (
+              <Paper
+                key={sectionIndex}
+                sx={{
+                  p: { xs: 2, sm: 3 },
+                  mb: 2,
+                  borderRadius: { xs: 1, sm: 2 }
+                }}
+                elevation={1}
+              >
+                <Grid container spacing={{ xs: 1.5, sm: 2 }}>
                   <Grid item xs={12}>
                     <TextField
                       fullWidth
-                      label="Module Title"
-                      value={module.title}
+                      label="Section Title"
+                      value={section.title}
                       onChange={(e) => {
-                        const newModules = [...courseData.modules];
-                        newModules[moduleIndex].title = e.target.value;
-                        handleInputChange('modules', newModules);
+                        const newSections = [...courseData.sections];
+                        newSections[sectionIndex].title = e.target.value;
+                        handleInputChange('sections', newSections);
+                      }}
+                      size="small"
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          fontSize: { xs: '0.875rem', sm: '1rem' }
+                        }
                       }}
                     />
                   </Grid>
@@ -414,100 +473,87 @@ const CourseWizard = () => {
                     <TextField
                       fullWidth
                       multiline
-                      rows={2}
-                      label="Module Description"
-                      value={module.description}
+                      rows={3}
+                      label="Section Content"
+                      value={section.content}
                       onChange={(e) => {
-                        const newModules = [...courseData.modules];
-                        newModules[moduleIndex].description = e.target.value;
-                        handleInputChange('modules', newModules);
+                        const newSections = [...courseData.sections];
+                        newSections[sectionIndex].content = e.target.value;
+                        handleInputChange('sections', newSections);
+                      }}
+                      size="small"
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          fontSize: { xs: '0.875rem', sm: '1rem' }
+                        }
                       }}
                     />
                   </Grid>
                 </Grid>
 
-                <Typography variant="subtitle1" sx={{ mb: 2 }}>Content</Typography>
-                
-                <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                <Box sx={{ mt: { xs: 1.5, sm: 2 } }}>
                   <Button
-                    startIcon={<VideoIcon />}
-                    onClick={() => handleContentUpload(moduleIndex, 'video')}
-                    variant="text"
-                    color="primary"
+                    variant="outlined"
                     size="small"
+                    onClick={() => handleSubsectionAdd(sectionIndex)}
+                    sx={{
+                      fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                    }}
                   >
-                    ADD VIDEO
-                  </Button>
-                  <Button
-                    startIcon={<FileTextIcon />}
-                    onClick={() => handleContentUpload(moduleIndex, 'document')}
-                    variant="text"
-                    color="primary"
-                    size="small"
-                  >
-                    ADD DOCUMENT
-                  </Button>
-                  <Button
-                    startIcon={<MessageSquareIcon />}
-                    onClick={() => handleContentUpload(moduleIndex, 'quiz')}
-                    variant="text"
-                    color="primary"
-                    size="small"
-                  >
-                    ADD QUIZ
+                    Add Subsection
                   </Button>
                 </Box>
 
-                {module.content.map((content, contentIndex) => (
-                  <Paper key={contentIndex} sx={{ p: 2, mb: 2, bgcolor: 'grey.50' }}>
-                    <Grid container spacing={2} alignItems="center">
-                      <Grid item xs={12} md={6}>
+                {section.subsections.map((subsection, subsectionIndex) => (
+                  <Paper
+                    key={subsectionIndex}
+                    sx={{
+                      p: { xs: 1.5, sm: 2 },
+                      mt: { xs: 1.5, sm: 2 },
+                      bgcolor: 'grey.50',
+                      borderRadius: { xs: 1, sm: 2 }
+                    }}
+                    elevation={0}
+                  >
+                    <Grid container spacing={{ xs: 1.5, sm: 2 }}>
+                      <Grid item xs={12}>
                         <TextField
                           fullWidth
-                          label={`${content.type.charAt(0).toUpperCase() + content.type.slice(1)} Title`}
-                          value={content.title}
+                          label="Subsection Title"
+                          value={subsection.title}
                           onChange={(e) => {
-                            const newModules = [...courseData.modules];
-                            newModules[moduleIndex].content[contentIndex].title = e.target.value;
-                            handleInputChange('modules', newModules);
+                            const newSections = [...courseData.sections];
+                            newSections[sectionIndex].subsections[subsectionIndex].title = e.target.value;
+                            handleInputChange('sections', newSections);
+                          }}
+                          size="small"
+                          sx={{
+                            '& .MuiInputBase-root': {
+                              fontSize: { xs: '0.875rem', sm: '1rem' }
+                            }
                           }}
                         />
                       </Grid>
-                      {content.type === 'video' && (
-                        <Grid item xs={12} md={6}>
-                          <TextField
-                            fullWidth
-                            type="number"
-                            label="Duration (minutes)"
-                            value={content.duration}
-                            onChange={(e) => {
-                              const duration = Math.min(parseInt(e.target.value), 45);
-                              const newModules = [...courseData.modules];
-                              newModules[moduleIndex].content[contentIndex].duration = duration;
-                              handleInputChange('modules', newModules);
-                            }}
-                            helperText="Maximum duration: 45 minutes"
-                          />
-                        </Grid>
-                      )}
-                      {content.url && (
-                        <Grid item xs={12}>
-                          <Box sx={{ mt: 1 }}>
-                            {content.type === 'video' ? (
-                              <video 
-                                src={content.url} 
-                                controls 
-                                style={{ maxWidth: '100%', maxHeight: '200px' }} 
-                              />
-                            ) : (
-                              <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                {content.type === 'document' ? '📄' : '📝'}
-                                {content.title}
-                              </Typography>
-                            )}
-                          </Box>
-                        </Grid>
-                      )}
+                      <Grid item xs={12}>
+                        <TextField
+                          fullWidth
+                          multiline
+                          rows={3}
+                          label="Subsection Content"
+                          value={subsection.content}
+                          onChange={(e) => {
+                            const newSections = [...courseData.sections];
+                            newSections[sectionIndex].subsections[subsectionIndex].content = e.target.value;
+                            handleInputChange('sections', newSections);
+                          }}
+                          size="small"
+                          sx={{
+                            '& .MuiInputBase-root': {
+                              fontSize: { xs: '0.875rem', sm: '1rem' }
+                            }
+                          }}
+                        />
+                      </Grid>
                     </Grid>
                   </Paper>
                 ))}
@@ -519,318 +565,162 @@ const CourseWizard = () => {
       case 2:
         return (
           <Box>
-            <Button 
-              variant="outlined" 
-              startIcon={<BookIcon />} 
-              onClick={handleModuleAdd}
-              sx={{ mb: 3 }}
+            <Typography
+              variant="h6"
+              gutterBottom
+              sx={{
+                fontSize: { xs: '1.125rem', sm: '1.25rem' },
+                mb: { xs: 2, sm: 3 }
+              }}
             >
-              Add Module
-            </Button>
-            {courseData.modules.map((module, moduleIndex) => (
-              <Paper key={moduleIndex} sx={{ p: 3, mb: 2 }}>
-                <Grid container spacing={2} sx={{ mb: 2 }}>
-                  <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
-                      label="Module Title"
-                      value={module.title}
-                      onChange={(e) => {
-                        const newModules = [...courseData.modules];
-                        newModules[moduleIndex].title = e.target.value;
-                        handleInputChange('modules', newModules);
-                      }}
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
-                      label="Module Description"
-                      value={module.description}
-                      onChange={(e) => {
-                        const newModules = [...courseData.modules];
-                        newModules[moduleIndex].description = e.target.value;
-                        handleInputChange('modules', newModules);
-                      }}
-                    />
-                  </Grid>
-                </Grid>
-
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="subtitle1" gutterBottom>
-                    Module Content
+              Upload Course Materials
+            </Typography>
+            <Grid container spacing={{ xs: 2, sm: 3 }}>
+              <Grid item xs={12}>
+                <input
+                  accept=".pdf,.doc,.docx,.txt,.md"
+                  style={{ display: 'none' }}
+                  id="course-material-upload"
+                  type="file"
+                  onChange={handleFileUpload}
+                />
+                <label htmlFor="course-material-upload">
+                  <Button
+                    variant="outlined"
+                    component="span"
+                    startIcon={<UploadIcon />}
+                    size="small"
+                    sx={{
+                      fontSize: { xs: '0.875rem', sm: '1rem' }
+                    }}
+                  >
+                    Upload Course Material
+                  </Button>
+                </label>
+                {courseFile && (
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      mt: 1,
+                      fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                    }}
+                  >
+                    Selected file: {courseFile.name}
                   </Typography>
-                  <Grid container spacing={2} sx={{ mb: 2 }}>
-                    <Grid item>
-                      <Button
-                        variant="outlined"
-                        startIcon={<VideoIcon />}
-                        onClick={() => handleContentAdd(moduleIndex, 'video')}
-                        sx={{ mr: 1 }}
-                      >
-                        Add Video
-                      </Button>
-                      <Button
-                        variant="outlined"
-                        startIcon={<FileTextIcon />}
-                        onClick={() => handleContentAdd(moduleIndex, 'document')}
-                        sx={{ mr: 1 }}
-                      >
-                        Add Document
-                      </Button>
-                      <Button
-                        variant="outlined"
-                        startIcon={<MessageSquareIcon />}
-                        onClick={() => handleContentAdd(moduleIndex, 'quiz')}
-                      >
-                        Add Quiz
-                      </Button>
-                      <Button
-                        variant="outlined"
-                        startIcon={<UploadIcon />}
-                        onClick={() => handleContentUpload(moduleIndex, 'video')}
-                        sx={{ mr: 1 }}
-                      >
-                        Upload Video
-                      </Button>
-                      <Button
-                        variant="outlined"
-                        startIcon={<UploadIcon />}
-                        onClick={() => handleContentUpload(moduleIndex, 'document')}
-                        sx={{ mr: 1 }}
-                      >
-                        Upload Document
-                      </Button>
-                      <Button
-                        variant="outlined"
-                        startIcon={<UploadIcon />}
-                        onClick={() => handleContentUpload(moduleIndex, 'quiz')}
-                      >
-                        Upload Quiz
-                      </Button>
-                    </Grid>
-                  </Grid>
-                </Box>
-
-                {module.content.map((content, contentIndex) => (
-                  <Paper key={contentIndex} sx={{ p: 2, mb: 2 }}>
-                    <Grid container spacing={2} alignItems="center">
-                      <Grid item xs={12} md={6}>
-                        <TextField
-                          fullWidth
-                          label={`${content.type.charAt(0).toUpperCase() + content.type.slice(1)} Title`}
-                          value={content.title}
-                          onChange={(e) => {
-                            const newModules = [...courseData.modules];
-                            newModules[moduleIndex].content[contentIndex].title = e.target.value;
-                            handleInputChange('modules', newModules);
-                          }}
-                        />
-                      </Grid>
-                      {content.type === 'video' && (
-                        <Grid item xs={12} md={6}>
-                          <TextField
-                            fullWidth
-                            type="number"
-                            label="Duration (minutes)"
-                            value={content.duration}
-                            onChange={(e) => {
-                              const duration = Math.min(parseInt(e.target.value), 45);
-                              const newModules = [...courseData.modules];
-                              newModules[moduleIndex].content[contentIndex].duration = duration;
-                              handleInputChange('modules', newModules);
-                            }}
-                            helperText="Maximum duration: 45 minutes"
-                          />
-                        </Grid>
-                      )}
-                      {content.url && (
-                        <Grid item xs={12}>
-                          {content.type === 'video' ? (
-                            <video 
-                              src={content.url} 
-                              controls 
-                              style={{ maxWidth: '100%', maxHeight: '300px' }} 
-                            />
-                          ) : content.type === 'document' ? (
-                            <Typography variant="body2">
-                              📄 {content.title}
-                            </Typography>
-                          ) : content.type === 'quiz' ? (
-                            <Typography variant="body2">
-                              📝 Quiz: {content.title}
-                            </Typography>
-                          ) : null}
-                        </Grid>
-                      )}
-                    </Grid>
-                  </Paper>
-                ))}
-              </Paper>
-            ))}
+                )}
+              </Grid>
+              <Grid item xs={12}>
+                <FormControl size="small">
+                  <FormHelperText sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                    Extract raw content from the uploaded file
+                  </FormHelperText>
+                  <Select
+                    value={extractRaw}
+                    onChange={(e) => setExtractRaw(e.target.value)}
+                    sx={{
+                      fontSize: { xs: '0.875rem', sm: '1rem' },
+                      minWidth: { xs: 120, sm: 150 }
+                    }}
+                  >
+                    <MenuItem value={true}>Yes</MenuItem>
+                    <MenuItem value={false}>No</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+            </Grid>
           </Box>
         );
 
       case 3:
         return (
           <Box>
-            {courseData.deliveryMethod === 'live' && (
-              <>
-                <Button
-                  variant="outlined"
-                  startIcon={<CalendarIcon />}
-                  onClick={handleLiveSessionAdd}
-                  sx={{ mb: 3 }}
+            <Typography
+              variant="h6"
+              gutterBottom
+              sx={{
+                fontSize: { xs: '1.125rem', sm: '1.25rem' },
+                mb: { xs: 2, sm: 3 }
+              }}
+            >
+              Review Course Details
+            </Typography>
+            <Grid container spacing={{ xs: 2, sm: 3 }}>
+              <Grid item xs={12}>
+                <FormControl
+                  fullWidth
+                  size="small"
+                  sx={{ mb: { xs: 2, sm: 3 } }}
                 >
-                  Add Live Session
-                </Button>
-                {courseData.liveSessions.map((session, index) => (
-                  <Paper key={index} sx={{ p: 3, mb: 2 }}>
-                    <Grid container spacing={2}>
-                      <Grid item xs={12} md={6}>
-                        <LocalizationProvider dateAdapter={AdapterDateFns}>
-                          <DateTimePicker
-                            label="Session Date"
-                            value={session.sessionDate}
-                            onChange={(newValue) => {
-                              const newSessions = [...courseData.liveSessions];
-                              newSessions[index].sessionDate = newValue;
-                              handleInputChange('liveSessions', newSessions);
-                            }}
-                          />
-                        </LocalizationProvider>
-                      </Grid>
-                      <Grid item xs={12} md={6}>
-                        <TextField
-                          fullWidth
-                          label="Topic"
-                          value={session.topic}
-                          onChange={(e) => {
-                            const newSessions = [...courseData.liveSessions];
-                            newSessions[index].topic = e.target.value;
-                            handleInputChange('liveSessions', newSessions);
-                          }}
-                        />
-                      </Grid>
-                    </Grid>
-                  </Paper>
-                ))}
-              </>
-            )}
-            <Grid container spacing={3}>
-              <Grid item xs={12} md={6}>
-                <LocalizationProvider dateAdapter={AdapterDateFns}>
-                  <DateTimePicker
-                    label="Course Start Date"
-                    value={courseData.courseSettings.startDate}
-                    onChange={(newValue) => {
-                      handleNestedInputChange('courseSettings', 'startDate', newValue);
+                  <FormHelperText sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                    Publish course immediately after creation
+                  </FormHelperText>
+                  <Select
+                    value={courseData.isPublished}
+                    onChange={(e) => handleInputChange('isPublished', e.target.value)}
+                    sx={{
+                      fontSize: { xs: '0.875rem', sm: '1rem' }
                     }}
-                  />
-                </LocalizationProvider>
+                  >
+                    <MenuItem value={true}>Yes</MenuItem>
+                    <MenuItem value={false}>No</MenuItem>
+                  </Select>
+                </FormControl>
               </Grid>
-              <Grid item xs={12} md={6}>
-                <LocalizationProvider dateAdapter={AdapterDateFns}>
-                  <DateTimePicker
-                    label="Course End Date"
-                    value={courseData.courseSettings.endDate}
-                    onChange={(newValue) => {
-                      handleNestedInputChange('courseSettings', 'endDate', newValue);
+              <Grid item xs={12}>
+                <Paper
+                  sx={{
+                    p: { xs: 2, sm: 3 },
+                    borderRadius: { xs: 1, sm: 2 }
+                  }}
+                  elevation={1}
+                >
+                  <Typography
+                    variant="subtitle1"
+                    gutterBottom
+                    sx={{
+                      fontSize: { xs: '1rem', sm: '1.125rem' },
+                      mb: { xs: 1.5, sm: 2 }
                     }}
-                  />
-                </LocalizationProvider>
+                  >
+                    Course Summary
+                  </Typography>
+                  <Grid container spacing={1}>
+                    {[
+                      { label: 'Title', value: courseData.title },
+                      { label: 'Category', value: courseData.category },
+                      { label: 'Difficulty', value: courseData.difficulty },
+                      { label: 'Price', value: `$${courseData.price}` },
+                      { label: 'Duration', value: `${courseData.durationInWeeks} weeks` },
+                      { label: 'Number of Sections', value: courseData.sections.length }
+                    ].map((item, index) => (
+                      <Grid item xs={12} sm={6} key={index}>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{
+                              fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                            }}
+                          >
+                            {item.label}:
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                              fontWeight: 500
+                            }}
+                          >
+                            {item.value}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                    ))}
+                  </Grid>
+                </Paper>
               </Grid>
             </Grid>
           </Box>
-        );
-
-      case 4:
-        return (
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                type="number"
-                label="Maximum Students"
-                value={courseData.courseSettings.maxStudents}
-                onChange={(e) => handleNestedInputChange('courseSettings', 'maxStudents', parseInt(e.target.value))}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                multiline
-                rows={2}
-                label="Prerequisites (one per line)"
-                value={courseData.courseSettings.prerequisites.join('\n')}
-                onChange={(e) => handleNestedInputChange('courseSettings', 'prerequisites', e.target.value.split('\n'))}
-                helperText="Enter each prerequisite on a new line"
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                multiline
-                rows={2}
-                label="Learning Objectives (one per line)"
-                value={courseData.courseSettings.objectives.join('\n')}
-                onChange={(e) => handleNestedInputChange('courseSettings', 'objectives', e.target.value.split('\n'))}
-                helperText="Enter each objective on a new line"
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <Typography variant="subtitle1" gutterBottom>
-                Completion Criteria
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={12} md={4}>
-                  <TextField
-                    fullWidth
-                    type="number"
-                    label="Minimum Attendance (%)"
-                    value={courseData.courseSettings.completionCriteria.minAttendance}
-                    onChange={(e) => {
-                      const newCriteria = {
-                        ...courseData.courseSettings.completionCriteria,
-                        minAttendance: parseInt(e.target.value)
-                      };
-                      handleNestedInputChange('courseSettings', 'completionCriteria', newCriteria);
-                    }}
-                  />
-                </Grid>
-                <Grid item xs={12} md={4}>
-                  <TextField
-                    fullWidth
-                    type="number"
-                    label="Minimum Assignment Score (%)"
-                    value={courseData.courseSettings.completionCriteria.minAssignments}
-                    onChange={(e) => {
-                      const newCriteria = {
-                        ...courseData.courseSettings.completionCriteria,
-                        minAssignments: parseInt(e.target.value)
-                      };
-                      handleNestedInputChange('courseSettings', 'completionCriteria', newCriteria);
-                    }}
-                  />
-                </Grid>
-                <Grid item xs={12} md={4}>
-                  <TextField
-                    fullWidth
-                    type="number"
-                    label="Minimum Quiz Score (%)"
-                    value={courseData.courseSettings.completionCriteria.minQuizScore}
-                    onChange={(e) => {
-                      const newCriteria = {
-                        ...courseData.courseSettings.completionCriteria,
-                        minQuizScore: parseInt(e.target.value)
-                      };
-                      handleNestedInputChange('courseSettings', 'completionCriteria', newCriteria);
-                    }}
-                  />
-                </Grid>
-              </Grid>
-            </Grid>
-          </Grid>
         );
 
       default:
@@ -839,35 +729,98 @@ const CourseWizard = () => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Paper sx={{ p: 4 }}>
-        <Typography variant="h4" gutterBottom>
+    <Container
+      maxWidth="lg"
+      sx={{
+        py: { xs: 2, sm: 3, md: 4 },
+        px: { xs: 2, sm: 3 }
+      }}
+    >
+      <Paper
+        sx={{
+          p: { xs: 2, sm: 3, md: 4 },
+          borderRadius: { xs: 2, sm: 3 },
+          boxShadow: { xs: 1, sm: 2 }
+        }}
+      >
+        <Typography
+          variant="h4"
+          gutterBottom
+          sx={{
+            fontSize: { xs: '1.5rem', sm: '2rem', md: '2.25rem' },
+            mb: { xs: 2, sm: 3 }
+          }}
+        >
           Create New Course
         </Typography>
-        
-        <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
-          {steps.map((label) => (
-            <Step key={label}>
-              <StepLabel>{label}</StepLabel>
-            </Step>
-          ))}
-        </Stepper>
 
-        {renderStepContent(activeStep)}
+        {/* Mobile Stepper Progress */}
+        <Box sx={{ display: { xs: 'block', md: 'none' }, mb: 3 }}>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            Step {activeStep + 1} of {steps.length}
+          </Typography>
+          <LinearProgress
+            variant="determinate"
+            value={(activeStep + 1) * (100 / steps.length)}
+            sx={{ height: 6, borderRadius: 3 }}
+          />
+          <Typography variant="h6" sx={{ mt: 2 }}>
+            {steps[activeStep]}
+          </Typography>
+        </Box>
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
+        {/* Desktop Stepper */}
+        <Box sx={{ display: { xs: 'none', md: 'block' }, mb: 4 }}>
+          <Stepper
+            activeStep={activeStep}
+            alternativeLabel={window.innerWidth < 600}
+          >
+            {steps.map((label) => (
+              <Step key={label}>
+                <StepLabel>{label}</StepLabel>
+              </Step>
+            ))}
+          </Stepper>
+        </Box>
+
+        {/* Form Content */}
+        <Box sx={{ minHeight: { xs: 'auto', md: '400px' } }}>
+          {renderStepContent(activeStep)}
+        </Box>
+
+        {/* Navigation Buttons */}
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            justifyContent: 'space-between',
+            gap: { xs: 2, sm: 0 },
+            mt: { xs: 3, sm: 4 }
+          }}
+        >
           <Button
             onClick={handleBack}
             disabled={activeStep === 0}
+            fullWidth={window.innerWidth < 600}
+            sx={{ order: { xs: 2, sm: 1 } }}
           >
             Back
           </Button>
-          <Box>
+
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              gap: 2,
+              order: { xs: 1, sm: 2 },
+              width: { xs: '100%', sm: 'auto' }
+            }}
+          >
             {!showAIAssistant && (
               <Button
                 variant="outlined"
                 onClick={() => setShowAIAssistant(true)}
-                sx={{ mr: 2 }}
+                fullWidth={window.innerWidth < 600}
               >
                 AI Assistant
               </Button>
@@ -877,14 +830,26 @@ const CourseWizard = () => {
                 variant="contained"
                 onClick={handleSubmit}
                 disabled={submissionStatus.isSubmitting || !validateStep()}
+                fullWidth={window.innerWidth < 600}
+                sx={{
+                  minWidth: { sm: '150px' }
+                }}
               >
-                Create Course
+                {submissionStatus.isSubmitting ? (
+                  <CircularProgress size={24} color="inherit" />
+                ) : (
+                  'Create Course'
+                )}
               </Button>
             ) : (
               <Button
                 variant="contained"
                 onClick={handleNext}
                 disabled={!validateStep()}
+                fullWidth={window.innerWidth < 600}
+                sx={{
+                  minWidth: { sm: '150px' }
+                }}
               >
                 Next
               </Button>
@@ -892,13 +857,28 @@ const CourseWizard = () => {
           </Box>
         </Box>
 
+        {/* AI Assistant Panel */}
         {showAIAssistant && (
-          <Box sx={{ mt: 4 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Box
+            sx={{
+              mt: { xs: 3, sm: 4 },
+              p: { xs: 2, sm: 3 },
+              bgcolor: 'background.default',
+              borderRadius: 2
+            }}
+          >
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                mb: { xs: 2, sm: 3 }
+              }}
+            >
               <Typography variant="h6">AI Assistant</Typography>
-              <Button onClick={() => setShowAIAssistant(false)}>
+              <IconButton onClick={() => setShowAIAssistant(false)} size="small">
                 <XIcon />
-              </Button>
+              </IconButton>
             </Box>
             <AIAssistant
               courseData={courseData}
@@ -917,11 +897,18 @@ const CourseWizard = () => {
         open={snackbarOpen}
         autoHideDuration={6000}
         onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: window.innerWidth < 600 ? 'center' : 'right'
+        }}
       >
         <Alert
           onClose={() => setSnackbarOpen(false)}
           severity={submissionStatus.success ? "success" : "error"}
-          sx={{ width: '100%' }}
+          sx={{
+            width: '100%',
+            maxWidth: { xs: '100%', sm: '400px' }
+          }}
         >
           {submissionStatus.success
             ? "Course created successfully!"
