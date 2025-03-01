@@ -37,7 +37,7 @@ const Courses = () => {
       setIsLoading(true);
       console.log('Fetching courses with token:', axios.defaults.headers.common['Authorization']);
       
-      const response = await axios.get('/instructor/courses');
+      const response = await axios.get('/courses/instructor');
       console.log('Full response:', response);
 
       // Robust response handling

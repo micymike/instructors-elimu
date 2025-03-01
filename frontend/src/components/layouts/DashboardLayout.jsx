@@ -94,9 +94,9 @@ const DashboardLayout = () => {
         },
         {
           icon: Video,
-          label: 'Zoom Classes',
-          path: '/instructor/zoom-meetings',
-          description: 'Manage Zoom classes'
+          label: 'Virtual Classes',
+          path: '/instructor/virtual-classes',
+          description: 'Manage virtual classes'
         }
       ]
     },
