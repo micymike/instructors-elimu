@@ -5,7 +5,7 @@ import { Edit, Trash2, ArrowLeft } from 'lucide-react';
 import AIModal from '../../components/AIModal';
 import toast from 'react-hot-toast';
 
-const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://centralize-auth-elimu.onrender.com';
 
 const CourseDetails = () => {
   const { courseId } = useParams();
@@ -44,7 +44,7 @@ const CourseDetails = () => {
 
       try {
         setIsLoading(true);
-        const response = await axios.get(`${BASE_URL}/instructor/courses/${courseId}`, {
+        const response = await axios.get(`${BASE_URL}/courses/instructor`, {
           headers: getHeaders()
         });
         setCourse(response.data);

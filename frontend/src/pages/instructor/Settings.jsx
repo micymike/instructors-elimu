@@ -5,6 +5,8 @@ import { instructorSettingsAPI} from '../../services/api';
 import toast from 'react-hot-toast';
 import { useUser } from '../../services/UserContext';
 import io from 'socket.io-client';
+import { API_URL } from '../../config';
+
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -27,8 +29,6 @@ const InstructorSettings = () => {
   const fileInputRef = useRef(null);
   const { user: contextUser, setUser } = useUser();
   const [socket, setSocket] = useState(null);
-  const [notifications, setNotifications] = useState([]);
-
   // State variables
   const [isProfileUpdating, setIsProfileUpdating] = useState(false);
   const [isPasswordChanging, setIsPasswordChanging] = useState(false);
@@ -73,7 +73,8 @@ const InstructorSettings = () => {
 
   // WebSocket Setup
   useEffect(() => {
-    const newSocket = io('https://centralize-auth-elimu.onrender.com', {
+    const newSocket = io(  import.meta.env.VITE_BACKEND_URL
+      , {
       auth: {
         token: localStorage.getItem('token')
       }
@@ -97,7 +98,9 @@ const InstructorSettings = () => {
     const fetchData = async () => {
       try {
         const [profileRes, statsRes, withdrawalsRes] = await Promise.all([
+          console.log('Attempting to fetch profile...'),
           instructorSettingsAPI.getProfile(),
+          console.log('Profile response:', profileRes),
           instructorSettingsAPI.getDashboardStats(),
           instructorSettingsAPI.getWithdrawalStatus()
         ]);
@@ -156,29 +159,31 @@ const InstructorSettings = () => {
   };
 
   // Profile Picture Update Handler
-const handleProfilePictureUpdate = async (file) => {
-  if (!file) return;
-  const formData = new FormData();
-  formData.append('profilePhoto', file,file.name); 
+  const handleProfilePictureUpdate = async () => {
+    if (!profilePicture.file) return;
+    const formData = new FormData();
+    formData.append('profilePhoto', profilePicture.file, profilePicture.file.name);
+  
+    try {
+      setProfilePicture(prev => ({ ...prev, isUploading: true }));
+      const response = await instructorSettingsAPI.updateProfilePicture(formData);
+      const updatedUser = {
+        ...contextUser,
+        profilePhotoUrl: response.data.profilePhotoUrl
+      };
+      setUser(updatedUser);
+      setProfilePicture(prev => ({
+        preview: response.data.profilePhotoUrl,
+        file: null,
+        isUploading: false
+      }));
+      toast.success('Profile picture updated successfully');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to update profile picture');
+      setProfilePicture(prev => ({ ...prev, isUploading: false }));
+    }
+  };
 
-  try {
-    // Update only profile picture
-    const response = await instructorSettingsAPI.updateProfilePicture(formData);
-    const updatedUser = {
-      ...contextUser,
-      profilePhotoUrl: response.data.profilePhotoUrl
-    };
-    
-    setUser(updatedUser);
-    setProfilePicture({
-      preview: response.data.profilePhotoUrl,
-      file: null
-    });
-    toast.success('Profile picture updated successfully');
-  } catch (error) {
-    toast.error(error.response?.data?.message || 'Failed to update profile picture');
-  }
-};
 
   // Profile Picture Handlers
   const handleProfilePictureChange = (e) => {
@@ -266,6 +271,32 @@ const handleProfilePictureUpdate = async (file) => {
     } finally {
       setIsPasswordChanging(false);
     }
+  };
+  const [notifications, setNotifications] = useState({
+    emailNotifications: true,
+    courseUpdates: true,
+    studentMessages: true,
+    marketingEmails: false
+  });
+
+  const [privacy, setPrivacy] = useState({
+    profileVisibility: 'public',
+    showRatings: true,
+    showCourseCount: true
+  });
+
+  const handleNotificationChange = (key) => {
+    setNotifications(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
+  const handlePrivacyChange = (key, value) => {
+    setPrivacy(prev => ({
+      ...prev,
+      [key]: value
+    }));
   };
 
   return (
@@ -494,28 +525,68 @@ const handleProfilePictureUpdate = async (file) => {
           </div>
         </motion.form>
 
-        {/* Notifications Section */}
-        <motion.div variants={itemVariants} className="bg-white rounded-xl shadow-lg p-6 mb-8">
+      {/* Notifications Section */}
+      <motion.div variants={itemVariants} className="bg-white rounded-xl shadow-lg p-6 mb-8">
           <div className="flex items-center mb-6">
             <Bell className="w-6 h-6 text-blue-600 mr-2" />
-            <h2 className="text-xl font-semibold text-gray-800">Notifications</h2>
+            <h2 className="text-xl font-semibold text-gray-800">Notification Preferences</h2>
           </div>
 
-          <div className="space-y-3">
-            {notifications.map((notification) => (
-              <div key={notification.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <div className="font-medium">{notification.type}</div>
-                  <div className="text-sm text-gray-600">{notification.message}</div>
-                </div>
-                <button 
-                  onClick={() => socket.emit('markNotificationAsRead', notification.id)}
-                  className="text-blue-600 hover:text-blue-800"
+          <div className="space-y-4">
+            {Object.entries(notifications).map(([key, value]) => (
+              <div key={key} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg">
+                <span className="capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                <button
+                  onClick={() => handleNotificationChange(key)}
+                  className={`w-12 h-6 rounded-full p-1 transition-colors ${value ? 'bg-blue-600' : 'bg-gray-300'}`}
                 >
-                  Mark Read
+                  <div className={`w-4 h-4 rounded-full bg-white transform transition-transform ${value ? 'translate-x-6' : 'translate-x-0'}`} />
                 </button>
               </div>
             ))}
+          </div>
+        </motion.div>
+
+        {/* Privacy Settings */}
+        <motion.div variants={itemVariants} className="bg-white rounded-xl shadow-lg p-6 mb-8">
+          <div className="flex items-center mb-6">
+            <Key className="w-6 h-6 text-blue-600 mr-2" />
+            <h2 className="text-xl font-semibold text-gray-800">Privacy Settings</h2>
+          </div>
+
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Profile Visibility</label>
+              <select
+                value={privacy.profileVisibility}
+                onChange={(e) => handlePrivacyChange('profileVisibility', e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="public">Public</option>
+                <option value="private">Private</option>
+              </select>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg">
+                <span>Show Course Ratings</span>
+                <button
+                  onClick={() => handlePrivacyChange('showRatings', !privacy.showRatings)}
+                  className={`w-12 h-6 rounded-full p-1 transition-colors ${privacy.showRatings ? 'bg-blue-600' : 'bg-gray-300'}`}
+                >
+                  <div className={`w-4 h-4 rounded-full bg-white transform transition-transform ${privacy.showRatings ? 'translate-x-6' : 'translate-x-0'}`} />
+                </button>
+              </div>
+              <div className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg">
+                <span>Show Course Count</span>
+                <button
+                  onClick={() => handlePrivacyChange('showCourseCount', !privacy.showCourseCount)}
+                  className={`w-12 h-6 rounded-full p-1 transition-colors ${privacy.showCourseCount ? 'bg-blue-600' : 'bg-gray-300'}`}
+                >
+                  <div className={`w-4 h-4 rounded-full bg-white transform transition-transform ${privacy.showCourseCount ? 'translate-x-6' : 'translate-x-0'}`} />
+                </button>
+              </div>
+            </div>
           </div>
         </motion.div>
       </motion.div>

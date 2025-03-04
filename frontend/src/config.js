@@ -1,1 +1,1 @@
-export const API_URL = process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : 'https://centralize-auth-elimu.onrender.com';
+export const API_URL = process.env.NODE_ENV === 'development' ? 'https://centralize-auth-elimu.onrender.com' : 'https://production-url.com';

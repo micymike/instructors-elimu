@@ -33,16 +33,28 @@ const ZoomMeetings = () => {
         return;
       }
 
-      const response = await fetch('https://centralize-auth-elimu.onrender.com/zoom/meetings', {
+const response = await fetch(`https://centralize-auth-elimu.onrender.com/zoom/meetings/{meetingId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
 
-      if (!response.ok) throw new Error('Failed to fetch meetings');
-      
+      if (!response.ok) {
+        throw new Error('Failed to fetch meetings');
+      }
+
       const data = await response.json();
-      setMeetings(data);
+      // Handle the array of meetings from the Zoom API
+      setMeetings(data.map(meeting => ({
+        id: meeting.id,
+        title: meeting.topic,
+        startTime: meeting.start_time,
+        duration: meeting.duration,
+        description: meeting.agenda,
+        maxParticipants: meeting.settings?.participants || 100,
+        joinUrl: meeting.join_url,
+        status: meeting.status
+      })));
     } catch (err) {
       setError(err.message);
       toast.error(err.message);
@@ -68,9 +80,7 @@ const ZoomMeetings = () => {
         return;
       }
 
-      const instructorId = "current_user_id"; // Replace with actual ID
-
-      const response = await fetch('https://centralize-auth-elimu.onrender.com/zoom/meetings', {
+      const response = await fetch(`https://centralize-auth-elimu.onrender.com/api/zoom/meetings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -84,11 +94,11 @@ const ZoomMeetings = () => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = response.ok ? await response.json() : {};
         throw new Error(errorData.message || 'Failed to create meeting');
       }
 
-      const data = await response.json();
+      const data = response.ok ? await response.json() : {};
       setMeetings(prev => [...prev, data]);
       
       toast.success('Meeting created successfully');
@@ -115,14 +125,30 @@ const ZoomMeetings = () => {
         return;
       }
 
-      const response = await fetch(
-        `https://centralize-auth-elimu.onrender.com/zoom/meetings/${meetingId}/join`, 
-        { headers: { 'Authorization': `Bearer ${token}` } }
-      );
+      const response = await fetch(`https://centralize-auth-elimu.onrender.com/api/zoom/meetings/${meetingId}/join`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
 
-      if (!response.ok) throw new Error('Failed to join meeting');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to join meeting');
+      }
+
+      const { joinUrl, topic, startTime } = await response.json();
       
-      const { joinUrl } = await response.json();
+      if (!joinUrl) {
+        toast.error('No join URL available for this meeting');
+        return;
+      }
+
+      // Optional: Add a toast with meeting details before opening
+      toast.success(`Joining meeting: ${topic} at ${new Date(startTime).toLocaleString()}`, {
+        duration: 3000,
+      });
+
+      // Open the join URL in a new tab
       window.open(joinUrl, '_blank');
     } catch (err) {
       toast.error(err.message);
@@ -141,14 +167,23 @@ const ZoomMeetings = () => {
       const confirmDelete = window.confirm('Are you sure you want to delete this meeting?');
       if (!confirmDelete) return;
 
-      const response = await fetch(
-        `https://centralize-auth-elimu.onrender.com/zoom/meetings/${meetingId}`, 
-        { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }
+      const response = await fetch(`https://centralize-auth-elimu.onrender.com/api/zoom/meetings/${meetingId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to delete meeting');
+      }
+
+      // Remove the deleted meeting from the list
+      setMeetings(prevMeetings => 
+        prevMeetings.filter(meeting => meeting.id !== meetingId)
       );
 
-      if (!response.ok) throw new Error('Failed to delete meeting');
-      
-      setMeetings(prev => prev.filter(m => m.id !== meetingId));
       toast.success('Meeting deleted successfully');
     } catch (err) {
       toast.error(err.message);
