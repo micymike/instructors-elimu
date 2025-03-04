@@ -48,32 +48,32 @@ export const instructorAPI = {
 
 export const instructorCourseAPI = {
   async createCourse(courseData) {
-    const response = await api.post('/instructor/courses', courseData);
+    const response = await api.post('/courses/instructor', courseData);
     return response.data;
   },
 
   async getAllCourses() {
-    const response = await api.get('/instructor/courses');
+    const response = await api.get('/courses/instructor');
     return response.data;
   },
 
   async getCourse(id) {
-    const response = await api.get(`/instructor/courses/${id}`);
+    const response = await api.get(`/courses/instructor/${id}`);
     return response.data;
   },
 
   async updateCourse(id, courseData) {
-    const response = await api.patch(`/instructor/courses/${id}`, courseData);
+    const response = await api.patch(`/courses/instructor/${id}`, courseData);
     return response.data;
   },
 
   async deleteCourse(id) {
-    const response = await api.delete(`/instructor/courses/${id}`);
+    const response = await api.delete(`/courses/instructor/${id}`);
     return response.data;
   },
 
   async getCourseAnalytics(courseId) {
-    const response = await api.get(`/instructor/courses/${courseId}/analytics`);
+    const response = await api.get(`/courses/instructor/${courseId}/analytics`);
     return response.data;
   }
 };

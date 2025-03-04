@@ -456,9 +456,6 @@ const DashboardLayout = () => {
           transition={{ duration: 0.5 }}
           className="flex-1 overflow-auto p-6"
         >
-          {/* Debug logging */}
-          {console.log("Current Location:", location.pathname)}
-          {console.log("Current Location State:", location.state)}
           <Outlet context={{ location }} />
         </motion.main>
         <AIAssistantChat />
