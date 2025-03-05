@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Clock, Users, Video, AlertCircle, Loader, Trash2, Plus, Zap } from 'lucide-react';
+import { Calendar, Clock, Video, AlertCircle, Loader, Trash2, Plus } from 'lucide-react';
+import { API_URL } from '../../config';
 
 const ZoomMeetings = () => {
   const navigate = useNavigate();
@@ -14,12 +15,9 @@ const ZoomMeetings = () => {
     topic: '',
     startTime: '',
     duration: 60,
-    agenda: '',
-    settings: {
-      participants: 100
-    }
+    agenda: ''
   });
-  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
+  
 
   useEffect(() => {
     fetchMeetings();
@@ -29,15 +27,15 @@ const ZoomMeetings = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      if (!token) {
+      const user = JSON.parse(localStorage.getItem('user'));
+      
+      if (!token || !user) {
         navigate('/login');
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}/zoom/meetings`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const response = await fetch(`${API_URL}/zoom/meetings`, {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
 
       if (!response.ok) throw new Error('Failed to fetch meetings');
@@ -64,23 +62,25 @@ const ZoomMeetings = () => {
 
     try {
       const token = localStorage.getItem('token');
-      if (!token) {
+      const user = JSON.parse(localStorage.getItem('user'));
+      
+      if (!token || !user) {
         navigate('/login');
         return;
       }
 
-      const instructorId = "current_user_id"; // Replace with actual ID
-
-      const response = await fetch(`${API_BASE_URL}/zoom/meetings`, {
+      const response = await fetch(`${API_URL}/zoom/meetings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          instructorId,
-          ...newMeeting,
-          startTime: newMeeting.startTime
+          instructorId: user._id,
+          topic: newMeeting.topic,
+          startTime: newMeeting.startTime,
+          duration: newMeeting.duration,
+          agenda: newMeeting.agenda
         }),
       });
 
@@ -97,8 +97,7 @@ const ZoomMeetings = () => {
         topic: '',
         startTime: '',
         duration: 60,
-        agenda: '',
-        settings: { participants: 100 }
+        agenda: ''
       });
     } catch (err) {
       setError(err.message);
@@ -117,7 +116,7 @@ const ZoomMeetings = () => {
       }
 
       const response = await fetch(
-        `${API_BASE_URL}/${meetingId}/join`, 
+        `${API_URL}/zoom/meetings/${meetingId}/join`, 
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
 
@@ -143,7 +142,7 @@ const ZoomMeetings = () => {
       if (!confirmDelete) return;
 
       const response = await fetch(
-        `${API_BASE_URL}/zoom/meetings/${meetingId}`, 
+        `${API_URL}/zoom/meetings/${meetingId}`, 
         { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }
       );
 
@@ -234,34 +233,17 @@ const ZoomMeetings = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Duration (minutes) *</label>
-                  <input
-                    type="number"
-                    value={newMeeting.duration}
-                    onChange={(e) => setNewMeeting(prev => ({ ...prev, duration: Number(e.target.value) }))}
-                    className="w-full border border-gray-200 rounded-xl p-3"
-                    min={30}
-                    max={180}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Max Participants *</label>
-                  <input
-                    type="number"
-                    value={newMeeting.settings.participants}
-                    onChange={(e) => setNewMeeting(prev => ({
-                      ...prev,
-                      settings: { ...prev.settings, participants: Number(e.target.value) }
-                    }))}
-                    className="w-full border border-gray-200 rounded-xl p-3"
-                    min={10}
-                    max={500}
-                    required
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Duration (minutes) *</label>
+                <input
+                  type="number"
+                  value={newMeeting.duration}
+                  onChange={(e) => setNewMeeting(prev => ({ ...prev, duration: Number(e.target.value) }))}
+                  className="w-full border border-gray-200 rounded-xl p-3"
+                  min={30}
+                  max={180}
+                  required
+                />
               </div>
 
               <div>
@@ -349,10 +331,6 @@ const ZoomMeetings = () => {
                     <div className="flex items-center gap-3">
                       <Clock className="w-5 h-5 text-purple-500" />
                       <span>{new Date(meeting.start_time).toLocaleTimeString()}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Users className="w-5 h-5 text-green-500" />
-                      <span>{meeting.settings.participants} participants maximum</span>
                     </div>
                   </div>
 
