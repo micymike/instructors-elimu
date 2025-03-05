@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Settings, Bell, Shield, UserCircle, Key, Loader2, DollarSign } from 'lucide-react';
-import { instructorSettingsAPI} from '../../services/api';
+import { instructorSettingsAPI } from '../../services/api';
 import toast from 'react-hot-toast';
 import { useUser } from '../../services/UserContext';
 import io from 'socket.io-client';
@@ -158,49 +158,64 @@ const InstructorSettings = () => {
     }
   };
 
-  // Profile Picture Update Handler
-  const handleProfilePictureUpdate = async () => {
-    if (!profilePicture.file) return;
-    const formData = new FormData();
-    formData.append('profilePhoto', profilePicture.file, profilePicture.file.name);
-  
+  // Handle profile picture update
+  const handleProfilePictureChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (!validTypes.includes(file.type)) {
+      toast.error('Please upload a valid image file (JPG, PNG, or GIF)');
+      return;
+    }
+
+    // Validate file size (5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+    if (file.size > maxSize) {
+      toast.error('File size must be less than 5MB');
+      return;
+    }
+
+    setProfilePicture(prev => ({
+      ...prev,
+      file,
+      preview: URL.createObjectURL(file),
+      isUploading: true
+    }));
+
     try {
-      setProfilePicture(prev => ({ ...prev, isUploading: true }));
+      const formData = new FormData();
+      formData.append('profilePhoto', file);
+      
       const response = await instructorSettingsAPI.updateProfilePicture(formData);
-      const updatedUser = {
-        ...contextUser,
-        profilePhotoUrl: response.data.profilePhotoUrl
-      };
-      setUser(updatedUser);
+      
+      if (response.profilePhotoUrl) {
+        setProfilePicture(prev => ({
+          ...prev,
+          preview: response.profilePhotoUrl,
+          file: null,
+          isUploading: false
+        }));
+
+        // Update context user
+        setUser(prev => ({
+          ...prev,
+          profilePhotoUrl: response.profilePhotoUrl
+        }));
+
+        toast.success('Profile picture updated successfully');
+      } else {
+        throw new Error('Invalid response from server');
+      }
+    } catch (error) {
+      console.error('Error updating profile picture:', error);
+      toast.error(error.response?.data?.message || 'Failed to update profile picture');
       setProfilePicture(prev => ({
-        preview: response.data.profilePhotoUrl,
-        file: null,
+        ...prev,
         isUploading: false
       }));
-      toast.success('Profile picture updated successfully');
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update profile picture');
-      setProfilePicture(prev => ({ ...prev, isUploading: false }));
     }
-  };
-
-
-  // Profile Picture Handlers
-  const handleProfilePictureChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Create preview and update profile picture
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfilePicture({
-          preview: reader.result,
-          file: file
-        });
-        handleProfilePictureUpdate(file);
-      };
-      reader.readAsDataURL(file);
-    }
-   
   };
 
   const handleRemoveProfilePicture = async () => {
@@ -345,11 +360,11 @@ const InstructorSettings = () => {
                 type="file"
                 ref={fileInputRef}
                 className="hidden"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/gif"
                 onChange={handleProfilePictureChange}
               />
               <button
-                onClick={() => fileInputRef.current.click()}
+                onClick={() => fileInputRef.current?.click()}
                 className="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full p-2 hover:bg-blue-600"
                 disabled={profilePicture.isUploading}
               >
@@ -361,16 +376,7 @@ const InstructorSettings = () => {
               </button>
             </div>
             <div className="mt-4 flex gap-2">
-              {profilePicture.file && (
-                <button
-                  onClick={ handleProfilePictureUpdate}
-                  disabled={profilePicture.isUploading}
-                  className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 disabled:opacity-50"
-                >
-                  {profilePicture.isUploading ? 'Uploading...' : 'Save Photo'}
-                </button>
-              )}
-              {(profilePicture.preview || contextUser?.profilePhotoUrl) && (
+              {profilePicture.preview && (
                 <button
                   onClick={handleRemoveProfilePicture}
                   className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"

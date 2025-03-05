@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Clock, Video, AlertCircle, Loader, Trash2, Plus } from 'lucide-react';
-import { API_URL } from '../../config';
+import { Calendar, Clock, Users, Video, AlertCircle, Loader, Trash2, Plus } from 'lucide-react';
+import VirtualClassService from '../../services/virtualClass.service';
 
 const VirtualClasses = () => {
   const navigate = useNavigate();
@@ -15,9 +15,11 @@ const VirtualClasses = () => {
     topic: '',
     startTime: '',
     duration: 60,
-    agenda: ''
+    agenda: '',
+    settings: {
+      participants: 100
+    }
   });
-  
 
   useEffect(() => {
     fetchMeetings();
@@ -26,36 +28,10 @@ const VirtualClasses = () => {
   const fetchMeetings = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const user = JSON.parse(localStorage.getItem('user'));
-      
-      if (!token || !user) {
-        navigate('/login');
-        return;
-      }
-
-      const response = await fetch(`${API_URL}/zoom/meetings`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch meetings');
-      }
-
-      const data = await response.json();
-      // Handle the array of meetings from the Zoom API
-      setMeetings(data.map(meeting => ({
-        id: meeting.id,
-        title: meeting.topic,
-        startTime: meeting.start_time,
-        duration: meeting.duration,
-        description: meeting.agenda,
-        maxParticipants: meeting.settings?.participants || 100,
-        joinUrl: meeting.join_url,
-        status: meeting.status
-      })));
+      const response = await VirtualClassService.getAllClasses();
+      setMeetings(response.data || []);
     } catch (err) {
-      setError(err.message);
+      setError('Failed to load virtual classes');
       toast.error(err.message);
     } finally {
       setLoading(false);
@@ -73,119 +49,39 @@ const VirtualClasses = () => {
     setError(null);
 
     try {
-      const token = localStorage.getItem('token');
-      const user = JSON.parse(localStorage.getItem('user'));
-      
-      if (!token || !user) {
-        navigate('/login');
-        return;
-      }
-
-      const response = await fetch(`${API_URL}/zoom/meetings`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          instructorId: user._id,
-          topic: newMeeting.topic,
-          startTime: newMeeting.startTime,
-          duration: newMeeting.duration,
-          agenda: newMeeting.agenda
-        }),
+      const response = await VirtualClassService.createClass({
+        ...newMeeting,
+        startTime: newMeeting.startTime
       });
-
-      if (!response.ok) {
-        const errorData = response.ok ? await response.json() : {};
-        throw new Error(errorData.message || 'Failed to create meeting');
-      }
-
-      const data = response.ok ? await response.json() : {};
-      setMeetings(prev => [...prev, data]);
       
-      toast.success('Class created successfully');
+      setMeetings(prev => [...prev, response.data]);
+      toast.success('Virtual class created successfully');
       setNewMeeting({
         topic: '',
         startTime: '',
         duration: 60,
-        agenda: ''
+        agenda: '',
+        settings: { participants: 100 }
       });
     } catch (err) {
-      setError(err.message);
+      setError('Failed to create virtual class');
       toast.error(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleJoinMeeting = async (meetingId) => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        navigate('/login');
-        return;
-      }
-
-      const response = await fetch(
-        `${API_URL}/zoom/meetings/${meetingId}/join`, 
-        { headers: { 'Authorization': `Bearer ${token}` } }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Failed to join meeting');
-      }
-
-      const { joinUrl, topic, startTime } = await response.json();
-      
-      if (!joinUrl) {
-        toast.error('No join URL available for this class');
-        return;
-      }
-
-      // Optional: Add a toast with meeting details before opening
-      toast.success(`Joining class: ${topic} at ${new Date(startTime).toLocaleString()}`, {
-        duration: 3000,
-      });
-
-      // Open the join URL in a new tab
-      window.open(joinUrl, '_blank');
-    } catch (err) {
-      toast.error(err.message);
-    }
-  };
-
   const handleDeleteMeeting = async (meetingId) => {
     try {
       setIsDeleting(meetingId);
-      const token = localStorage.getItem('token');
-      if (!token) {
-        navigate('/login');
-        return;
-      }
-
-      const confirmDelete = window.confirm('Are you sure you want to delete this class?');
+      const confirmDelete = window.confirm('Are you sure you want to delete this virtual class?');
       if (!confirmDelete) return;
 
-      const response = await fetch(
-        `${API_URL}/zoom/meetings/${meetingId}`, 
-        { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Failed to delete class');
-      }
-
-      // Remove the deleted meeting from the list
-      setMeetings(prevMeetings => 
-        prevMeetings.filter(meeting => meeting.id !== meetingId)
-      );
-
-      toast.success('Class deleted successfully');
+      await VirtualClassService.deleteClass(meetingId);
+      setMeetings(prevMeetings => prevMeetings.filter(meeting => meeting.id !== meetingId));
+      toast.success('Virtual class deleted successfully');
     } catch (err) {
-      toast.error(err.message);
+      toast.error('Failed to delete virtual class');
     } finally {
       setIsDeleting(null);
     }
@@ -267,17 +163,34 @@ const VirtualClasses = () => {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Duration (minutes) *</label>
-                <input
-                  type="number"
-                  value={newMeeting.duration}
-                  onChange={(e) => setNewMeeting(prev => ({ ...prev, duration: Number(e.target.value) }))}
-                  className="w-full border border-gray-200 rounded-xl p-3"
-                  min={30}
-                  max={180}
-                  required
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Duration (minutes) *</label>
+                  <input
+                    type="number"
+                    value={newMeeting.duration}
+                    onChange={(e) => setNewMeeting(prev => ({ ...prev, duration: Number(e.target.value) }))}
+                    className="w-full border border-gray-200 rounded-xl p-3"
+                    min={30}
+                    max={180}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Max Participants *</label>
+                  <input
+                    type="number"
+                    value={newMeeting.settings.participants}
+                    onChange={(e) => setNewMeeting(prev => ({
+                      ...prev,
+                      settings: { ...prev.settings, participants: Number(e.target.value) }
+                    }))}
+                    className="w-full border border-gray-200 rounded-xl p-3"
+                    min={10}
+                    max={500}
+                    required
+                  />
+                </div>
               </div>
 
               <div>
@@ -365,6 +278,10 @@ const VirtualClasses = () => {
                     <div className="flex items-center gap-3">
                       <Clock className="w-5 h-5 text-purple-500" />
                       <span>{new Date(meeting.start_time).toLocaleTimeString()}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Users className="w-5 h-5 text-green-500" />
+                      <span>{meeting.settings.participants} participants maximum</span>
                     </div>
                   </div>
 

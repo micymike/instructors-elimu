@@ -6,7 +6,7 @@ import axios from 'axios';
 import { useToast } from '../../hooks/useToast';
 
 // Configure axios base URL and defaults
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://centralize-auth-elimu.onrender.com';
 axios.defaults.baseURL = API_BASE_URL;
 
 const Courses = () => {
@@ -37,7 +37,7 @@ const Courses = () => {
       setIsLoading(true);
       console.log('Fetching courses with token:', axios.defaults.headers.common['Authorization']);
       
-      const response = await axios.get('/courses/instructor');
+      const response = await axios.get('https://centralize-auth-elimu.onrender.com/courses/instructor');
       console.log('Full response:', response);
 
       // Robust response handling
@@ -240,7 +240,7 @@ const Courses = () => {
             </p>
           </div>
           <Link
-            to="/instructor/create-course"
+            to="/instructor/courses/new"
             className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
           >
             Create New Course

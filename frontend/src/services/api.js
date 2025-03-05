@@ -48,32 +48,32 @@ export const instructorAPI = {
 
 export const instructorCourseAPI = {
   async createCourse(courseData) {
-    const response = await api.post('/instructor/courses', courseData);
+    const response = await api.post('/courses/instructor', courseData);
     return response.data;
   },
 
   async getAllCourses() {
-    const response = await api.get('/instructor/courses');
+    const response = await api.get('/courses/instructor');
     return response.data;
   },
 
   async getCourse(id) {
-    const response = await api.get(`/instructor/courses/${id}`);
+    const response = await api.get(`/courses/instructor/${id}`);
     return response.data;
   },
 
   async updateCourse(id, courseData) {
-    const response = await api.patch(`/instructor/courses/${id}`, courseData);
+    const response = await api.patch(`/courses/instructor/${id}`, courseData);
     return response.data;
   },
 
   async deleteCourse(id) {
-    const response = await api.delete(`/instructor/courses/${id}`);
+    const response = await api.delete(`/courses/instructor/${id}`);
     return response.data;
   },
 
   async getCourseAnalytics(courseId) {
-    const response = await api.get(`/instructor/courses/${courseId}/analytics`);
+    const response = await api.get(`/courses/instructor/${courseId}/analytics`);
     return response.data;
   }
 };
@@ -347,29 +347,24 @@ export const instructorSettingsAPI = {
   },
 
   // Update Profile Picture
-  async updateProfilePicture(profilePhoto) {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
-
+  async updateProfilePicture(file) {
     const formData = new FormData();
-    formData.append('profilePhoto', profilePhoto);
+    formData.append('profilePhoto', file);
 
     try {
       const response = await api.put('/api/instructors/profile/profile-picture', formData, {
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'multipart/form-data',
-        },
+        }
       });
       return response.data;
     } catch (error) {
-      console.error('Error updating profile picture', error);
+      if (error.response?.status === 400) {
+        throw new Error(error.response.data.message || 'Invalid file format or size');
+      }
       throw error;
     }
   },
-
 
   async requestPasswordReset(passwordData) {
     try {
@@ -409,6 +404,47 @@ export const instructorSettingsAPI = {
     throw new Error('Password change is not currently supported.');
   }
 };
+
+export const instructorProfileAPI = {
+  // Get the Instructor's Profile
+  async getProfile() {
+    const response = await api.get('/api/instructors/profile');
+    return response.data;
+  },
+
+  // Update Instructor Profile
+  async updateProfile(profileData) {
+    const response = await api.put('/api/instructors/profile/update', profileData);
+    return response.data;
+  },
+
+  // Get Instructor Dashboard Stats
+  async getDashboardStats() {
+    const response = await api.get('/api/instructors/profile/dashboard');
+    return response.data;
+  },
+
+  // Update Profile Picture
+  async updateProfilePicture(file) {
+    const formData = new FormData();
+    formData.append('profilePhoto', file);
+
+    try {
+      const response = await api.put('/api/instructors/profile/profile-picture', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        }
+      });
+      return response.data;
+    } catch (error) {
+      if (error.response?.status === 400) {
+        throw new Error(error.response.data.message || 'Invalid file format or size');
+      }
+      throw new Error('Failed to update profile picture');
+    }
+  }
+};
+
 export const instructorDocumentsAPI = {
   async getAllDocuments() {
     const response = await api.get('/api/instructors/documents');
@@ -486,39 +522,39 @@ export const instructorAuthAPI = {
   }
 };
 
-export const instructorZoomAPI = {
-  async getAllMeetings() {
-    const response = await api.get('/api/instructors/zoom/meetings');
+export const virtualClassAPI = {
+  async getAllClasses() {
+    const response = await api.get('/api/instructors/virtual-classes');
     return response.data;
   },
 
-  async createMeeting(meetingData) {
-    const response = await api.post('/api/instructors/zoom/meetings', meetingData);
+  async createClass(classData) {
+    const response = await api.post('/api/instructors/virtual-classes', classData);
     return response.data;
   },
 
-  async getMeetingDetails(meetingId) {
-    const response = await api.get(`/api/instructors/zoom/meetings/${meetingId}`);
+  async getClassDetails(classId) {
+    const response = await api.get(`/api/instructors/virtual-classes/${classId}`);
     return response.data;
   },
 
-  async updateMeeting(meetingId, meetingData) {
-    const response = await api.patch(`/api/instructors/zoom/meetings/${meetingId}`, meetingData);
+  async updateClass(classId, classData) {
+    const response = await api.patch(`/api/instructors/virtual-classes/${classId}`, classData);
     return response.data;
   },
 
-  async deleteMeeting(meetingId) {
-    const response = await api.delete(`/api/instructors/zoom/meetings/${meetingId}`);
+  async deleteClass(classId) {
+    const response = await api.delete(`/api/instructors/virtual-classes/${classId}`);
     return response.data;
   },
 
-  async getJoinUrl(meetingId) {
-    const response = await api.get(`/api/instructors/zoom/meetings/${meetingId}/join`);
+  async getJoinUrl(classId) {
+    const response = await api.get(`/api/instructors/virtual-classes/${classId}/join`);
     return response.data;
   },
 
-  async createGroupMeeting(groupId, meetingData) {
-    const response = await api.post(`/api/instructors/zoom/meetings/group/${groupId}`, meetingData);
+  async createGroupClass(groupId, classData) {
+    const response = await api.post(`/api/instructors/virtual-classes/group/${groupId}`, classData);
     return response.data;
   }
 };
@@ -768,6 +804,83 @@ export const instructorCourseProgressAPI = {
   }
 };
 
+// Zoom API
+export const zoomAPI = {
+  async getAllMeetings() {
+    const response = await api.get('/zoom/meetings');
+    return response;
+  },
+
+  async createMeeting(meetingData) {
+    const response = await api.post('/zoom/meetings', meetingData);
+    return response;
+  },
+
+  async getMeetingDetails(meetingId) {
+    const response = await api.get(`/zoom/meetings/${meetingId}`);
+    return response;
+  },
+
+  async updateMeeting(meetingId, meetingData) {
+    const response = await api.patch(`/zoom/meetings/${meetingId}`, meetingData);
+    return response;
+  },
+
+  async deleteMeeting(meetingId) {
+    const response = await api.delete(`/zoom/meetings/${meetingId}`);
+    return response;
+  },
+
+  async createGroupMeeting(groupId, meetingData) {
+    const response = await api.post(`/zoom/meetings/group/${groupId}`, meetingData);
+    return response;
+  }
+};
+
+export const instructorStudentAnalysisAPI = {
+  async getStudentAnalysis(courseId, studentId) {
+    if (!courseId || !studentId) {
+      throw new Error('Course ID and Student ID are required');
+    }
+
+    try {
+      const response = await api.get(`/instructor/student-analysis/course/${courseId}/student/${studentId}`);
+      return response.data;
+    } catch (error) {
+      // Handle various error cases
+      if (error.response?.status === 404) {
+        throw new Error('Student analysis data not found');
+      } else if (error.response?.status === 400) {
+        throw new Error('Invalid request. Please check the course and student IDs');
+      } else if (error.response?.status === 403) {
+        throw new Error('You do not have permission to view this student\'s data');
+      }
+      throw error;
+    }
+  },
+
+  async getCourseAnalytics(courseId) {
+    if (!courseId) {
+      throw new Error('Course ID is required');
+    }
+
+    const isValidObjectId = (id) => /^[0-9a-fA-F]{24}$/.test(id);
+    if (!isValidObjectId(courseId)) {
+      throw new Error('Invalid course ID format');
+    }
+
+    try {
+      const response = await api.get(`/instructor/student-analysis/course/${courseId}/analytics`);
+      return response.data;
+    } catch (error) {
+      if (error.response?.status === 404) {
+        throw new Error('Course analytics data not found');
+      }
+      throw error;
+    }
+  }
+};
+
 // Backwards compatibility exports
 export const courseProgressAPI = instructorCourseProgressAPI;
 export const liveSessionAPI = instructorLiveSessionAPI;
@@ -780,7 +893,7 @@ export const quizAPI = instructorQuizAPI;
 export const interactiveAPI = instructorInteractiveAPI;
 export const settingsAPI = instructorSettingsAPI;
 export const documentsAPI = instructorDocumentsAPI;
-export const zoomAPI = instructorZoomAPI;
+export const classAPI = virtualClassAPI;
 export const notesAPI = instructorNotesAPI;
 export const aiChatAPI = instructorAIChatAPI;
 export const groupAPI = instructorGroupAPI;
@@ -790,3 +903,5 @@ export const lessonAPI = instructorLessonAPI;
 export const analyticsAPI = instructorAnalyticsAPI;
 export const accessibilityAPI = instructorAccessibilityAPI;
 export const contentGenerationAPI = instructorContentGenerationAPI;
+
+export { api };

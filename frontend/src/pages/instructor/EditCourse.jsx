@@ -18,7 +18,6 @@ const EditCourse = () => {
 
   // Validate MongoDB ObjectId
   const isValidObjectId = (id) => {
-    // Check if the id is a valid 24-character hex string
     return /^[0-9a-fA-F]{24}$/.test(id);
   };
 
@@ -47,7 +46,6 @@ const EditCourse = () => {
 
   useEffect(() => {
     const fetchCourseDetails = async () => {
-      // Validate courseId before making the request
       if (!courseId || !isValidObjectId(courseId)) {
         setError('Invalid course ID');
         setIsLoading(false);
@@ -57,7 +55,7 @@ const EditCourse = () => {
 
       try {
         setIsLoading(true);
-        const response = await axios.get(`${BASE_URL}/instructor/courses/${courseId}`, {
+        const response = await axios.get(`${BASE_URL}/courses/instructor/${courseId}`, {
           headers: getHeaders()
         });
         setCourse(response.data);
@@ -77,10 +75,9 @@ const EditCourse = () => {
 
   const handleSubmit = async (formData) => {
     try {
-      // Prepare data with only allowed properties
       const cleanedData = prepareUpdateData(formData);
 
-      const response = await axios.put(`${BASE_URL}/instructor/courses/${courseId}`, cleanedData, {
+      const response = await axios.put(`${BASE_URL}/courses/instructor/${courseId}`, cleanedData, {
         headers: getHeaders()
       });
       
@@ -92,7 +89,6 @@ const EditCourse = () => {
       toast.error(errorMessage);
       console.error('Update course error:', error);
       
-      // Log the full error response for debugging
       if (error.response) {
         console.error('Error response:', error.response.data);
       }
@@ -100,28 +96,31 @@ const EditCourse = () => {
   };
 
   const handleAIAssistantResponse = (suggestion) => {
-    // Update course description 
     setCourse(prev => ({
       ...prev,
       description: suggestion
     }));
   };
 
+  // Loading State - Mobile-first responsive design
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-indigo-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading course details...</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="text-center w-full max-w-md">
+          <div className="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-t-2 border-indigo-500 mx-auto mb-4"></div>
+          <p className="text-sm sm:text-base text-gray-600">Loading course details...</p>
         </div>
       </div>
     );
   }
 
+  // Error State - Mobile-first responsive design
   if (error || !course) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-600">{error || 'Course not found'}</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <p className="text-sm sm:text-base text-gray-600 text-center">
+          {error || 'Course not found'}
+        </p>
       </div>
     );
   }
@@ -140,9 +139,9 @@ const EditCourse = () => {
         onSuggestionSelect={handleAIAssistantResponse}
       />
 
-      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
+        <div className="max-w-xl mx-auto lg:max-w-4xl">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6 sm:mb-8 text-center">
             Edit Course
           </h1>
           <CourseForm 
@@ -150,6 +149,7 @@ const EditCourse = () => {
             onSubmit={handleSubmit} 
             mode="edit"
             onAIAssistantClick={() => setIsAIModalOpen(true)}
+            className="w-full"
           />
         </div>
       </div>
