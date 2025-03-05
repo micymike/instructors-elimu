@@ -9,7 +9,7 @@ import { UserProvider } from './services/UserContext';
 import InstructorForm from './components/InstructorForm';
 import Login from './components/Login';
 import DashboardLayout from './components/layouts/DashboardLayout';
-import ZoomMeetings from './pages/instructor/ZoomMeetings';
+import VirtualClasses from './pages/instructor/VirtualClasses';
 import CreateAssessment from './pages/instructor/CreateAssessment';
 import GroupManagement from './pages/instructor/GroupManagement';
 import InstructorsLanding from './components/InstructorsLanding';
@@ -38,7 +38,8 @@ import VideoManagement from './pages/instructor/VideoManagement';
 import InstructorSettings from './pages/instructor/Settings';
 import EditCourse from './pages/instructor/EditCourse'; 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-
+import AssessmentList from './pages/instructor/AssessmentList';
+import GradeAssessment from './pages/instructor/GradeAssessment';
 
 const queryClient = new QueryClient();
 
@@ -101,9 +102,9 @@ const router = createBrowserRouter([
         errorElement: <div>Error loading Groups page</div>
       },
       {
-        path: 'zoom-meetings',
-        element: <ZoomMeetings />,
-        errorElement: <div>Error loading Zoom Meetings page</div>
+        path: 'virtual-classes',
+        element: <VirtualClasses />,
+        errorElement: <div>Error loading Virtual Classes page</div>
       },
       {
         path: 'course-learning',
@@ -136,13 +137,23 @@ const router = createBrowserRouter([
         errorElement: <div>Error loading Assessments  Creator page</div>
         },
       {
+        path: 'assessments/list',
+        element: <AssessmentList />,
+        errorElement: <div>Error loading Assessments List page</div>
+      },
+      {
+        path: 'assessments/:courseId/:assessmentId/grade',
+        element: <GradeAssessment />,
+        errorElement: <div>Error loading Assessment Grading page</div>
+      },
+      {
         path: 'video-management',
         element: <VideoManagement />,
         errorElement: <div>Error loading Video Management page</div>
       },
       {
         path: 'create-session',
-        element: <ZoomMeetings />,
+        element: <VirtualClasses />,
         errorElement: <div>Error loading Create Session page</div>
       },
       {
@@ -164,6 +175,11 @@ const router = createBrowserRouter([
         path: 'courses/:courseId/edit',
         element: <EditCourse />,
         errorElement: <div>Error loading Edit Course page</div>
+      },
+      {
+        path: 'student-analytics/:courseId/:studentId',
+        element: <StudentAnalytics />,
+        errorElement: <div>Error loading Student Analytics page</div>
       },
       {
         path: '',

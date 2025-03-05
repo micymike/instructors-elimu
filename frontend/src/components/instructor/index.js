@@ -4,7 +4,7 @@ export { default as Content } from './Content';
 export { default as CourseContentManager } from './CourseContentManager';
 export { default as CourseSettings } from './CourseSettings';
 export { default as GroupManagement } from './GroupManagement';
-export { default as ZoomMeetings } from './ZoomMeetings';
+export { default as VirtualClasses } from './VirtualClasses';
 export { default as CourseLearning } from './CourseLearning';
 export { default as Students } from './Students';
 export { default as StudentProgressPage } from './StudentProgressPage';

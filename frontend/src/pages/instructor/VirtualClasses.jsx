@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Clock, Users, Video, AlertCircle, Loader, Trash2, Plus, Zap } from 'lucide-react';
+import { Calendar, Clock, Users, Video, AlertCircle, Loader, Trash2, Plus } from 'lucide-react';
+import VirtualClassService from '../../services/virtualClass.service';
 
 const VirtualClasses = () => {
   const navigate = useNavigate();
@@ -27,36 +28,10 @@ const VirtualClasses = () => {
   const fetchMeetings = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      if (!token) {
-        navigate('/login');
-        return;
-      }
-
-const response = await fetch(`https://centralize-auth-elimu.onrender.com/zoom/meetings/{meetingId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch meetings');
-      }
-
-      const data = await response.json();
-      // Handle the array of meetings from the Zoom API
-      setMeetings(data.map(meeting => ({
-        id: meeting.id,
-        title: meeting.topic,
-        startTime: meeting.start_time,
-        duration: meeting.duration,
-        description: meeting.agenda,
-        maxParticipants: meeting.settings?.participants || 100,
-        joinUrl: meeting.join_url,
-        status: meeting.status
-      })));
+      const response = await VirtualClassService.getAllClasses();
+      setMeetings(response.data || []);
     } catch (err) {
-      setError(err.message);
+      setError('Failed to load virtual classes');
       toast.error(err.message);
     } finally {
       setLoading(false);
@@ -74,34 +49,13 @@ const response = await fetch(`https://centralize-auth-elimu.onrender.com/zoom/me
     setError(null);
 
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        navigate('/login');
-        return;
-      }
-
-      const response = await fetch(`https://centralize-auth-elimu.onrender.com/api/zoom/meetings`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          instructorId,
-          ...newMeeting,
-          startTime: newMeeting.startTime
-        }),
+      const response = await VirtualClassService.createClass({
+        ...newMeeting,
+        startTime: newMeeting.startTime
       });
-
-      if (!response.ok) {
-        const errorData = response.ok ? await response.json() : {};
-        throw new Error(errorData.message || 'Failed to create meeting');
-      }
-
-      const data = response.ok ? await response.json() : {};
-      setMeetings(prev => [...prev, data]);
       
-      toast.success('Class created successfully');
+      setMeetings(prev => [...prev, response.data]);
+      toast.success('Virtual class created successfully');
       setNewMeeting({
         topic: '',
         startTime: '',
@@ -110,83 +64,24 @@ const response = await fetch(`https://centralize-auth-elimu.onrender.com/zoom/me
         settings: { participants: 100 }
       });
     } catch (err) {
-      setError(err.message);
+      setError('Failed to create virtual class');
       toast.error(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleJoinMeeting = async (meetingId) => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        navigate('/login');
-        return;
-      }
-
-      const response = await fetch(`https://centralize-auth-elimu.onrender.com/api/zoom/meetings/${meetingId}/join`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Failed to join meeting');
-      }
-
-      const { joinUrl, topic, startTime } = await response.json();
-      
-      if (!joinUrl) {
-        toast.error('No join URL available for this class');
-        return;
-      }
-
-      // Optional: Add a toast with meeting details before opening
-      toast.success(`Joining class: ${topic} at ${new Date(startTime).toLocaleString()}`, {
-        duration: 3000,
-      });
-
-      // Open the join URL in a new tab
-      window.open(joinUrl, '_blank');
-    } catch (err) {
-      toast.error(err.message);
-    }
-  };
-
   const handleDeleteMeeting = async (meetingId) => {
     try {
       setIsDeleting(meetingId);
-      const token = localStorage.getItem('token');
-      if (!token) {
-        navigate('/login');
-        return;
-      }
-
-      const confirmDelete = window.confirm('Are you sure you want to delete this class?');
+      const confirmDelete = window.confirm('Are you sure you want to delete this virtual class?');
       if (!confirmDelete) return;
 
-      const response = await fetch(`https://centralize-auth-elimu.onrender.com/api/zoom/meetings/${meetingId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Failed to delete class');
-      }
-
-      // Remove the deleted meeting from the list
-      setMeetings(prevMeetings => 
-        prevMeetings.filter(meeting => meeting.id !== meetingId)
-      );
-
-      toast.success('Class deleted successfully');
+      await VirtualClassService.deleteClass(meetingId);
+      setMeetings(prevMeetings => prevMeetings.filter(meeting => meeting.id !== meetingId));
+      toast.success('Virtual class deleted successfully');
     } catch (err) {
-      toast.error(err.message);
+      toast.error('Failed to delete virtual class');
     } finally {
       setIsDeleting(null);
     }

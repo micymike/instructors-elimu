@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -19,24 +19,35 @@ import {
   LineChart,
   Line
 } from 'recharts';
+import { instructorStudentAnalysisAPI } from '../../services/api';
 
-const CourseAnalytics = () => {
-  // Sample data - replace with actual API calls
-  const courseData = {
-    enrollmentTrend: [
-      { month: 'Jan', students: 45 },
-      { month: 'Feb', students: 52 },
-      { month: 'Mar', students: 61 },
-      { month: 'Apr', students: 58 },
-      { month: 'May', students: 65 },
-    ],
-    completionRates: [
-      { module: 'Module 1', completed: 85 },
-      { module: 'Module 2', completed: 72 },
-      { module: 'Module 3', completed: 68 },
-      { module: 'Module 4', completed: 55 },
-    ],
-  };
+const CourseAnalytics = ({ courseId }) => {
+  const [analyticsData, setAnalyticsData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchCourseAnalytics = async () => {
+      try {
+        const data = await instructorStudentAnalysisAPI.getCourseAnalytics(courseId);
+        setAnalyticsData(data);
+      } catch (err) {
+        setError('Failed to load course analytics');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCourseAnalytics();
+  }, [courseId]);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>{error}</div>;
+  }
 
   return (
     <Box sx={{ p: 3 }}>
@@ -51,7 +62,7 @@ const CourseAnalytics = () => {
               Enrollment Trend
             </Typography>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={courseData.enrollmentTrend}>
+              <LineChart data={analyticsData.enrollmentTrend}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
@@ -74,7 +85,7 @@ const CourseAnalytics = () => {
               Module Completion Rates
             </Typography>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={courseData.completionRates}>
+              <BarChart data={analyticsData.completionRates}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="module" />
                 <YAxis />

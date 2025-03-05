@@ -151,7 +151,12 @@ const DashboardLayout = () => {
       path: "/instructor/Assessment",
       description: "Create new assessment",
     },
-   
+    {
+      icon: FileText,
+      label: "View Assessments",
+      path: "/instructor/assessments/list",
+      description: "View all assessments",
+    }
   ],
 },
 {
@@ -168,9 +173,9 @@ const DashboardLayout = () => {
     },
     {
       icon: Video,
-      label: "Zoom Classes",
-      path: "/instructor/zoom-meetings",
-      description: "Manage Zoom classes",
+      label: "Virtual Classes",
+      path: "/instructor/virtual-classes",
+      description: "Manage Virtual classes",
     },
   ],
 },
