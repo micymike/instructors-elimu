@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Clock, Users, Video, AlertCircle, Loader, Trash2, Plus } from 'lucide-react';
-import VirtualClassService from '../../services/virtualClass.service';
+import { Calendar, Clock, Users, Video, AlertCircle, Loader, Trash2, Plus, Link, ExternalLink } from 'lucide-react';
+import VirtualClassService, { MEETING_STATUS } from '../../services/virtualClass.service';
 
 const VirtualClasses = () => {
   const navigate = useNavigate();
@@ -11,6 +11,8 @@ const VirtualClasses = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isDeleting, setIsDeleting] = useState(null);
+  const [joiningMeeting, setJoiningMeeting] = useState(null);
+  const [gettingLink, setGettingLink] = useState(null);
   const [newMeeting, setNewMeeting] = useState({
     topic: '',
     startTime: '',
@@ -28,8 +30,38 @@ const VirtualClasses = () => {
   const fetchMeetings = async () => {
     try {
       setLoading(true);
+      console.log('Fetching meetings...');
       const response = await VirtualClassService.getAllClasses();
-      setMeetings(response.data || []);
+      console.log('Full API Response:', {
+        data: response,
+        type: typeof response,
+        keys: Object.keys(response),
+        sample: Array.isArray(response) ? response[0] : Array.isArray(response.meetings) ? response.meetings[0] : null
+      });
+
+      // Log meeting data structure
+      const meetingsData = Array.isArray(response) ? response : response?.meetings || [];
+      console.log('Meetings data structure:', meetingsData.map(meeting => ({
+        id: meeting._id,
+        mongo_id: meeting.mongo_id,
+        zoomId: meeting.zoom_id,
+        topic: meeting.topic,
+        allKeys: Object.keys(meeting)
+      })));
+      if (Array.isArray(response)) {
+        console.log('Setting meetings from array response');
+        setMeetings(response);
+      } else if (response && Array.isArray(response.meetings)) {
+        console.log('Setting meetings from response.meetings');
+        setMeetings(response.meetings);
+      } else {
+        console.error('Unexpected response format:', {
+          response,
+          isArray: Array.isArray(response),
+          hasMeetings: response && Array.isArray(response.meetings)
+        });
+        setMeetings([]);
+      }
     } catch (err) {
       setError('Failed to load virtual classes');
       toast.error(err.message);
@@ -78,12 +110,84 @@ const VirtualClasses = () => {
       if (!confirmDelete) return;
 
       await VirtualClassService.deleteClass(meetingId);
-      setMeetings(prevMeetings => prevMeetings.filter(meeting => meeting.id !== meetingId));
+      setMeetings(prevMeetings => prevMeetings.filter(meeting => meeting._id !== meetingId));
       toast.success('Virtual class deleted successfully');
     } catch (err) {
       toast.error('Failed to delete virtual class');
     } finally {
       setIsDeleting(null);
+    }
+  };
+
+  const handleJoinMeeting = async (meetingId) => {
+    try {
+      if (!meetingId) {
+        console.error('Meeting ID is undefined:', { meetingId });
+        toast.error('Invalid meeting ID');
+        return;
+      }
+
+      setJoiningMeeting(meetingId);
+      console.log('Joining meeting with ID:', meetingId);
+
+      // Find the meeting to check if it's an early join
+      const meeting = meetings.find(m => m.id === meetingId);
+      const isEarlyJoin = meeting && getMeetingStatus(meeting.start_time, meeting.duration) === MEETING_STATUS.SCHEDULED;
+
+      const response = await VirtualClassService.joinClass(meetingId);
+      console.log('Join meeting response:', response);
+
+      const joinUrl = response?.join_url || response?.joinUrl;
+      if (joinUrl) {
+        window.open(joinUrl, '_blank');
+        if (isEarlyJoin) {
+          toast.success('Joining meeting early. The host may not have started the meeting yet.');
+        } else {
+          toast.success('Joining meeting...');
+        }
+      } else {
+        console.error('No join URL in response:', response);
+        toast.error('Failed to get meeting join URL');
+      }
+    } catch (err) {
+      console.error('Error joining meeting:', err);
+      toast.error(err.message || 'Failed to join meeting');
+    } finally {
+      setJoiningMeeting(null);
+    }
+  };
+
+  const handleGetMeetingLink = async (meetingId) => {
+    try {
+      if (!meetingId) {
+        console.error('Meeting ID is undefined:', { meetingId });
+        toast.error('Invalid meeting ID');
+        return;
+      }
+
+      setGettingLink(meetingId);
+      
+      const meetingDetails = await VirtualClassService.getMeetingLink(meetingId);
+      
+      if (meetingDetails?.join_url) {
+        await navigator.clipboard.writeText(meetingDetails.join_url);
+        toast.success('Meeting link copied to clipboard!');
+        
+        // Update the meeting in the list with full details
+        setMeetings(prevMeetings => 
+          prevMeetings.map(meeting => 
+            meeting._id === meetingId ? { ...meeting, ...meetingDetails } : meeting
+          )
+        );
+      } else {
+        console.error('Missing join URL in response:', { meetingDetails });
+        toast.error('Failed to get meeting link - No URL found');
+      }
+    } catch (err) {
+      console.error('Error getting meeting details:', { error: err, meetingId });
+      toast.error(err.message || 'Failed to get meeting details');
+    } finally {
+      setGettingLink(null);
     }
   };
 
@@ -94,6 +198,42 @@ const VirtualClasses = () => {
       </div>
     );
   }
+
+  const getMeetingStatus = (startTime, duration) => {
+    const now = new Date();
+    const meetingStart = new Date(startTime);
+    const meetingEnd = new Date(meetingStart.getTime() + duration * 60000);
+
+    if (now < meetingStart) return MEETING_STATUS.SCHEDULED;
+    if (now >= meetingStart && now <= meetingEnd) return MEETING_STATUS.IN_PROGRESS;
+    return MEETING_STATUS.COMPLETED;
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case MEETING_STATUS.SCHEDULED:
+        return 'bg-blue-100 text-blue-800';
+      case MEETING_STATUS.IN_PROGRESS:
+        return 'bg-green-100 text-green-800';
+      case MEETING_STATUS.COMPLETED:
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusText = (status) => {
+    switch (status) {
+      case MEETING_STATUS.SCHEDULED:
+        return 'Scheduled';
+      case MEETING_STATUS.IN_PROGRESS:
+        return 'In Progress';
+      case MEETING_STATUS.COMPLETED:
+        return 'Completed';
+      default:
+        return 'Unknown';
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 p-4 md:p-6">
@@ -238,70 +378,115 @@ const VirtualClasses = () => {
                 <p className="text-gray-500">No upcoming classes scheduled</p>
               </motion.div>
             ) : (
-              meetings.map(meeting => (
-                <motion.div
-                  key={meeting.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow border border-gray-100"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-xl font-semibold text-gray-900">{meeting.topic}</h3>
-                    <div className="flex items-center gap-3">
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        new Date(meeting.start_time) > new Date() 
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {new Date(meeting.start_time) > new Date() ? 'Upcoming' : 'Completed'}
-                      </span>
-                      <button
-                        onClick={() => handleDeleteMeeting(meeting.id)}
-                        className="text-red-500 hover:text-red-700 transition-colors"
-                        disabled={isDeleting === meeting.id}
+              meetings.map(meeting => {
+                const status = getMeetingStatus(meeting.start_time, meeting.duration);
+                // Allow joining for both scheduled and in-progress meetings
+                const isJoinable = status === MEETING_STATUS.IN_PROGRESS || status === MEETING_STATUS.SCHEDULED;
+                const isEarlyJoin = status === MEETING_STATUS.SCHEDULED;
+
+                // Add safeguards for required properties
+                if (!meeting || !meeting.start_time) {
+                  console.error('Invalid meeting data:', { meeting, id: meeting?.id });
+                  return null;
+                }
+
+                return (
+                  <motion.div
+                    key={meeting.id || Math.random()}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow border border-gray-100"
+                  >
+                    <div className="flex justify-between items-start mb-4">
+                      <h3 className="text-xl font-semibold text-gray-900">{meeting.topic || 'Untitled Meeting'}</h3>
+                      <div className="flex items-center gap-3">
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(status)}`}>
+                          {getStatusText(status)}
+                        </span>
+                        <button
+                          onClick={() => handleDeleteMeeting(meeting.id)}
+                          className="text-red-500 hover:text-red-700 transition-colors"
+                          disabled={isDeleting === meeting.id}
+                        >
+                          {isDeleting === meeting.id ? (
+                            <Loader className="w-5 h-5 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-5 h-5" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 text-gray-600">
+                      <div className="flex items-center gap-3">
+                        <Calendar className="w-5 h-5 text-blue-500" />
+                        <span>{new Date(meeting.start_time).toLocaleDateString()}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Clock className="w-5 h-5 text-purple-500" />
+                        <span>{new Date(meeting.start_time).toLocaleTimeString()}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Users className="w-5 h-5 text-green-500" />
+                        <span>
+                          {(meeting.settings?.participants || 100)} participants maximum
+                        </span>
+                      </div>
+                    </div>
+
+                    {meeting.agenda?.trim() && (
+                      <p className="mt-4 text-gray-500 text-sm">{meeting.agenda}</p>
+                    )}
+
+                    <div className="mt-6 space-y-3">
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => handleJoinMeeting(meeting.id)}
+                        disabled={joiningMeeting === meeting.id || status === MEETING_STATUS.COMPLETED}
+                        className={`w-full px-4 py-2 rounded-xl flex items-center justify-center gap-2 transition-colors ${
+                          status !== MEETING_STATUS.COMPLETED
+                            ? 'bg-blue-600 text-white hover:bg-blue-700'
+                            : 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                        }`}
                       >
-                        {isDeleting === meeting.id ? (
+                        {joiningMeeting === meeting.id ? (
                           <Loader className="w-5 h-5 animate-spin" />
                         ) : (
-                          <Trash2 className="w-5 h-5" />
+                          <>
+                            <Video className="w-5 h-5" />
+                            {isEarlyJoin ? 'Join Class (Early)' : 'Join Class'}
+                          </>
                         )}
-                      </button>
-                    </div>
-                  </div>
+                      </motion.button>
 
-                  <div className="space-y-3 text-gray-600">
-                    <div className="flex items-center gap-3">
-                      <Calendar className="w-5 h-5 text-blue-500" />
-                      <span>{new Date(meeting.start_time).toLocaleDateString()}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Clock className="w-5 h-5 text-purple-500" />
-                      <span>{new Date(meeting.start_time).toLocaleTimeString()}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Users className="w-5 h-5 text-green-500" />
-                      <span>{meeting.settings.participants} participants maximum</span>
-                    </div>
-                  </div>
+                      {isEarlyJoin && (
+                        <p className="text-xs text-blue-600 italic text-center mt-1">
+                          You can join this meeting before its scheduled start time
+                        </p>
+                      )}
 
-                  {meeting.agenda && (
-                    <p className="mt-4 text-gray-500 text-sm">{meeting.agenda}</p>
-                  )}
-
-                  <div className="mt-6">
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => handleJoinMeeting(meeting.id)}
-                      className="w-full px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-                    >
-                      <Video className="w-5 h-5" />
-                      Join Class
-                    </motion.button>
-                  </div>
-                </motion.div>
-              ))
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => handleGetMeetingLink(meeting.id)}
+                        disabled={gettingLink === meeting.id}
+                        className="w-full px-4 py-2 bg-white text-blue-600 border border-blue-600 rounded-xl hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
+                      >
+                        {gettingLink === meeting.id ? (
+                          <Loader className="w-5 h-5 animate-spin" />
+                        ) : (
+                          <>
+                            <Link className="w-5 h-5" />
+                            Get Meeting Link
+                          </>
+                        )}
+                      </motion.button>
+                    </div>
+                  </motion.div>
+                );
+              })
             )}
           </AnimatePresence>
         </div>
