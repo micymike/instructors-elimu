@@ -25,6 +25,7 @@ import {
   Clock,
   DollarSign,
   CreditCard,
+  GraduationCap,
 } from "lucide-react"
 import AIAssistantChat from "../AIAssistantChat"
 import { motion, AnimatePresence } from "framer-motion"
@@ -230,6 +231,12 @@ const DashboardLayout = () => {
           description: "Transaction history",
         },
       ],
+    },
+    {
+      icon: GraduationCap,
+      label: 'Quizzes',
+      path: '/instructor/Quizzes',
+      description: 'Quizzes'
     },
     {
       icon: Calendar,

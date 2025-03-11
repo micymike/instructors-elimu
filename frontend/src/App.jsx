@@ -123,8 +123,8 @@ const router = createBrowserRouter([
       },
       {
         path: 'create-course',
-        element: <CourseWizard />,
-        errorElement: <div>Error loading Create Course page</div>
+        element: <CourseForm mode="create" />,
+        errorElement: <div>Error loading Course Creation page</div>
       },
       {
         path: 'Quizzes',

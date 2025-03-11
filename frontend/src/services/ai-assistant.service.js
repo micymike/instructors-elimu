@@ -3,9 +3,9 @@ import axios from 'axios';
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
 
-if (!GROQ_API_KEY) {
+/*if (!GROQ_API_KEY) {
   throw new Error('VITE_GROQ_API_KEY environment variable is not set. Please add it to your .env file.');
-}
+};*/
 
 class AIAssistantService {
   constructor() {
@@ -34,7 +34,7 @@ class AIAssistantService {
     this.groqApi = axios.create({
       baseURL: 'https://api.groq.com/openai/v1',
       headers: {
-        'Authorization': `Bearer ${GROQ_API_KEY.trim()}`,
+      //  'Authorization': `Bearer ${GROQ_API_KEY.trim()}`,
         'Content-Type': 'application/json'
       }
     });
