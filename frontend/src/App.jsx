@@ -13,6 +13,8 @@ import VirtualClasses from './pages/instructor/VirtualClasses';
 import CreateAssessment from './pages/instructor/CreateAssessment';
 import GroupManagement from './pages/instructor/GroupManagement';
 import InstructorsLanding from './components/InstructorsLanding';
+import PricingPage from './components/Pricing';
+import ContactPage from './components/Contact';
 import CourseLearning from './pages/instructor/CourseLearning';
 import QuizzManager from './pages/instructor/Quizzes';
 import CourseWizard from './components/CourseWizard/CourseWizard';
@@ -193,6 +195,17 @@ const router = createBrowserRouter([
     element: <InstructorsLanding />,
     errorElement: <div>Error loading Instructors Landing page</div>
   },
+  {
+    path: '/pricing',
+    element: <PricingPage />,
+    errorElement: <div>Error loading Instructors Pricing page</div>
+  },
+  {
+    path: '/contact',
+    element: <ContactPage />,
+    errorElement: <div>Error loading Instructors Pricing page</div>
+  },
+
   {
     path: '/privacy-policy',
     element: <PrivacyPolicy />,
