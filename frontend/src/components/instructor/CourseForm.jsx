@@ -89,29 +89,30 @@ export const CourseForm = ({
         // Direct API call using Axios
         const token = localStorage.getItem('token');
         
-        const coursePayload = {
+        const formPayload = new FormData();
+        formPayload.append('file', files[0]); // Assuming single PDF
+        formPayload.append('course', JSON.stringify({
           title: formData.title,
-          description: formData.description || '',
-          instructorId: userId, // Use user ID from local storage
-          videos: files
-            .filter(file => file.type.includes('video'))
-            .map(file => ({ url: URL.createObjectURL(file) })),
-          pdfs: files
-            .filter(file => file.type.includes('pdf'))
-            .map(file => ({ 
-              url: URL.createObjectURL(file),
-              name: file.name 
-            }))
-        };
+          description: formData.description,
+          price: formData.price,
+          durationInWeeks: Math.ceil(formData.duration / 40), // Convert hours to weeks
+          difficulty: formData.level,
+          category: formData.category,
+          isPublished: formData.status === 'published',
+          // Add missing required fields
+          sections: [],
+          learningOutcomes: [],
+          prerequisites: [],
+          tags: []
+        }));
 
-        const response = await axios.post('/instructor/courses', coursePayload, {
-          baseURL: import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/',
+        const response = await axios.post('/courses/instructor', coursePayload, {
+          baseURL: 'https://centralize-auth-elimu.onrender.com'|| 'http://localhost:3000/',
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         });
-
         // Handle successful course creation
         toast.success('Course created successfully!');
         console.log('Created Course:', response.data);
@@ -308,6 +309,7 @@ export const CourseForm = ({
                           multiple
                           className="sr-only"
                           onChange={handleFileChange}
+                          accept=".pdf,.mp4,.mov,.avi,video/*,application/pdf"
                         />
                       </label>
                     </div>
