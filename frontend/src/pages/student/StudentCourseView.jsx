@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import axios from 'axios';
+import { api } from '../../services/api'; // Import the configured api instance
 import { motion } from 'framer-motion';
 
 const StudentCourseView = () => {
@@ -11,7 +11,8 @@ const StudentCourseView = () => {
   useEffect(() => {
     const fetchCourse = async () => {
       try {
-        const response = await axios.get(`http://localhost:3000/api/courses/${courseId}`);
+        // Use the configured api instance and the correct student endpoint
+        const response = await api.get(`/student/courses/${courseId}`); 
         setCourse(response.data);
       } catch (error) {
         console.error('Error fetching course:', error);

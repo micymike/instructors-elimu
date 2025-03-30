@@ -10,10 +10,10 @@ const Students = () => {
   const navigate = useNavigate();
 
   // Dummy data generation function
-  function generateDummyStudents() {
-    const courses = ['Computer Science', 'Business', 'Engineering', 'Medicine', 'Arts'];
-    const years = ['Freshman', 'Sophomore', 'Junior', 'Senior'];
-    const cities = ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix'];
+  //function generateDummyStudents() {
+   // const courses = ['Computer Science', 'Business', 'Engineering', 'Medicine', 'Arts'];
+   // const years = ['Freshman', 'Sophomore', 'Junior', 'Senior'];
+   // const cities = ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix'];
 
     return Array.from({ length: 12 }, (_, i) => ({
       id: i + 1,

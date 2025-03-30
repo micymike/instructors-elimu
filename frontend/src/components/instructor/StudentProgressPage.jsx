@@ -43,9 +43,12 @@ const StudentProgressPage = () => {
   // Fetch instructor's courses
   const fetchCourses = async () => {
     try {
-      const response = await axios.get(`${BASE_URL}/instructor/courses`, {
+      const response = await axios.get(`${BASE_URL}/courses/instructor`, {
         headers: getHeaders()
       });
+      
+      // Log API response
+      console.log('Courses API Response:', response.data);
       
       // Ensure courses is an array
       const fetchedCourses = Array.isArray(response.data) ? response.data : [];
@@ -77,6 +80,9 @@ const StudentProgressPage = () => {
         }
       });
 
+      // Log API response
+      console.log('Students API Response:', response.data);
+
       setStudents(response.data.students || []);
       setPagination(prev => ({
         ...prev,
@@ -102,6 +108,9 @@ const StudentProgressPage = () => {
       const response = await axios.get(`${BASE_URL}/instructor/courses/${selectedCourse}/students/${studentId}`, {
         headers: getHeaders()
       });
+
+      // Log API response
+      console.log('Student Progress API Response:', response.data);
 
       setStudentProgress(response.data);
     } catch (error) {
