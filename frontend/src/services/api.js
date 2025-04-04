@@ -445,7 +445,7 @@ export const instructorProfileAPI = {
       if (error.response?.status === 400) {
         throw new Error(error.response.data.message || 'Invalid file format or size');
       }
-      throw new Error('Failed to update profile picture');
+      throw error;
     }
   }
 };
@@ -635,7 +635,27 @@ export const instructorLiveSessionAPI = {
   }
 };
 
-export const instructorGroupAPI = {
+export const groupAPI = {
+  async getAllGroups() {
+    const response = await api.get('/api/groups');
+    return response.data;
+  },
+
+  async createGroup(groupData) {
+    const response = await api.post('/api/groups', groupData);
+    return response.data;
+  },
+
+  async updateGroup(groupId, groupData) {
+    const response = await api.put(`/api/groups/${groupId}`, groupData);
+    return response.data;
+  },
+
+  async deleteGroup(groupId) {
+    const response = await api.delete(`/api/groups/${groupId}`);
+    return response.data;
+  },
+
   async getInstructorGroups() {
     const response = await api.get('/api/instructors/groups');
     return response.data;
@@ -810,35 +830,41 @@ export const instructorCourseProgressAPI = {
 };
 
 // Zoom API
-export const zoomAPI = {
+export const instructorZoomMeetingAPI = {
+  // Create a general Zoom meeting
+  async createMeeting(meetingDetails) {
+    const response = await api.post('/instructor/zoom/meetings', meetingDetails);
+    return response.data;
+  },
+
+  // Create a Zoom meeting for a specific group
+  async createGroupMeeting(groupId, meetingDetails) {
+    const response = await api.post(`/instructor/zoom/meetings/group/${groupId}`, meetingDetails);
+    return response.data;
+  },
+
+  // Get all meetings for the instructor
   async getAllMeetings() {
-    const response = await api.get('/zoom/meetings');
-    return response;
+    const response = await api.get('/instructor/zoom/meetings');
+    return response.data;
   },
 
-  async createMeeting(meetingData) {
-    const response = await api.post('/zoom/meetings', meetingData);
-    return response;
-  },
-
+  // Get details of a specific meeting
   async getMeetingDetails(meetingId) {
-    const response = await api.get(`/zoom/meetings/${meetingId}`);
-    return response;
+    const response = await api.get(`/instructor/zoom/meetings/${meetingId}`);
+    return response.data;
   },
 
-  async updateMeeting(meetingId, meetingData) {
-    const response = await api.patch(`/zoom/meetings/${meetingId}`, meetingData);
-    return response;
+  // Update meeting details
+  async updateMeeting(meetingId, updateDetails) {
+    const response = await api.patch(`/instructor/zoom/meetings/${meetingId}`, updateDetails);
+    return response.data;
   },
 
+  // Delete a meeting
   async deleteMeeting(meetingId) {
-    const response = await api.delete(`/zoom/meetings/${meetingId}`);
-    return response;
-  },
-
-  async createGroupMeeting(groupId, meetingData) {
-    const response = await api.post(`/zoom/meetings/group/${groupId}`, meetingData);
-    return response;
+    const response = await api.delete(`/instructor/zoom/meetings/${meetingId}`);
+    return response.data;
   }
 };
 
@@ -901,12 +927,12 @@ export const documentsAPI = instructorDocumentsAPI;
 export const classAPI = virtualClassAPI;
 export const notesAPI = instructorNotesAPI;
 export const aiChatAPI = instructorAIChatAPI;
-export const groupAPI = instructorGroupAPI;
 export const scheduleAPI = instructorScheduleAPI;
 export const moduleAPI = instructorModuleAPI;
 export const lessonAPI = instructorLessonAPI;
 export const analyticsAPI = instructorAnalyticsAPI;
 export const accessibilityAPI = instructorAccessibilityAPI;
 export const contentGenerationAPI = instructorContentGenerationAPI;
+export const zoomMeetingAPI = instructorZoomMeetingAPI;
 
 export { api };

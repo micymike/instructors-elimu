@@ -1,3 +1,4 @@
+import React from 'react';
 import { useLocation } from 'react-router-dom';
 import { createBrowserRouter } from 'react-router-dom';
 import DashboardLayout from './components/layouts/DashboardLayout';
@@ -21,6 +22,8 @@ const Withdrawals = React.lazy(() => import('./pages/instructor/payments/Withdra
 const PaymentHistory = React.lazy(() => import('./pages/instructor/payments/PaymentHistory'));
 const Schedule = React.lazy(() => import('./pages/instructor/Schedule'));
 const Settings = React.lazy(() => import('./pages/instructor/Settings'));
+const VirtualClasses = React.lazy(() => import('./pages/instructor/VirtualClasses'));
+const GroupManagement = React.lazy(() => import('./pages/instructor/GroupManagement'));
 
 const router = createBrowserRouter([
   {
@@ -95,6 +98,14 @@ const router = createBrowserRouter([
       {
         path: 'settings',
         element: <Settings />
+      },
+      {
+        path: 'groups',
+        element: <GroupManagement />
+      },
+      {
+        path: 'virtual-classes',
+        element: <VirtualClasses />
       }
     ]
   }

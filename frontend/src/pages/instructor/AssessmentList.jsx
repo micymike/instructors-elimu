@@ -214,7 +214,7 @@ const AssessmentList = () => {
       </div>
 
       {filteredAssessments.length > 0 ? (
-        <Grid container spacing={2} md={4}>
+        <Grid container spacing={2} item md={4}>
           {filteredAssessments.map((assessment) => (
             <Grid item xs={12} sm={6} lg={4} key={assessment._id}>
               <Card className="p-3 md:p-4">
@@ -289,28 +289,30 @@ const AssessmentList = () => {
           ))}
         </Grid>
       ) : (
-        <Paper className="p-8 text-center">
-          <Inbox className="text-gray-400 w-16 h-16 mx-auto mb-4" /> {/* Changed icon component name */}
-          <Typography variant="h6" color="textSecondary" className="mb-2">
-            No Assessments Found
-          </Typography>
-          <Typography variant="body2" color="textSecondary" className="mb-4">
-            {searchQuery 
-              ? "No assessments match your search criteria. Try adjusting your filters."
-              : selectedCourse !== 'all'
-                ? "No assessments found for this course. Create one to get started."
-                : "No assessments found. Create your first assessment to get started."
-            }
-          </Typography>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={() => navigate('/instructor/Assessment')}
-            size="small"
-          >
-            Create Assessment
-          </Button>
-        </Paper>
+        <Grid container spacing={2} justifyContent="center" alignItems="center" item>
+          <Grid item md={6} textAlign="center">
+            <Inbox className="mx-auto mb-4 text-gray-400" size={64} />
+            <Typography variant="h6" color="textSecondary">
+              No assessments found
+            </Typography>
+            <Typography variant="body2" color="textSecondary" className="mt-2">
+              {searchQuery 
+                ? "No assessments match your search criteria. Try adjusting your filters."
+                : selectedCourse !== 'all'
+                  ? "No assessments found for this course. Create one to get started."
+                  : "No assessments found. Create your first assessment to get started."
+              }
+            </Typography>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => navigate('/instructor/Assessment')}
+              size="small"
+            >
+              Create Assessment
+            </Button>
+          </Grid>
+        </Grid>
       )}
 
       <Dialog 

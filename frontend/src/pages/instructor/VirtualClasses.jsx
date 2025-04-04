@@ -13,14 +13,12 @@ const VirtualClasses = () => {
   const [isDeleting, setIsDeleting] = useState(null);
   const [joiningMeeting, setJoiningMeeting] = useState(null);
   const [gettingLink, setGettingLink] = useState(null);
+  const [showCreateMeetingForm, setShowCreateMeetingForm] = useState(false);
   const [newMeeting, setNewMeeting] = useState({
     topic: '',
     startTime: '',
     duration: 60,
-    agenda: '',
-    settings: {
-      participants: 100
-    }
+    agenda: ''
   });
 
   useEffect(() => {
@@ -70,37 +68,138 @@ const VirtualClasses = () => {
     }
   };
 
-  const handleDateTimeChange = (date, time) => {
-    const isoString = `${date}T${time}:00Z`;
-    setNewMeeting(prev => ({ ...prev, startTime: isoString }));
-  };
-
   const handleCreateMeeting = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
+    // Validate input
+    if (!newMeeting.topic || !newMeeting.startTime) {
+      toast.error('Please provide a topic and start time');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const response = await VirtualClassService.createClass({
-        ...newMeeting,
-        startTime: newMeeting.startTime
-      });
+      // Ensure startTime is in ISO 8601 format
+      const isoStartTime = new Date(newMeeting.startTime).toISOString();
+
+      const meetingData = {
+        topic: newMeeting.topic,
+        startTime: isoStartTime,
+        duration: newMeeting.duration || 60,
+        agenda: newMeeting.agenda || ''
+      };
+
+      const response = await VirtualClassService.createClass(meetingData);
       
-      setMeetings(prev => [...prev, response.data]);
-      toast.success('Virtual class created successfully');
+      // Add the new meeting to the list
+      setMeetings(prev => [...prev, response]);
+      
+      // Reset form and close
       setNewMeeting({
         topic: '',
         startTime: '',
         duration: 60,
-        agenda: '',
-        settings: { participants: 100 }
+        agenda: ''
       });
+      setShowCreateMeetingForm(false);
+      
+      // Show success toast
+      toast.success('Virtual class created successfully');
     } catch (err) {
       setError('Failed to create virtual class');
-      toast.error(err.message);
+      toast.error(err.message || 'An error occurred while creating the meeting');
     } finally {
       setLoading(false);
     }
+  };
+
+  const renderCreateMeetingForm = () => {
+    return (
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white shadow-lg rounded-lg p-6 mt-4"
+      >
+        <h3 className="text-xl font-semibold mb-4 flex items-center">
+          <Video className="w-6 h-6 mr-2 text-blue-600" /> Create New Virtual Class
+        </h3>
+        <form onSubmit={handleCreateMeeting} className="space-y-4">
+          <div>
+            <label htmlFor="topic" className="block text-sm font-medium text-gray-700">
+              Meeting Topic
+            </label>
+            <input
+              type="text"
+              id="topic"
+              value={newMeeting.topic}
+              onChange={(e) => setNewMeeting(prev => ({ ...prev, topic: e.target.value }))}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200"
+              placeholder="Enter meeting topic"
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="startTime" className="block text-sm font-medium text-gray-700">
+              Start Time
+            </label>
+            <input
+              type="datetime-local"
+              id="startTime"
+              value={newMeeting.startTime}
+              onChange={(e) => setNewMeeting(prev => ({ ...prev, startTime: e.target.value }))}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200"
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="duration" className="block text-sm font-medium text-gray-700">
+              Duration (minutes)
+            </label>
+            <input
+              type="number"
+              id="duration"
+              value={newMeeting.duration}
+              onChange={(e) => setNewMeeting(prev => ({ ...prev, duration: parseInt(e.target.value) || 60 }))}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200"
+              min="15"
+              max="240"
+              placeholder="Meeting duration in minutes"
+            />
+          </div>
+          <div>
+            <label htmlFor="agenda" className="block text-sm font-medium text-gray-700">
+              Agenda (Optional)
+            </label>
+            <textarea
+              id="agenda"
+              value={newMeeting.agenda}
+              onChange={(e) => setNewMeeting(prev => ({ ...prev, agenda: e.target.value }))}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200"
+              placeholder="Enter meeting agenda"
+              rows="3"
+            />
+          </div>
+          <div className="flex justify-end space-x-3">
+            <button
+              type="button"
+              onClick={() => setShowCreateMeetingForm(false)}
+              className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+            >
+              {loading ? 'Creating...' : 'Create Meeting'}
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    );
   };
 
   const handleDeleteMeeting = async (meetingId) => {
@@ -191,14 +290,6 @@ const VirtualClasses = () => {
     }
   };
 
-  if (loading && !meetings.length) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader className="w-8 h-8 animate-spin text-blue-600" />
-      </div>
-    );
-  }
-
   const getMeetingStatus = (startTime, duration) => {
     const now = new Date();
     const meetingStart = new Date(startTime);
@@ -235,6 +326,14 @@ const VirtualClasses = () => {
     }
   };
 
+  if (loading && !meetings.length) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-100 p-4 md:p-6">
       <motion.div
@@ -259,109 +358,7 @@ const VirtualClasses = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Create Class Form */}
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="bg-white rounded-2xl p-6 shadow-xl border border-gray-100"
-        >
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-            <Plus className="w-6 h-6 text-blue-600" />
-            Schedule New Class
-          </h2>
-          
-          <form onSubmit={handleCreateMeeting} className="space-y-6">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Class Title *</label>
-                <input
-                  type="text"
-                  value={newMeeting.topic}
-                  onChange={(e) => setNewMeeting(prev => ({ ...prev, topic: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Date *</label>
-                  <input
-                    type="date"
-                    onChange={(e) => handleDateTimeChange(e.target.value, newMeeting.startTime.split('T')[1]?.split(':')[0])}
-                    className="w-full border border-gray-200 rounded-xl p-3"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Time *</label>
-                  <input
-                    type="time"
-                    onChange={(e) => handleDateTimeChange(newMeeting.startTime.split('T')[0], e.target.value)}
-                    className="w-full border border-gray-200 rounded-xl p-3"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Duration (minutes) *</label>
-                  <input
-                    type="number"
-                    value={newMeeting.duration}
-                    onChange={(e) => setNewMeeting(prev => ({ ...prev, duration: Number(e.target.value) }))}
-                    className="w-full border border-gray-200 rounded-xl p-3"
-                    min={30}
-                    max={180}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Max Participants *</label>
-                  <input
-                    type="number"
-                    value={newMeeting.settings.participants}
-                    onChange={(e) => setNewMeeting(prev => ({
-                      ...prev,
-                      settings: { ...prev.settings, participants: Number(e.target.value) }
-                    }))}
-                    className="w-full border border-gray-200 rounded-xl p-3"
-                    min={10}
-                    max={500}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Agenda</label>
-                <textarea
-                  value={newMeeting.agenda}
-                  onChange={(e) => setNewMeeting(prev => ({ ...prev, agenda: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl p-3 h-32"
-                  placeholder="Class agenda..."
-                />
-              </div>
-            </div>
-
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              type="submit"
-              disabled={loading}
-              className="w-full px-6 py-4 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-50"
-            >
-              {loading ? (
-                <Loader className="w-5 h-5 animate-spin mx-auto" />
-              ) : (
-                <div className="flex items-center justify-center gap-2">
-                  <Video className="w-5 h-5" />
-                  Create Class
-                </div>
-              )}
-            </motion.button>
-          </form>
-        </motion.div>
+        {showCreateMeetingForm && renderCreateMeetingForm()}
 
         {/* Classes List */}
         <div className="space-y-6">
@@ -491,6 +488,12 @@ const VirtualClasses = () => {
           </AnimatePresence>
         </div>
       </div>
+      <button 
+        onClick={() => setShowCreateMeetingForm(!showCreateMeetingForm)}
+        className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+      >
+        <Plus className="w-5 h-5 mr-2" /> Create Meeting
+      </button>
     </div>
   );
 };
