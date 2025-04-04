@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { Link, useLocation, Outlet, useNavigate } from "react-router-dom"
-import axios from "axios"
 import { useAuth } from "../../contexts/AuthContext"
 import {
   BarChart2,
@@ -29,7 +28,8 @@ import {
 import AIAssistantChat from "../AIAssistantChat"
 import { motion, AnimatePresence } from "framer-motion"
 
-import { API_URL } from "../../config"
+import axios from 'axios';
+const API_URL = import.meta.env.VITE_BACKEND_URL || 'https://centralize-auth-elimu.onrender.com';
 
 const DashboardLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
@@ -37,6 +37,7 @@ const DashboardLayout = () => {
   const { user: authUser, loading, logout } = useAuth()
   const [instructorData, setInstructorData] = useState(null)
   const [expandedItem, setExpandedItem] = useState(null)
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -98,6 +99,14 @@ const DashboardLayout = () => {
   }, [navigate, authUser, logout])
 
   useEffect(() => {
+    console.group('DashboardLayout Navigation Debug');
+    console.log('Current Location:', location.pathname);
+    console.log('Current User:', authUser);
+    console.log('Expanded Item:', expandedItem);
+    console.groupEnd();
+  }, [location.pathname, authUser, expandedItem]);
+
+  useEffect(() => {
     console.error("CURRENT LOCATION CHANGED", {
       pathname: location.pathname,
       search: location.search,
@@ -105,6 +114,28 @@ const DashboardLayout = () => {
       state: location.state,
     })
   }, [location])
+
+  useEffect(() => {
+    const fetchUnreadNotificationsCount = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get(`${API_URL}/api/instructors/notifications/unread-count`, {
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        setUnreadNotificationsCount(response.data.count);
+      } catch (error) {
+        console.error('Failed to fetch unread notifications count:', error);
+      }
+    };
+
+    if (authUser) {
+      fetchUnreadNotificationsCount();
+    }
+  }, [authUser]);
 
   const menuItems = [
     {
@@ -139,72 +170,60 @@ const DashboardLayout = () => {
       path: "/instructor/students",
       description: "Student management",
     },
-{
-  icon: ClipboardCheck,
-  label: "Assessments",
-  path: "/instructor/Assessment",
-  description: "View and grade assessments",
-  subItems: [
     {
-      icon: Plus,
-      label: "Create Assessment",
+      icon: ClipboardCheck,
+      label: "Assessments",
       path: "/instructor/Assessment",
-      description: "Create new assessment",
+      description: "View and grade assessments",
+      subItems: [
+        {
+          icon: Plus,
+          label: "Create Assessment",
+          path: "/instructor/Assessment",
+          description: "Create new assessment",
+        },
+        {
+          icon: FileText,
+          label: "View Assessments",
+          path: "/instructor/assessments/list",
+          description: "View all assessments",
+        },
+      ],
     },
     {
-      icon: FileText,
-      label: "View Assessments",
-      path: "/instructor/assessments/list",
-      description: "View all assessments",
-    }
-  ],
-},
-{
-  icon: UserPlus,
-  label: "Collaboration",
-  path: "/instructor/groups",
-  description: "Group projects & collaboration",
-  subItems: [
-    {
-      icon: Users,
-      label: "Group Projects",
+      icon: UserPlus,
+      label: "Collaboration",
       path: "/instructor/groups",
-      description: "Manage group projects",
+      description: "Group projects & collaboration",
+      subItems: [
+        {
+          icon: Users,
+          label: "Group Projects",
+          path: "/instructor/groups",
+          description: "Manage group projects",
+        },
+        {
+          icon: Video,
+          label: "Virtual Classes",
+          path: "/instructor/virtual-classes",
+          description: "Manage Virtual classes",
+        },
+      ],
     },
     {
-      icon: Video,
-      label: "Virtual Classes",
-      path: "/instructor/virtual-classes",
-      description: "Manage Virtual classes",
+      icon: BarChart2,
+      label: "Analytics",
+      path: "/instructor/analytics",
+      description: "Course and student analytics",
+      subItems: [
+        {
+          icon: TrendingUp,
+          label: "Course Analytics",
+          path: "/instructor/analytics/courses",
+          description: "Course performance metrics",
+        },
+      ]
     },
-  ],
-},
-{
-  icon: BarChart2,
-  label: 'Analytics',
-  path: '/instructor/analytics/:id/analytics',
-  description: 'Course and student analytics',
-  subItems: [
-    {
-      icon: TrendingUp,
-      label: 'Course Analytics',
-      path: '/instructor/analytics/:id/analytics',
-      description: 'Course performance metrics'
-    },
-    {
-      icon: Users,
-      label: 'Student Analytics',
-      path: '/instructor/analytics/students',
-      description: 'Student engagement metrics'
-    },
-    {
-      icon: Clock,
-      label: 'Time Analytics',
-      path: '/instructor/analytics/time',
-      description: 'Time spent metrics'
-    }
-  ]
-},
     {
       icon: DollarSign,
       label: "Payments",
@@ -232,12 +251,6 @@ const DashboardLayout = () => {
       ],
     },
     {
-      icon: Calendar,
-      label: "Schedule",
-      path: "/instructor/schedule",
-      description: "Class timetable",
-    },
-    {
       icon: Settings,
       label: "Settings",
       path: "/instructor/settings",
@@ -247,6 +260,10 @@ const DashboardLayout = () => {
 
   const handleLogout = () => {
     logout()
+  }
+
+  const handleNotificationClick = () => {
+    navigate('/instructor/notifications');
   }
 
   const MenuItem = ({ item, index }) => {
@@ -261,14 +278,18 @@ const DashboardLayout = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: index * 0.1 }}
       >
-        <Link
-          to={item.path}
+        <div
           className={`flex items-center justify-between rounded-lg transition-all duration-200 group-hover:bg-blue-700 ${
             isActive ? "bg-blue-700" : "text-white"
-          }`}
-          onClick={() => {
+          } cursor-pointer p-2`}
+          onClick={(e) => {
             if (hasSubItems) {
-              setExpandedItem(isExpanded ? null : item.label)
+              e.preventDefault();
+              setExpandedItem(isExpanded ? null : item.label);
+            } else if (item.onClick) {
+              item.onClick(navigate);
+            } else {
+              navigate(item.path);
             }
           }}
         >
@@ -288,7 +309,7 @@ const DashboardLayout = () => {
               <ChevronDown className="w-5 h-5" />
             </motion.div>
           )}
-        </Link>
+        </div>
 
         <AnimatePresence>
           {hasSubItems && isExpanded && (
@@ -305,12 +326,17 @@ const DashboardLayout = () => {
                   className="cursor-pointer hover:bg-blue-700 p-2"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    if (subItem.onClick) {
+                      subItem.onClick(navigate);
+                    } else {
+                      navigate(subItem.path);
+                    }
+                  }}
                 >
                   <div className="flex items-center">
                     <subItem.icon className="mr-2 w-4 h-4" />
-                    <Link to={subItem.path} className="flex-1">
-                      {subItem.label}
-                    </Link>
+                    <span className="flex-1">{subItem.label}</span>
                   </div>
                 </motion.div>
               ))}
@@ -433,8 +459,11 @@ const DashboardLayout = () => {
             </button>
 
             <div className="flex items-center space-x-4">
-              <button className="p-2 hover:bg-gray-100 rounded-full">
+              <button onClick={handleNotificationClick} className="p-2 hover:bg-gray-100 rounded-full relative">
                 <Bell className="h-6 w-6 text-gray-600" />
+                {unreadNotificationsCount > 0 && (
+                  <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">{unreadNotificationsCount}</span>
+                )}
               </button>
               {instructorData?.profilePicture ? (
                 <img

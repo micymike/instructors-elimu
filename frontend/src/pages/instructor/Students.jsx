@@ -1,7 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Search, User, Mail, Phone, MapPin, School, Filter, Loader2, GraduationCap, TrendingUp, UserX, Book, Users } from 'lucide-react';
+import { 
+  Search, 
+  User, 
+  Mail, 
+  Phone, 
+  MapPin, 
+  School, 
+  Filter, 
+  Loader2, 
+  GraduationCap, 
+  TrendingUp, 
+  UserX, 
+  Book, 
+  Users 
+} from 'lucide-react';
+import { 
+  Typography, 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableContainer, 
+  TableHead, 
+  TableRow, 
+  Paper, 
+  Button, 
+  LinearProgress, 
+  Box 
+} from '@mui/material';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 
@@ -14,6 +41,7 @@ const Students = () => {
   const [courses, setCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [students, setStudents] = useState([]);
+  const [studentProgress, setStudentProgress] = useState({});
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -50,42 +78,60 @@ const Students = () => {
       }
       
       setCourses(fetchedCourses);
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Failed to fetch courses';
-      toast.error(errorMessage);
-      console.error('Courses fetch error:', error);
-      setCourses([]);
-    } finally {
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching courses:', err);
+      toast.error('Failed to fetch courses');
+      setError(err);
       setLoading(false);
     }
   };
 
-  const fetchStudentsForCourse = async (courseId) => {
-    if (!courseId) return;
-
+  const fetchStudents = async (courseId) => {
     try {
       setLoading(true);
-      const response = await axios.get(`/instructor/courses/${courseId}/students`, {
-        headers: getHeaders(),
-        params: {
-          page: pagination.page,
-          limit: pagination.limit
-        }
+      const response = await axios.get(`/courses/${courseId}/students`, {
+        headers: getHeaders()
       });
 
-      setStudents(response.data.students || []);
-      setPagination(prev => ({
-        ...prev,
-        total: response.data.total || 0
-      }));
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Failed to fetch students';
-      toast.error(errorMessage);
-      console.error('Students fetch error:', error);
-      setError(errorMessage);
-      setStudents([]);
-    } finally {
+      const fetchedStudents = response.data.students || [];
+      setStudents(fetchedStudents);
+      
+      // Fetch progress for each student
+      const progressPromises = fetchedStudents.map(student => 
+        fetchStudentProgress(courseId, student._id)
+      );
+      
+      const progressResults = await Promise.all(progressPromises);
+      
+      const progressMap = progressResults.reduce((acc, progress, index) => {
+        acc[fetchedStudents[index]._id] = progress;
+        return acc;
+      }, {});
+      
+      setStudentProgress(progressMap);
       setLoading(false);
+    } catch (err) {
+      console.error('Error fetching students:', err);
+      toast.error('Failed to fetch students');
+      setError(err);
+      setLoading(false);
+    }
+  };
+
+  const fetchStudentProgress = async (courseId, studentId) => {
+    try {
+      const response = await axios.get(`/courses/${courseId}/students/${studentId}/progress`, {
+        headers: getHeaders()
+      });
+      return response.data;
+    } catch (err) {
+      console.error(`Error fetching progress for student ${studentId}:`, err);
+      return { 
+        completedModules: 0, 
+        totalModules: 0, 
+        progressPercentage: 0 
+      };
     }
   };
 
@@ -93,122 +139,83 @@ const Students = () => {
     fetchCourses();
   }, []);
 
-  useEffect(() => {
-    if (selectedCourse) {
-      fetchStudentsForCourse(selectedCourse);
-    }
-  }, [selectedCourse, pagination.page]);
-
-  const handleCourseClick = (course) => {
-    setSelectedCourse(course.id);
+  const handleCourseSelect = (course) => {
+    setSelectedCourse(course);
+    fetchStudents(course._id);
   };
 
-  if (loading && courses.length === 0) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50">
-        <div className="flex flex-col items-center space-y-4">
-          <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
-          <p className="text-blue-600 font-medium">Loading courses...</p>
-        </div>
-      </div>
-    );
-  }
+  const renderProgressBar = (studentId) => {
+    const progress = studentProgress[studentId];
+    if (!progress) return null;
 
-  if (courses.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 p-4">
-        <div className="text-center">
-          <UserX className="w-24 h-24 text-gray-400 mx-auto mb-6" />
-          <h2 className="text-2xl font-semibold text-gray-700 mb-4">
-            No Courses Found
-          </h2>
-          <p className="text-gray-500 max-w-md mx-auto mb-6">
-            You haven't created any courses yet. Start by creating a course to view and manage students.
-          </p>
-          <button 
-            onClick={() => navigate('/instructor/courses/new')}
-            className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-          >
-            Create First Course
-          </button>
-        </div>
-      </div>
+      <Box sx={{ width: '100%', mr: 1 }}>
+        <LinearProgress 
+          variant="determinate" 
+          value={progress.progressPercentage || 0} 
+        />
+        <Typography variant="body2" color="text.secondary">
+          {`${progress.completedModules || 0} / ${progress.totalModules || 0} Modules`}
+        </Typography>
+      </Box>
     );
-  }
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <GraduationCap className="w-10 h-10 text-blue-600" />
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                Students Directory
-              </h1>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+    <div className="p-6">
+      <Typography variant="h4" className="mb-6">Students</Typography>
+      
+      {/* Course Selection */}
+      <div className="mb-6">
+        <Typography variant="h6">Select a Course</Typography>
+        <div className="flex flex-wrap gap-4">
           {courses.map(course => (
-            <motion.div
-              key={course.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              whileHover={{ scale: 1.02 }}
-              className={`bg-white rounded-lg shadow-md overflow-hidden cursor-pointer ${selectedCourse === course.id ? 'ring-2 ring-blue-500' : ''}`}
-              onClick={() => handleCourseClick(course)}
+            <Button 
+              key={course._id}
+              variant={selectedCourse?._id === course._id ? 'contained' : 'outlined'}
+              onClick={() => handleCourseSelect(course)}
             >
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="text-lg font-semibold">{course.title || 'Untitled Course'}</h3>
-                    <p className="text-sm text-gray-500">{course.category || 'No Category'}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center text-sm text-gray-600 mb-4">
-                  <Users className="w-4 h-4 mr-2" />
-                  <span>{course.students?.length || 0} Students</span>
-                </div>
-              </div>
-            </motion.div>
+              {course.title}
+            </Button>
           ))}
         </div>
-
-        {selectedCourse && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold mb-4">Students in Selected Course</h2>
-            {students.length > 0 ? (
-              <div className="space-y-4">
-                {students.map(student => (
-                  <div key={student.id} className="border-b border-gray-100 pb-4">
-                    <div className="flex items-center space-x-4">
-                      <div className="flex-shrink-0">
-                        <User className="w-8 h-8 text-gray-400" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">
-                          {student.name}
-                        </p>
-                        <p className="text-sm text-gray-500 truncate">
-                          {student.email}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <UserX className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">No students enrolled in this course yet</p>
-              </div>
-            )}
-          </div>
-        )}
       </div>
+
+      {/* Students Table */}
+      {selectedCourse && (
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Name</TableCell>
+                <TableCell>Email</TableCell>
+                <TableCell>Progress</TableCell>
+                <TableCell>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {students.map(student => (
+                <TableRow key={student._id}>
+                  <TableCell>{student.name}</TableCell>
+                  <TableCell>{student.email}</TableCell>
+                  <TableCell>
+                    {renderProgressBar(student._id)}
+                  </TableCell>
+                  <TableCell>
+                    <Button 
+                      variant="outlined" 
+                      size="small"
+                      onClick={() => {/* Add detailed view logic */}}
+                    >
+                      View Details
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
     </div>
   );
 };

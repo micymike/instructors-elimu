@@ -1,260 +1,283 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import {
-  Users,
-  BookOpen,
-  Clock,
-  Award,
-  Plus,
-  Calendar,
-  ChevronRight,
-  ArrowRight,
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { 
+  Card, 
+  CardContent, 
+  Typography, 
+  Grid, 
+  Button, 
+  Chip, 
+  Avatar 
+} from '@mui/material';
+import { 
+  BookOpen, 
+  Users, 
+  TrendingUp, 
+  FileText, 
+  CheckCircle 
 } from 'lucide-react';
-import CourseAnalytics from '../../components/dashboard/CourseAnalytics.jsx';
-import UpcomingSchedule from '../../components/dashboard/UpcomingSchedule';
-import RecentActivity from '../../components/dashboard/RecentActivity';
-import StatCard from '../../components/dashboard/StatCard';
-import axios from 'axios';
-import io from 'socket.io-client';
-
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3000';
+import { instructorAPI } from '../../services/api';
+import { motion } from 'framer-motion';
+import { formatDistanceToNow } from 'date-fns';
 
 const Dashboard = () => {
-  const navigate = useNavigate();
-  const [user, setUser] = useState({
-    firstName: 'Instructor',
-    email: ''
-  });
-  const [selectedTimeRange, setSelectedTimeRange] = useState('week');
-  const [stats, setStats] = useState({
-    totalCourses: 0,
-    activeCourses: 0,
-    totalStudents: 0,
-    teachingHours: 0,
-    recentActivity: [],
-    upcomingSchedule: []
-  });
-  const [socket, setSocket] = useState(null);
-  const [error, setError] = useState(null);
+  const { user } = useAuth();
+  const [dashboardData, setDashboardData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Establish socket connection
   useEffect(() => {
-    const newSocket = io(SOCKET_URL, {
-      auth: {
-        token: localStorage.getItem('token')
-      }
-    });
-
-    newSocket.on('connect', () => {
-      console.log('Socket connected');
-    });
-
-    newSocket.on('instructor_stats_update', (updatedStats) => {
-      setStats(prevStats => ({
-        ...prevStats,
-        ...updatedStats
-      }));
-    });
-
-    newSocket.on('connect_error', (err) => {
-      console.error('Socket connection error:', err);
-    });
-
-    setSocket(newSocket);
-
-    // Cleanup socket on unmount
-    return () => {
-      if (newSocket) {
-        newSocket.disconnect();
+    const fetchDashboardData = async () => {
+      try {
+        const data = await instructorAPI.getDashboard();
+        setDashboardData(data);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+        setLoading(false);
       }
     };
+
+    fetchDashboardData();
   }, []);
 
-  // Fetch initial data
-  useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-      } catch (err) {
-        console.error('Error parsing user data:', err);
-      }
-    }
-    fetchUserSettings();
-    fetchCourseStats();
-  }, []);
-
-  const fetchUserSettings = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        navigate('/login');
-        return;
-      }
-
-      const response = await axios.get(`${API_URL}/settings`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.data && response.data.data) {
-        setUser(response.data.data.personalInfo || response.data.data);
-      }
-    } catch (error) {
-      console.error('Error fetching user settings:', error);
-      if (error.response?.status === 401) {
-        // Clear token and redirect to login
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        navigate('/login');
-      }
-    }
-  };
-
-  const fetchCourseStats = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/courses/instructors/stats`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      
-      const statsData = response.data.data;
-      setStats({
-        totalCourses: statsData.totalCourses || 0,
-        activeCourses: statsData.activeCourses || 0,
-        totalStudents: statsData.totalStudents || 0,
-        teachingHours: statsData.teachingHours || 0,
-        recentActivity: statsData.recentActivity || [],
-        upcomingSchedule: statsData.upcomingSchedule || []
-      });
-    } catch (error) {
-      console.error('Error fetching course stats:', error);
-      // Handle error gracefully
-      setStats({
-        totalCourses: 0,
-        activeCourses: 0,
-        totalStudents: 0,
-        teachingHours: 0,
-        recentActivity: [],
-        upcomingSchedule: []
-      });
-    }
-  };
-
-  // Stat cards with dynamic values
-  const statCards = [
-    {
-      name: 'Total Courses',
-      value: stats.totalCourses,
-      icon: BookOpen,
-      change: `+${Math.round((stats.totalCourses / (stats.totalCourses || 1)) * 100)}%`,
-      changeType: 'positive'
-    },
-    {
-      name: 'Active Courses',
-      value: stats.activeCourses,
-      icon: BookOpen,
-      change: `+${Math.round((stats.activeCourses / (stats.totalCourses || 1)) * 100)}%`,
-      changeType: 'positive'
-    },
-    {
-      name: 'Total Students',
-      value: stats.totalStudents,
-      icon: Users,
-      change: `+${Math.round((stats.totalStudents / (stats.totalCourses * 10 || 1)) * 100)}%`,
-      changeType: 'positive'
-    },
-    {
-      name: 'Teaching Hours',
-      value: stats.teachingHours,
-      icon: Clock,
-      change: `+${Math.round((stats.teachingHours / (stats.totalCourses * 10 || 1)) * 100)}%`,
-      changeType: 'positive'
-    }
-  ];
-
-  const quickActions = [
-    {
-      title: 'Create Course',
-      icon: Plus,
-      path: '/instructor/create-course',
-      color: 'bg-blue-500'
-    },
-    {
-      title: 'Schedule',
-      icon: Calendar,
-      path: '/instructor/create-session',
-      color: 'bg-purple-500'
-    },
-    {
-      title: 'Analytics',
-      icon: ChevronRight,
-      path: '/instructor/analytics',
-      color: 'bg-green-500'
-    }
-  ];
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header Section */}
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Welcome back, {user?.firstName || 'Instructor'}!
-          </h1>
-          <p className="text-sm text-gray-600 mt-1">
-            Here's what's happening with your courses today
-          </p>
-        </div>
-        <div className="flex gap-3">
-          {quickActions.map((action, index) => (
-            <Link
-              key={index}
-              to={action.path}
-              className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow"
-            >
-              <div className={`p-1.5 rounded-lg ${action.color}`}>
-                <action.icon className="h-4 w-4 text-white" />
+    <div className="p-6 bg-gray-50 min-h-screen">
+      <Typography variant="h4" className="mb-6">
+        Welcome, {user?.name || 'Instructor'}
+      </Typography>
+
+      <Grid container spacing={3}>
+        {/* Course Overview */}
+        <Grid item xs={12} md={4}>
+          <Card className="h-full">
+            <CardContent>
+              <div className="flex items-center mb-4">
+                <BookOpen className="w-8 h-8 mr-3 text-blue-600" />
+                <Typography variant="h6">Course Overview</Typography>
               </div>
-              <span className="text-sm font-medium text-gray-900">{action.title}</span>
-            </Link>
-          ))}
-        </div>
-      </div>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <Typography variant="body2">Total Courses</Typography>
+                  <Chip 
+                    label={dashboardData?.totalCourses || 0} 
+                    color="primary" 
+                    size="small" 
+                  />
+                </div>
+                <div className="flex justify-between">
+                  <Typography variant="body2">Active Courses</Typography>
+                  <Chip 
+                    label={dashboardData?.activeCourses || 0} 
+                    color="success" 
+                    size="small" 
+                  />
+                </div>
+                <Link to="/instructor/courses">
+                  <Button 
+                    variant="outlined" 
+                    color="primary" 
+                    size="small" 
+                    className="mt-2"
+                  >
+                    View All Courses
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </Grid>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {statCards.map((stat, index) => (
-          <StatCard key={index} {...stat} />
-        ))}
-      </div>
+        {/* Student Metrics */}
+        <Grid item xs={12} md={4}>
+          <Card className="h-full">
+            <CardContent>
+              <div className="flex items-center mb-4">
+                <Users className="w-8 h-8 mr-3 text-green-600" />
+                <Typography variant="h6">Student Metrics</Typography>
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <Typography variant="body2">Total Students</Typography>
+                  <Chip 
+                    label={dashboardData?.totalStudents || 0} 
+                    color="primary" 
+                    size="small" 
+                  />
+                </div>
+                <div className="flex justify-between">
+                  <Typography variant="body2">New Enrollments</Typography>
+                  <Chip 
+                    label={dashboardData?.newEnrollments || 0} 
+                    color="secondary" 
+                    size="small" 
+                  />
+                </div>
+                <Link to="/instructor/students">
+                  <Button 
+                    variant="outlined" 
+                    color="primary" 
+                    size="small" 
+                    className="mt-2"
+                  >
+                    Manage Students
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </Grid>
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Course Analytics */}
-        <div className="lg:col-span-2 space-y-6">
-          <CourseAnalytics />
-          
-          {/* Recent Activity */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-lg font-semibold mb-4">Recent Activity</h2>
-            <RecentActivity activities={stats.recentActivity} />
-          </div>
-        </div>
+        {/* Performance Insights */}
+        <Grid item xs={12} md={4}>
+          <Card className="h-full">
+            <CardContent>
+              <div className="flex items-center mb-4">
+                <TrendingUp className="w-8 h-8 mr-3 text-purple-600" />
+                <Typography variant="h6">Performance</Typography>
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <Typography variant="body2">Average Quiz Score</Typography>
+                  <Chip 
+                    label={`${(dashboardData?.averageQuizScore || 0) * 100}%`} 
+                    color="primary" 
+                    size="small" 
+                  />
+                </div>
+                <div className="flex justify-between">
+                  <Typography variant="body2">Course Completion Rate</Typography>
+                  <Chip 
+                    label={`${(dashboardData?.courseCompletionRate || 0) * 100}%`} 
+                    color="success" 
+                    size="small" 
+                  />
+                </div>
+                <Link to="/instructor/analytics/students">
+                  <Button 
+                    variant="outlined" 
+                    color="primary" 
+                    size="small" 
+                    className="mt-2"
+                  >
+                    View Analytics
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </Grid>
 
-        {/* Right Column - Upcoming Schedule */}
-        <div className="space-y-6">
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-lg font-semibold mb-4">Upcoming Sessions</h2>
-            <UpcomingSchedule sessions={stats.upcomingSchedule} />
-          </div>
-        </div>
-      </div>
+        {/* Recent Assessments */}
+        <Grid item xs={12} md={6}>
+          <Card className="h-full">
+            <CardContent>
+              <div className="flex items-center mb-4">
+                <FileText className="w-8 h-8 mr-3 text-orange-600" />
+                <Typography variant="h6">Recent Assessments</Typography>
+              </div>
+              {dashboardData?.recentAssessments?.length > 0 ? (
+                <div className="space-y-3">
+                  {dashboardData.recentAssessments.slice(0, 3).map((assessment, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="flex justify-between items-center p-3 bg-gray-100 rounded-lg"
+                    >
+                      <div>
+                        <Typography variant="body2" className="font-semibold">
+                          {assessment.title}
+                        </Typography>
+                        <Typography variant="caption" color="textSecondary">
+                          {formatDistanceToNow(new Date(assessment.createdAt), { addSuffix: true })}
+                        </Typography>
+                      </div>
+                      <Chip 
+                        label={assessment.status} 
+                        color={assessment.status === 'Graded' ? 'success' : 'warning'} 
+                        size="small" 
+                      />
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <Typography variant="body2" color="textSecondary" className="text-center">
+                  No recent assessments
+                </Typography>
+              )}
+              <Link to="/instructor/assessments/list" className="block mt-4">
+                <Button 
+                  variant="outlined" 
+                  color="primary" 
+                  size="small" 
+                  fullWidth
+                >
+                  View All Assessments
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Upcoming Sessions */}
+        <Grid item xs={12} md={6}>
+          <Card className="h-full">
+            <CardContent>
+              <div className="flex items-center mb-4">
+                <CheckCircle className="w-8 h-8 mr-3 text-teal-600" />
+                <Typography variant="h6">Upcoming Sessions</Typography>
+              </div>
+              {dashboardData?.upcomingSessions?.length > 0 ? (
+                <div className="space-y-3">
+                  {dashboardData.upcomingSessions.slice(0, 3).map((session, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="flex justify-between items-center p-3 bg-gray-100 rounded-lg"
+                    >
+                      <div>
+                        <Typography variant="body2" className="font-semibold">
+                          {session.title}
+                        </Typography>
+                        <Typography variant="caption" color="textSecondary">
+                          {formatDistanceToNow(new Date(session.startTime), { addSuffix: true })}
+                        </Typography>
+                      </div>
+                      <Avatar 
+                        alt="Session" 
+                        src={session.coverImage} 
+                        sx={{ width: 40, height: 40 }} 
+                      />
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <Typography variant="body2" color="textSecondary" className="text-center">
+                  No upcoming sessions
+                </Typography>
+              )}
+              <Link to="/instructor/virtual-classes" className="block mt-4">
+                <Button 
+                  variant="outlined" 
+                  color="primary" 
+                  size="small" 
+                  fullWidth
+                >
+                  View All Sessions
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
     </div>
   );
 };

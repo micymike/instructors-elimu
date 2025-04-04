@@ -1,114 +1,51 @@
-import React from 'react';
-import { useLocation } from 'react-router-dom';
-import { createBrowserRouter } from 'react-router-dom';
+import React, { lazy, Suspense } from 'react';
+import { Navigate, Routes, Route } from 'react-router-dom';
 import DashboardLayout from './components/layouts/DashboardLayout';
+import LoadingScreen from './components/common/LoadingScreen';
 
-// Lazy load components
-const Dashboard = React.lazy(() => import('./pages/instructor/Dashboard'));
-const CoursesList = React.lazy(() => import('./pages/instructor/CoursesList'));
-const CreateCourse = React.lazy(() => import('./pages/instructor/CreateCourse'));
-const CourseContent = React.lazy(() => import('./pages/instructor/CourseContent'));
-const StudentsList = React.lazy(() => import('./pages/instructor/Students'));
-const StudentProgress = React.lazy(() => import('./pages/instructor/StudentProgressPage'));
-const AssessmentList = React.lazy(() => import('./pages/instructor/AssessmentList'));
-const Assessments = React.lazy(() => import('./pages/instructor/Assessments'));
-const GroupProjects = React.lazy(() => import('./pages/instructor/collaboration/GroupProjects'));
-const LiveSessions = React.lazy(() => import('./pages/instructor/collaboration/LiveSessions'));
-const CourseAnalytics = React.lazy(() => import('./pages/instructor/analytics/CourseAnalytics'));
-const StudentAnalytics = React.lazy(() => import('./pages/instructor/analytics/StudentAnalytics'));
-const TimeAnalytics = React.lazy(() => import('./pages/instructor/analytics/TimeAnalytics'));
-const PaymentsDashboard = React.lazy(() => import('./pages/instructor/payments/PaymentsDashboard'));
-const Withdrawals = React.lazy(() => import('./pages/instructor/payments/Withdrawals'));
-const PaymentHistory = React.lazy(() => import('./pages/instructor/payments/PaymentHistory'));
-const Schedule = React.lazy(() => import('./pages/instructor/Schedule'));
-const Settings = React.lazy(() => import('./pages/instructor/Settings'));
-const VirtualClasses = React.lazy(() => import('./pages/instructor/VirtualClasses'));
-const GroupManagement = React.lazy(() => import('./pages/instructor/GroupManagement'));
+// Lazy loaded components
+const Dashboard = lazy(() => import('./pages/instructor/Dashboard'));
+const CoursesList = lazy(() => import('./components/instructor/CoursesList'));
+const CreateCourse = lazy(() => import('./pages/instructor/CreateCourse'));
+const CourseContent = lazy(() => import('./pages/instructor/CourseContentManager'));
+const StudentsList = lazy(() => import('./pages/instructor/Students'));
+const GroupProjects = lazy(() => import('./pages/instructor/collaboration/GroupProjects'));
+const CourseAnalytics = lazy(() => import('./pages/instructor/CourseAnalytics'));
+const CourseAnalyticsDetail = lazy(() => import('./pages/instructor/CourseAnalyticsDetail'));
+const PaymentsDashboard = lazy(() => import('./pages/instructor/payments/PaymentsDashboard'));
+const Withdrawals = lazy(() => import('./pages/instructor/payments/Withdrawals'));
+const PaymentHistory = lazy(() => import('./pages/instructor/payments/PaymentHistory'));
+const Settings = lazy(() => import('./pages/instructor/Settings'));
+const Notifications = lazy(() => import('./pages/instructor/Notifications'));
+const VirtualClasses = lazy(() => import('./pages/instructor/VirtualClasses'));
+const GroupManagement = lazy(() => import('./pages/instructor/GroupManagement'));
 
-const router = createBrowserRouter([
-  {
-    path: '/instructor',
-    element: <DashboardLayout />,
-    children: [
-      {
-        path: 'dashboard',
-        element: <Dashboard />
-      },
-      {
-        path: 'courses',
-        element: <CoursesList />
-      },
-      {
-        path: 'create-course',
-        element: <CreateCourse />
-      },
-      // Removed the problematic courses/content route
-      {
-        path: 'students',
-        element: <StudentsList />
-      },
-      {
-        path: 'students/progress',
-        element: <StudentProgress />
-      },
-      {
-        path: 'assessments',
-        element: <Assessments />,
-      },
-      {
-        path: 'assessments/list',
-        element: <AssessmentList />
-      },
-      {
-        path: 'collaboration/projects',
-        element: <GroupProjects />
-      },
-      {
-        path: 'collaboration/sessions',
-        element: <LiveSessions />
-      },
-      {
-        path: 'analytics/courses',
-        element: <CourseAnalytics />
-      },
-      {
-        path: 'analytics/students',
-        element: <StudentAnalytics />
-      },
-      {
-        path: 'analytics/time',
-        element: <TimeAnalytics />
-      },
-      {
-        path: 'payments/dashboard',
-        element: <PaymentsDashboard />
-      },
-      {
-        path: 'payments/withdrawals',
-        element: <Withdrawals />
-      },
-      {
-        path: 'payments/history',
-        element: <PaymentHistory />
-      },
-      {
-        path: 'schedule',
-        element: <Schedule />
-      },
-      {
-        path: 'settings',
-        element: <Settings />
-      },
-      {
-        path: 'groups',
-        element: <GroupManagement />
-      },
-      {
-        path: 'virtual-classes',
-        element: <VirtualClasses />
-      }
-    ]
-  }
-]);
+const AppRoutes = () => {
+  return (
+    <Suspense fallback={<LoadingScreen />}>
+      <Routes>
+        <Route path="/" element={<Navigate to="/instructor/dashboard" replace />} />
+        
+        {/* Instructor Routes */}
+        <Route path="instructor" element={<DashboardLayout />}>
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="courses" element={<CoursesList />} />
+          <Route path="create-course" element={<CreateCourse />} />
+          <Route path="students" element={<StudentsList />} />
+          <Route path="collaboration/projects" element={<GroupProjects />} />
+          <Route path="analytics/courses" element={<CourseAnalytics />} />
+          <Route path="analytics/courses/:courseId" element={<CourseAnalyticsDetail />} />
+          <Route path="payments/dashboard" element={<PaymentsDashboard />} />
+          <Route path="payments/withdrawals" element={<Withdrawals />} />
+          <Route path="payments/history" element={<PaymentHistory />} />
+          <Route path="settings" element={<Settings />} />
+          <Route path="notifications" element={<Notifications />} />
+          <Route path="groups" element={<GroupManagement />} />
+          <Route path="virtual-classes" element={<VirtualClasses />} />
+        </Route>
+      </Routes>
+    </Suspense>
+  );
+};
 
-export default router;
+export default AppRoutes;
