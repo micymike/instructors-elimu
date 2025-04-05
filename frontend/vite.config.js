@@ -18,6 +18,7 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: true,
     rollupOptions: {
+      // Additional Rollup options if needed
     }
   },
   optimizeDeps: {
@@ -26,5 +27,14 @@ export default defineConfig({
   server: {
     port: process.env.PORT || 3001,
     host: true
+  },
+  preview: {
+    port: process.env.PORT || 3001,
+    host: true,
+    allowedHosts: [
+      'elimu-instructor-fr.onrender.com',
+      'localhost',
+      '127.0.0.1'
+    ]
   }
 });
