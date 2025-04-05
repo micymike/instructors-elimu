@@ -70,55 +70,110 @@ const InstructorSettings = () => {
     isUploading: false,
   });
 
-  // WebSocket Setup
-  useEffect(() => {
-    // Remove socket setup since we're not using socket.io anymore
-    // and it's causing the error
-    
-    return () => {
-      // Clean up function - no need to disconnect
-    };
-  }, []);
-
-  // Fetch Initial Data
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Use the exact API endpoint provided
-        const profileRes = await axios.get(`${API_URL}/api/instructors/profile`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json'
+  // Image processing utility function
+  const processImage = async (file, maxWidth = 500, maxHeight = 500, quality = 0.7) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          // Calculate new dimensions while maintaining aspect ratio
+          let width = img.width;
+          let height = img.height;
+          
+          if (width > height) {
+            if (width > maxWidth) {
+              height *= maxWidth / width;
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width *= maxHeight / height;
+              height = maxHeight;
+            }
           }
-        });
-        
-        console.log('Profile response:', profileRes);
-        
-        // Set profile form data from API response
-        setProfileForm({
-          name: profileRes.data.name,
-          email: profileRes.data.email,
-          phoneNumber: profileRes.data.phoneNumber,
-        });
 
-        // Set profile picture if available
-        if (profileRes.data.profilePhotoUrl) {
-          setProfilePicture(prev => ({
-            ...prev,
-            preview: profileRes.data.profilePhotoUrl
-          }));
-        }
-        
-        // Fetch other data as needed
-        // This can be updated later when those endpoints are provided
-        
-      } catch (error) {
-        console.error('Failed to load profile data:', error);
-        toast.error('Failed to load profile data');
-      }
-    };
-    
-    fetchData();
+          // Create canvas for resizing and compression
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          
+          // Draw the image with new dimensions
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Convert to base64 with compression
+          const processedImage = canvas.toDataURL('image/jpeg', quality);
+          resolve(processedImage);
+        };
+        img.src = event.target.result;
+      };
+      reader.onerror = (error) => reject(error);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Handle profile picture change with frontend processing
+  const handleProfilePictureChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type and size
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    const maxSize = 5 * 1024 * 1024; // 5MB
+
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Only JPEG, PNG, and GIF files are allowed');
+      return;
+    }
+
+    if (file.size > maxSize) {
+      toast.error('File size must be less than 5MB');
+      return;
+    }
+
+    try {
+      // Set uploading state
+      setProfilePicture(prev => ({ ...prev, isUploading: true }));
+
+      // Process the image
+      const processedImage = await processImage(file);
+
+      // Update local storage with processed image
+      localStorage.setItem('profilePicture', processedImage);
+
+      // Update state with processed image
+      setProfilePicture({
+        preview: processedImage,
+        isUploading: false
+      });
+
+      // Update user context with local image
+      login({
+        ...contextUser,
+        profilePhotoUrl: processedImage,
+        token: localStorage.getItem('token')
+      });
+
+      toast.success('Profile picture updated locally');
+    } catch (error) {
+      console.error('Profile picture processing error:', error);
+      toast.error('Failed to process profile picture');
+      
+      // Reset uploading state
+      setProfilePicture(prev => ({ ...prev, isUploading: false }));
+    }
+  };
+
+  // Load saved profile picture on component mount
+  useEffect(() => {
+    const savedProfilePicture = localStorage.getItem('profilePicture');
+    if (savedProfilePicture) {
+      setProfilePicture({
+        preview: savedProfilePicture,
+        isUploading: false
+      });
+    }
   }, []);
 
   // Profile Update Handler
@@ -161,95 +216,6 @@ const InstructorSettings = () => {
       setIsProfileUpdating(false);
     }
   };
-
-  // Handle profile picture update
-  const handleProfilePictureChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    // Validate file type and size
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-    const maxSize = 5 * 1024 * 1024; // 5MB
-
-    if (!allowedTypes.includes(file.type)) {
-      toast.error('Only JPEG, PNG, and GIF files are allowed');
-      return;
-    }
-
-    if (file.size > maxSize) {
-      toast.error('File size must be less than 5MB');
-      return;
-    }
-
-    // Create FormData to send the file
-    const formData = new FormData();
-    formData.append('profilePhoto', file);
-
-    try {
-      // Set uploading state
-      setProfilePicture(prev => ({ ...prev, isUploading: true }));
-
-      // Upload profile picture
-      const response = await axios.put(
-        `${API_URL}/api/instructors/profile/profile-picture`, 
-        formData, 
-        {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'multipart/form-data'
-          }
-        }
-      );
-
-      // Update profile picture preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfilePicture({
-          preview: reader.result,
-          isUploading: false
-        });
-      };
-      reader.readAsDataURL(file);
-
-      // Update user context with new profile photo URL
-      login({
-        ...contextUser,
-        profilePhotoUrl: response.data.profilePhotoUrl,
-        token: localStorage.getItem('token')
-      });
-
-      toast.success('Profile picture updated successfully');
-    } catch (error) {
-      console.error('Profile picture upload error:', error);
-      
-      // Handle specific error scenarios
-      if (error.response) {
-        toast.error(
-          error.response.data.message || 
-          'Failed to update profile picture'
-        );
-      } else if (error.request) {
-        toast.error('No response received from server');
-      } else {
-        toast.error('Error uploading profile picture');
-      }
-
-      // Reset uploading state
-      setProfilePicture(prev => ({ ...prev, isUploading: false }));
-    }
-  };
-
-  const handleRemoveProfilePicture = async () => {
-    try {
-      setProfilePicture({
-        preview: null,
-        file: null
-      });
-     
-      toast.success('Profile picture removed');
-    } catch (error) {
-      toast.error('Failed to remove profile picture');
-  }};
 
   // Withdrawal Handler
   const handleWithdrawal = async (e) => {
@@ -409,7 +375,7 @@ const InstructorSettings = () => {
             <div className="mt-4 flex gap-2">
               {profilePicture.preview && (
                 <button
-                  onClick={handleRemoveProfilePicture}
+                  onClick={() => setProfilePicture({ preview: null, file: null })}
                   className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
                   disabled={profilePicture.isUploading}
                 >
