@@ -1,12 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Settings, Bell, Shield, UserCircle, Key, Loader2, DollarSign } from 'lucide-react';
-import { instructorSettingsAPI } from '../../services/api';
 import toast from 'react-hot-toast';
-import { useUser } from '../../services/UserContext';
-import io from 'socket.io-client';
-import { API_URL } from '../../config';
+import { useAuth } from '../../contexts/AuthContext';
+import axios from 'axios';
 
+// Update API_URL to prioritize localhost in development mode
+const API_URL = import.meta.env.DEV 
+  ? 'http://localhost:3000'
+  : (import.meta.env.VITE_BACKEND_URL || 'https://centralize-auth-elimu.onrender.com');
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -27,8 +29,7 @@ const itemVariants = {
 
 const InstructorSettings = () => {
   const fileInputRef = useRef(null);
-  const { user: contextUser, setUser } = useUser();
-  const [socket, setSocket] = useState(null);
+  const { user: contextUser, login } = useAuth();
   // State variables
   const [isProfileUpdating, setIsProfileUpdating] = useState(false);
   const [isPasswordChanging, setIsPasswordChanging] = useState(false);
@@ -39,8 +40,6 @@ const InstructorSettings = () => {
     name: contextUser?.name || '',
     email: contextUser?.email || '',
     phoneNumber: contextUser?.phoneNumber || '',
-    paymentRate: contextUser?.paymentRate || 0,
-    bio: contextUser?.bio || ''
   });
 
   // Dashboard Stats
@@ -73,59 +72,52 @@ const InstructorSettings = () => {
 
   // WebSocket Setup
   useEffect(() => {
-    const newSocket = io(  import.meta.env.VITE_BACKEND_URL
-      , {
-      auth: {
-        token: localStorage.getItem('token')
-      }
-    });
+    // Remove socket setup since we're not using socket.io anymore
+    // and it's causing the error
     
-    newSocket.on('newNotification', (notification) => {
-      setNotifications(prev => [...prev, notification]);
-    });
-
-    newSocket.on('notificationMarkedAsRead', (notificationId) => {
-      setNotifications(prev => prev.filter(n => n.id !== notificationId));
-    });
-
-    setSocket(newSocket);
-
-    return () => newSocket.disconnect();
+    return () => {
+      // Clean up function - no need to disconnect
+    };
   }, []);
 
   // Fetch Initial Data
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [profileRes, statsRes, withdrawalsRes] = await Promise.all([
-          console.log('Attempting to fetch profile...'),
-          instructorSettingsAPI.getProfile(),
-          console.log('Profile response:', profileRes),
-          instructorSettingsAPI.getDashboardStats(),
-          instructorSettingsAPI.getWithdrawalStatus()
-        ]);
-
+        // Use the exact API endpoint provided
+        const profileRes = await axios.get(`${API_URL}/api/instructors/profile`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        console.log('Profile response:', profileRes);
+        
+        // Set profile form data from API response
         setProfileForm({
           name: profileRes.data.name,
           email: profileRes.data.email,
           phoneNumber: profileRes.data.phoneNumber,
-          paymentRate: profileRes.data.paymentRate,
-          bio: profileRes.data.bio
         });
 
-        setDashboardStats(statsRes.data);
-        setWithdrawalHistory(withdrawalsRes.data);
-
+        // Set profile picture if available
         if (profileRes.data.profilePhotoUrl) {
           setProfilePicture(prev => ({
             ...prev,
             preview: profileRes.data.profilePhotoUrl
           }));
         }
+        
+        // Fetch other data as needed
+        // This can be updated later when those endpoints are provided
+        
       } catch (error) {
-        toast.error('Failed to load data');
+        console.error('Failed to load profile data:', error);
+        toast.error('Failed to load profile data');
       }
     };
+    
     fetchData();
   }, []);
 
@@ -134,25 +126,37 @@ const InstructorSettings = () => {
     e.preventDefault();
     setIsProfileUpdating(true);
   
-    const updateProfileDto = {
+    const updatePayload = {
       name: profileForm.name,
       email: profileForm.email,
       phoneNumber: profileForm.phoneNumber,
-      paymentRate: profileForm.paymentRate,
-      bio: profileForm.bio
+      notes: ""
     };
-  
+    
     try {
-      // Update only profile information
-      const response = await instructorSettingsAPI.updateProfile(updateProfileDto, null);
-      const updatedUser = {
+      const response = await axios.put(`${API_URL}/api/instructors/profile/update`, updatePayload, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      // Update user using login method which handles both context and local storage
+      login({
         ...contextUser,
-        ...response.data
-      };
-      setUser(updatedUser);
+        ...response.data,
+        token: localStorage.getItem('token')
+      });
+      
       toast.success('Profile updated successfully');
     } catch (error) {
-      toast.error('Profile update failed');
+      console.error('Profile update error:', error);
+      toast.error(
+        error.response?.data?.message?.join(', ') || 
+        error.response?.data?.message || 
+        error.message ||
+        'Profile update failed'
+      );
     } finally {
       setIsProfileUpdating(false);
     }
@@ -163,58 +167,75 @@ const InstructorSettings = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Validate file type
-    const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
-    if (!validTypes.includes(file.type)) {
-      toast.error('Please upload a valid image file (JPG, PNG, or GIF)');
+    // Validate file type and size
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    const maxSize = 5 * 1024 * 1024; // 5MB
+
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Only JPEG, PNG, and GIF files are allowed');
       return;
     }
 
-    // Validate file size (5MB)
-    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
     if (file.size > maxSize) {
       toast.error('File size must be less than 5MB');
       return;
     }
 
-    setProfilePicture(prev => ({
-      ...prev,
-      file,
-      preview: URL.createObjectURL(file),
-      isUploading: true
-    }));
+    // Create FormData to send the file
+    const formData = new FormData();
+    formData.append('profilePhoto', file);
 
     try {
-      const formData = new FormData();
-      formData.append('profilePhoto', file);
-      
-      const response = await instructorSettingsAPI.updateProfilePicture(formData);
-      
-      if (response.profilePhotoUrl) {
-        setProfilePicture(prev => ({
-          ...prev,
-          preview: response.profilePhotoUrl,
-          file: null,
+      // Set uploading state
+      setProfilePicture(prev => ({ ...prev, isUploading: true }));
+
+      // Upload profile picture
+      const response = await axios.put(
+        `${API_URL}/api/instructors/profile/profile-picture`, 
+        formData, 
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+
+      // Update profile picture preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfilePicture({
+          preview: reader.result,
           isUploading: false
-        }));
+        });
+      };
+      reader.readAsDataURL(file);
 
-        // Update context user
-        setUser(prev => ({
-          ...prev,
-          profilePhotoUrl: response.profilePhotoUrl
-        }));
+      // Update user context with new profile photo URL
+      login({
+        ...contextUser,
+        profilePhotoUrl: response.data.profilePhotoUrl,
+        token: localStorage.getItem('token')
+      });
 
-        toast.success('Profile picture updated successfully');
-      } else {
-        throw new Error('Invalid response from server');
-      }
+      toast.success('Profile picture updated successfully');
     } catch (error) {
-      console.error('Error updating profile picture:', error);
-      toast.error(error.response?.data?.message || 'Failed to update profile picture');
-      setProfilePicture(prev => ({
-        ...prev,
-        isUploading: false
-      }));
+      console.error('Profile picture upload error:', error);
+      
+      // Handle specific error scenarios
+      if (error.response) {
+        toast.error(
+          error.response.data.message || 
+          'Failed to update profile picture'
+        );
+      } else if (error.request) {
+        toast.error('No response received from server');
+      } else {
+        toast.error('Error uploading profile picture');
+      }
+
+      // Reset uploading state
+      setProfilePicture(prev => ({ ...prev, isUploading: false }));
     }
   };
 
@@ -235,7 +256,7 @@ const InstructorSettings = () => {
     e.preventDefault();
     setIsProcessingWithdrawal(true);
     try {
-      const response = await instructorSettingsAPI.withdrawFunds({
+      const response = await axios.post(`${API_URL}/instructor/withdraw-funds`, {
         amount: parseFloat(withdrawAmount),
         phoneNumber: profileForm.phoneNumber
       });
@@ -271,10 +292,19 @@ const InstructorSettings = () => {
 
     setIsPasswordChanging(true);
     try {
-      await instructorSettingsAPI.changePassword({
-        currentPassword: passwordForm.currentPassword,
-        newPassword: passwordForm.newPassword
+      // Create FormData object for the password update
+      const formData = new FormData();
+      formData.append('newPassword', passwordForm.newPassword);
+      formData.append('currentPassword', passwordForm.currentPassword);
+      
+      // Use the same profile update endpoint as specified in the API docs
+      await axios.put(`${API_URL}/api/instructors/profile/update`, formData, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'multipart/form-data'
+        }
       });
+      
       toast.success('Password changed successfully');
       setPasswordForm({
         currentPassword: '',
@@ -282,6 +312,7 @@ const InstructorSettings = () => {
         confirmPassword: ''
       });
     } catch (error) {
+      console.error('Password change error:', error);
       toast.error(error.response?.data?.message || 'Password change failed');
     } finally {
       setIsPasswordChanging(false);
@@ -433,25 +464,7 @@ const InstructorSettings = () => {
                   className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Hourly Rate ($)</label>
-                <input
-                  type="number"
-                  value={profileForm.paymentRate}
-                  onChange={(e) => setProfileForm({ ...profileForm, paymentRate: e.target.value })}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
             </div>
-          </div>
-
-          <div className="mt-6">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
-            <textarea
-              value={profileForm.bio}
-              onChange={(e) => setProfileForm({ ...profileForm, bio: e.target.value })}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 h-32"
-            />
           </div>
 
           <div className="mt-6 flex justify-end">
@@ -466,66 +479,6 @@ const InstructorSettings = () => {
                 <Loader2 className="animate-spin h-5 w-5" />
               ) : (
                 'Save Changes'
-              )}
-            </motion.button>
-          </div>
-        </motion.form>
-
-        {/* Security Section */}
-        <motion.form 
-          onSubmit={handlePasswordChange}
-          variants={itemVariants}
-          className="bg-white rounded-xl shadow-lg p-6 mb-8"
-        >
-          <div className="flex items-center mb-6">
-            <Shield className="w-6 h-6 text-blue-600 mr-2" />
-            <h2 className="text-xl font-semibold text-gray-800">Security Settings</h2>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
-                <input
-                  type="password"
-                  value={passwordForm.currentPassword}
-                  onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
-                <input
-                  type="password"
-                  value={passwordForm.newPassword}
-                  onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
-                <input
-                  type="password"
-                  value={passwordForm.confirmPassword}
-                  onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-6 flex justify-end">
-            <motion.button
-              type="submit"
-              disabled={isPasswordChanging}
-              className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              {isPasswordChanging ? (
-                <Loader2 className="animate-spin h-5 w-5" />
-              ) : (
-                'Change Password'
               )}
             </motion.button>
           </div>
