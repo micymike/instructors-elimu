@@ -127,7 +127,6 @@ const InstructorForm = () => {
           withCredentials: true,
           headers: {
             'Content-Type': 'multipart/form-data',
-            'Access-Control-Allow-Origin': 'https://elimu-instructor-fr.onrender.com'
           }
         }
       );
