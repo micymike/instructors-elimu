@@ -42,7 +42,7 @@ const Dashboard = () => {
     upcomingSchedule: []
   });
   const [socket, setSocket] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const getTimeBasedGreeting = () => {
