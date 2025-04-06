@@ -121,15 +121,21 @@ const InstructorForm = () => {
         formDataToSubmit.append('cv', formData.cv);
       }
 
-      await axios.post(`${API_URL}/auth/register/instructor`, formDataToSubmit, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
+      const response = await axios.post(`${API_URL}/auth/register/instructor`, 
+        formDataToSubmit, 
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Access-Control-Allow-Origin': 'https://elimu-instructor-fr.onrender.com'
+          }
         }
-      });
+      );
+      
       toast.success('Instructor registration submitted successfully!');
       navigate('/login');
     } catch (error) {
-      console.error('Registration error:', error);
+      console.error('Registration error:', error.response ? error.response.data : error.message);
       setError(error.response?.data?.message || 'Failed to register. Please try again.');
     } finally {
       setIsLoading(false);
