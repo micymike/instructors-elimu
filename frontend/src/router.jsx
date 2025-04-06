@@ -3,6 +3,8 @@ import { Navigate, Routes, Route } from 'react-router-dom';
 import DashboardLayout from './components/layouts/DashboardLayout';
 import LoadingScreen from './components/common/LoadingScreen';
 import Login from './components/Login';
+import InstructorForm from './components/InstructorForm';
+import InstructorsLanding from './components/InstructorsLanding';
 
 // Lazy loaded components
 const Dashboard = lazy(() => import('./pages/instructor/Dashboard'));
@@ -25,8 +27,9 @@ const AppRoutes = () => {
   return (
     <Suspense fallback={<LoadingScreen />}>
       <Routes>
-        <Route path="/" element={<Navigate to="/instructor/dashboard" replace />} />
+        <Route path="/" element={<InstructorsLanding />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/instructorsform" element={<InstructorForm />} />
         
         {/* Instructor Routes */}
         <Route path="instructor" element={<DashboardLayout />}>
