@@ -8,8 +8,9 @@ import Testimonial from './ui/Testimonial';
 import BlobButton from './ui/BlobButton';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
-import { API_URL } from '../config';
+//import { API_URL } from '../config';
 
+const API_URL = import.meta.env.VITE_BACKEND_URL
 // Move InputField outside the main component
 const InputField = ({ 
   label, 
