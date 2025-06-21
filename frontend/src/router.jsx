@@ -5,6 +5,8 @@ import LoadingScreen from './components/common/LoadingScreen';
 import Login from './components/Login';
 import InstructorForm from './components/InstructorForm';
 import InstructorsLanding from './components/InstructorsLanding';
+import Pricing from './components/Pricing';
+import Contact from './components/Contact';
 
 // Lazy loaded components
 const Dashboard = lazy(() => import('./pages/instructor/Dashboard'));
@@ -30,6 +32,8 @@ const AppRoutes = () => {
         <Route path="/" element={<InstructorsLanding />} />
         <Route path="/login" element={<Login />} />
         <Route path="/instructorsform" element={<InstructorForm />} />
+        <Route path="/pricing" element={<Pricing />} />
+        <Route path="/contact" element={<Contact />} />
         
         {/* Instructor Routes */}
         <Route path="instructor" element={<DashboardLayout />}>
