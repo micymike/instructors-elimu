@@ -1,0 +1,27 @@
+{
+  "default_branch": "main",
+  "branches": [
+    "Marc's-Branch",
+    "Wagura",
+    "course",
+    "main",
+    "mike",
+    "student-details"
+  ],
+  "parent": {
+    "Marc's-Branch": "main",
+    "Wagura": "main",
+    "course": "main",
+    "main": null,
+    "mike": "main",
+    "student-details": "main"
+  },
+  "order": [
+    "main",
+    "Marc's-Branch",
+    "Wagura",
+    "course",
+    "mike",
+    "student-details"
+  ]
+}
